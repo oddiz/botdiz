@@ -34,7 +34,7 @@ module.exports = function(invokedMessage, commandName) {
         .setTitle("Botdiz Help Menu")
         .setDescription("Below are all the things Botdiz can do")
         
-    for (const [i, command] of this.controller.commands.entries()) {
+    for (const command of this.controller.commands) {
         
         embedMessage = embedMessage.addField(
             PREFIX + command.name,

@@ -51,7 +51,7 @@ module.exports = class Controller {
                 name: "w2g",
                 description: "Creates a watch2gether room",
                 needArgs: true,
-                usage: "!w2g https://www.youtube.com/watch?v=EIyixC9NsLI"
+                usage: "!w2g https://www.youtube.com/watch?v=EIyixC9NsLI\n!w2g badgers"
             },
             require("./commands/w2g")
         )
@@ -63,7 +63,7 @@ module.exports = class Controller {
                 name: "play",
                 description: "Plays song from a link or finds from search.",
                 needArgs: true,
-                usage:"!play https://www.youtube.com/watch?v=EIyixC9NsLI\n!play badgers"
+                usage:"!play https://www.youtube.com/watch?v=EIyixC9NsLI\n!play https://open.spotify.com/track/4ygRdvjxDYngbgddCtXDjT?si=b907bfbd3a234252\n!play badgers"
             },
             require("./commands/play")
         )
