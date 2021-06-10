@@ -2,7 +2,7 @@ module.exports = function(invokedMessage, commandName) {
     if (arguments.length > 2) {
 
         this.wrongUsage(invokedMessage, this.name)
-        
+
         return
     }
 
@@ -34,12 +34,12 @@ module.exports = function(invokedMessage, commandName) {
         .setTitle("Botdiz Help Menu")
         .setDescription("Below are all the things Botdiz can do")
         
-    for (const command of this.controller.commands) {
+    for (const [i, command] of this.controller.commands.entries()) {
         
         embedMessage = embedMessage.addField(
             PREFIX + command.name,
             "```" +`Description: ${command.description}\n\nUsage: ${command.usage}` + "```",
-            true
+            false
         )
     } 
     

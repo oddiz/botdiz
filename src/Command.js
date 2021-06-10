@@ -44,8 +44,12 @@ module.exports = class Command {
         }
 
     }
-    wrongUsage(invokedMessage, commandName) {
-        invokedMessage.channel.send(`Wrong usage of command: **${this.controller.PREFIX + this.name}**`)
+    wrongUsage(invokedMessage, commandName, errText) {
+        if (!errText) {
+            const errText = `Wrong usage of command:` 
+        }
+        
+        invokedMessage.channel.send(`${errText} **${this.controller.PREFIX + this.name}**`)
 
         const helpCommand = this.controller.commands.find( ( { name } ) => name === "help" )
 

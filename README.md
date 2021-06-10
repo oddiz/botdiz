@@ -3,7 +3,6 @@
 ## TODO
 
     - Voice recognition
-    - watch 2 gether implementation
     - Play from youtube, spotify, soundcloud?
         - Youtube playlists
         - Spotify playlists + discover weekly

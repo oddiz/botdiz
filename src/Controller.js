@@ -8,12 +8,12 @@ module.exports = class Controller {
     constructor(discord, client, MsgHandler) {
 
         this.PREFIX = "!"
+        this.debugMode = false
 
         this.discord = discord
         this.client = client;
         this.MsgHandler = MsgHandler;
 
-        this.debugMode = true
 
         this.commands = []
     }
@@ -44,6 +44,18 @@ module.exports = class Controller {
             require("./commands/help")
         )
         this.commands.push(help)
+
+        const w2g = new Command(
+            this,
+            {
+                name: "w2g",
+                description: "Creates a watch2gether room",
+                needArgs: true,
+                usage: "!w2g https://www.youtube.com/watch?v=EIyixC9NsLI"
+            },
+            require("./commands/w2g")
+        )
+        this.commands.push(w2g)
 
     }
     
