@@ -57,6 +57,18 @@ module.exports = class Controller {
         )
         this.commands.push(w2g)
 
+        const play = new Command(
+            this,
+            {
+                name: "play",
+                description: "Plays song from a link or finds from search.",
+                needArgs: true,
+                usage:"!play https://www.youtube.com/watch?v=EIyixC9NsLI\n!play badgers"
+            },
+            require("./commands/play")
+        )
+        this.commands.push(play)
+
     }
     
     handleMessage(message, controller) {

@@ -34,6 +34,7 @@ module.exports = class Command {
             const boundFunc = this.func.bind(this)
             
             if(Array.isArray(args)){
+                console.log("args are array", args)
                 boundFunc(invokedMessage, ...args)
             } else {
                 boundFunc(invokedMessage, args)
