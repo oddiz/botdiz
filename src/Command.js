@@ -1,8 +1,7 @@
-const { logger } = require("./MessageHandler");
+const { logger } = require("./logger");
 
 module.exports = class Command {
     
-    static logger = require("./logger").logger 
     /*
     config:
         {
@@ -34,7 +33,7 @@ module.exports = class Command {
             const boundFunc = this.func.bind(this)
             
             if(Array.isArray(args)){
-                console.log("args are array", args)
+
                 boundFunc(invokedMessage, ...args)
             } else {
                 boundFunc(invokedMessage, args)
@@ -46,9 +45,10 @@ module.exports = class Command {
 
     }
     wrongUsage(invokedMessage, commandName, errText = "Wrong usage of command!") {
-        
+        //notify chat about the wrong usage
         invokedMessage.channel.send(`${errText}`)
 
+        //show help of specified command
         const helpCommand = this.controller.commands.find( ( { name } ) => name === "help" )
 
         helpCommand.execute(invokedMessage, commandName)

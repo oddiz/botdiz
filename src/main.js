@@ -15,7 +15,10 @@ const logger = winston.createLogger({
 */
 const { logger } = require("./logger")
 
-client.on('ready', () => logger.log('info', 'The bot is online!'));
+client.on('ready', () => {
+    logger.log('info', 'The bot is online!')
+    client.user.setActivity(`${this.PREFIX}help`, {type: 'LISTENING'})
+});
 client.on('debug', m => logger.log('debug', m));
 client.on('warn', m => logger.log('warn', m));
 client.on('error', m => logger.log('error', m));

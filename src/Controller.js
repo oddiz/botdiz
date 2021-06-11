@@ -19,6 +19,9 @@ module.exports = class Controller {
     }
 
     init() {
+        this.client.on('ready', () => {
+            this.client.user.setActivity(`${this.PREFIX}help`, {type: 'LISTENING'})
+        });
         //initialize commands
         const debug = new Command(
             this,
@@ -51,7 +54,7 @@ module.exports = class Controller {
                 name: "w2g",
                 description: "Creates a watch2gether room",
                 needArgs: true,
-                usage: "!w2g https://www.youtube.com/watch?v=EIyixC9NsLI\n!w2g badgers"
+                usage: "!w2g https://www.youtube.com/watch?v=<video id>\n\n!w2g badgers"
             },
             require("./commands/w2g")
         )
@@ -63,12 +66,23 @@ module.exports = class Controller {
                 name: "play",
                 description: "Plays song from a link or finds from search.",
                 needArgs: true,
-                usage:"!play https://www.youtube.com/watch?v=EIyixC9NsLI\n!play https://open.spotify.com/track/4ygRdvjxDYngbgddCtXDjT?si=b907bfbd3a234252\n!play badgers"
+                usage:"!play https://www.youtube.com/watch?v=<video id>\n\n!play https://open.spotify.com/track/<track id>\n\n!play badgers"
             },
             require("./commands/play")
         )
         this.commands.push(play)
-
+        
+        const clear = new Command(
+            this,
+            {
+                name: "clear",
+                description: "Clears channel. Use with caution!",
+                needArgs: true,
+                usage:"!clear <amount of message to delete>"
+            },
+            require("./commands/clear")
+        )
+        this.commands.push(clear)
     }
     
     handleMessage(message, controller) {
