@@ -5,7 +5,7 @@ module.exports = class Controller {
     
     
     
-    constructor(discord, client, MsgHandler) {
+    constructor(discord, client, MsgHandler, MusicController) {
 
         this.PREFIX = "!"
         this.debugMode = false
@@ -13,7 +13,7 @@ module.exports = class Controller {
         this.discord = discord
         this.client = client;
         this.MsgHandler = MsgHandler;
-
+        this.MusicController = new MusicController(this)
 
         this.commands = []
     }
@@ -22,6 +22,7 @@ module.exports = class Controller {
         this.client.on('ready', () => {
             this.client.user.setActivity(`${this.PREFIX}help`, {type: 'LISTENING'})
         });
+        
         //initialize commands
         const debug = new Command(
             this,

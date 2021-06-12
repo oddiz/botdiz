@@ -5,7 +5,10 @@
     "google-auth-library": "^7.1.2",
     "googleapis": "^76.0.0",
     "node-fetch": "^2.6.1",
-    "winston": "^3.3.3"
+    "opusscript": "^0.0.8",
+    "winston": "^3.3.3",
+    "youtube-mp3-downloader": "^0.7.7",
+    "ytdl-core": "^4.8.2"
   },
   "name": "botdiz",
   "description": "- Voice recognition\r     - watch 2 gether implementation\r     - Play from youtube, spotify, soundcloud?\r         - Youtube playlists\r         - Spotify playlists + discover weekly",

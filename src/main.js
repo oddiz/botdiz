@@ -23,9 +23,10 @@ client.on('debug', m => logger.log('debug', m));
 client.on('warn', m => logger.log('warn', m));
 client.on('error', m => logger.log('error', m));
 
-const MsgHandler = require('./MessageHandler.js')
-const Ctrl = require('./Controller.js')
-const Controller = new Ctrl(Discord, client, MsgHandler)
+const MsgHandler = require('./MessageHandler.js');
+const MusicController = require('./MusicController');
+const Ctrl = require('./Controller.js');
+const Controller = new Ctrl(Discord, client, MsgHandler, MusicController) ;
 Controller.init()
 
 client.on("message", message => {
