@@ -93,7 +93,7 @@ module.exports = class Controller {
                 needArgs: false,
                 usage: "!stop"
             },
-            this.MusicController.stop()
+            this.MusicController.stop
         )
         this.commands.push(stop)
     }
