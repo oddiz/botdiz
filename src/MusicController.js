@@ -54,15 +54,15 @@ class MusicController {
         const ytld = require("ytdl-core")
         voiceChannel.join()
         .then(connection =>{
-            const dispatcher = connection.play(ytld(youtubeUrl, { quality: "highestaudio"}), { volume: this.volume });
+            this.dispatcher = connection.play(ytld(youtubeUrl, { quality: "highestaudio"}), { volume: this.volume });
 
-            dispacher.on("status", isSpeaking => {
+            this.dispacher.on("status", isSpeaking => {
 
                 this.isSpeaking = true
 
             })
 
-            dispatcher.on("finish", end => {
+            this.dispatcher.on("finish", end => {
 
                 this.isSpeaking = false
                 voiceChannel.leave()
@@ -81,6 +81,28 @@ class MusicController {
 
         for (let i = 0; i < skipAmount; i++) {
             this.queue.shift()
+        }
+    }
+    
+    stop() {
+        try {
+            this.dispatcher.stop()
+        } catch (error) {
+            console.log("No dispatcher at present.", this.dispatcher, error)
+        }
+    }
+    pause() {
+        try {
+            this.dispatcher.pause()
+        } catch (error) {
+            console.log("No dispatcher at present.", this.dispatcher, error)
+        }
+    }
+    resume() {
+        try {
+            this.dispatcher.resume()
+        } catch (error) {
+            console.log("No dispatcher at present.", this.dispatcher, error)
         }
     }
 }

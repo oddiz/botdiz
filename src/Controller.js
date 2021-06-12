@@ -84,6 +84,18 @@ module.exports = class Controller {
             require("./commands/clear")
         )
         this.commands.push(clear)
+
+        const stop = new Command(
+            this,
+            {
+                name:"stop",
+                description: "Stops the music.",
+                needArgs: false,
+                usage: "!stop"
+            },
+            this.MusicController.stop()
+        )
+        this.commands.push(stop)
     }
     
     handleMessage(message, controller) {
