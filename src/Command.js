@@ -31,7 +31,6 @@ module.exports = class Command {
     execute(invokedMessage, args) {
         try {
             if(!this.noBind) {
-                console.log("WILL BIND")
                 const boundFunc = this.func.bind(this)
                 //const boundFunc = this.func
                 
@@ -42,7 +41,6 @@ module.exports = class Command {
                     boundFunc(invokedMessage, args)
                 }
             } else {
-                console.log("WONT BIND")
                 if(Array.isArray(args)){
     
                     this.func(invokedMessage, ...args)

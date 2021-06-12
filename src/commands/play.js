@@ -10,22 +10,22 @@ module.exports = function(invokedMessage, ...args) {
         //link is passed
         videoUrl = new URL(arguments[1])
         searchMode = false
-        console.log("link parsed continuing non search mode")
+        //console.log("link parsed continuing non search mode")
 
     } catch (error) {
         //no link passed
-        console.log("no link specified, continuing with search")
+        //console.log("no link specified, continuing with search")
         searchMode = true
     }
 
     if (searchMode) {
         const query = args.join(" ")
-        console.log("query is: " , query)
+        //console.log("query is: " , query)
 
         searchYT(query, 1, result => {
             if (result) {
                 /* 
-                {
+                result = {
                     videoId: "123", 
                     videoUrl: "http:...com/..",
                     videoTitle: xxtenacion 
@@ -50,15 +50,15 @@ module.exports = function(invokedMessage, ...args) {
     } else {
         const axios = require('axios');
         
-        console.log(videoUrl.hostname);
+        //console.log(videoUrl.hostname);
         //if link is youtube
         if (videoUrl.host.includes("youtube.com")){
-            console.log("video is from youtube")
+            //console.log("video is from youtube")
             
             const href = videoUrl.href
             const oembed = "https://www.youtube.com/oembed?url="
             const oEmbedUrl = oembed+href
-            console.log(oEmbedUrl)
+            
 
             axios.get(oEmbedUrl, {
                 headers: {
@@ -93,7 +93,7 @@ module.exports = function(invokedMessage, ...args) {
             const spotifyUri = require('spotify-uri');
             const parsed = spotifyUri.parse(videoUrl.href)
 
-            console.log(parsed)
+            //console.log(parsed)
             /*
             Track {
                 uri: 'https://open.spotify.com/track/73EByXGIiEe7e3SRNLcipP?si=86e056768b8a4fdd',
@@ -104,7 +104,7 @@ module.exports = function(invokedMessage, ...args) {
             const spotifyApiTrackUrl= "https://api.spotify.com/v1/tracks/"
             const songId = parsed.id
             const searchApiUrl = spotifyApiTrackUrl + songId;
-            console.log(searchApiUrl)
+            //console.log(searchApiUrl)
             axios.get(searchApiUrl, {
                 headers:{
                     "Accept": "application/json",
@@ -113,9 +113,9 @@ module.exports = function(invokedMessage, ...args) {
                 }
             }).then(result => {
                 const artistName = result.data.artists[0].name
-                console.log("artist name:", artistName)
+                //console.log("artist name:", artistName)
                 const songName = result.data.name
-                console.log("songName: ", songName )
+                //console.log("songName: ", songName )
                 
                 const query  = songName + " " + artistName
                 const searchYT = require('../scripts/searchYT')
@@ -137,7 +137,7 @@ module.exports = function(invokedMessage, ...args) {
                 })
                 
             }).catch(error => {
-                console.log("Error while using spotify AI. Error : " + error)
+                //console.log("Error while using spotify AI. Error : " + error)
             })
 
         }

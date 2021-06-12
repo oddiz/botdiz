@@ -42,13 +42,13 @@ module.exports = function (invokedMessage) {
                 const minutes = Math.floor((dateDiff / (1000 * 60) % 60))
                 const hours = Math.floor((dateDiff / (1000 * 60 * 60 )) % 24)
                 const days = Math.floor(dateDiff / (1000 * 60 * 60 * 24))
-                console.log("Days: ", days , "hours: ", hours, "minutes:", minutes, "seconds: ", seconds)
+                //console.log("Days: ", days , "hours: ", hours, "minutes:", minutes, "seconds: ", seconds)
 
                 let embedMessage = new Discord.MessageEmbed()
                 embedMessage = embedMessage
                     .setColor("#CB462C")
                     .setTitle(element.title)
-                    .setThumbnail(element.keyImages[2].url)
+                    .setThumbnail(element.keyImages[1].url)
                     .setTimestamp()
                     .setDescription(`Will be free in: **${days} Days** **${hours} Hours** **${minutes} Minutes** **${seconds} Seconds**`)
 
@@ -63,8 +63,7 @@ module.exports = function (invokedMessage) {
 
                 }
                 Promise.all(promises).then((values) => {
-                    console.log("Sent actives!", values)
-                    
+                    //future deals later
                     for (const embed of futureDeals) {
                 
                         invokedMessage.reply(embed)

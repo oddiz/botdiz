@@ -46,7 +46,7 @@ class MusicController {
     }
 
     run(invokedMessage) {
-        console.log(this.isSpeaking, "is speaking?")
+        //console.log(this.isSpeaking, "is speaking?")
 
         if (this.isSpeaking) {
             invokedMessage.channel.send("Added to queue.")
@@ -68,7 +68,7 @@ class MusicController {
             return
         }
         
-        const nextInQueue = this.queue.shift();
+        const nextInQueue = this.queue[0];
         //const songPath = nextInQueue.file
         const youtubeUrl = nextInQueue.videoUrl
         const ytld = require("ytdl-core")
@@ -90,6 +90,7 @@ class MusicController {
             dispatcher.on("finish", end => {
 
                 this.isSpeaking = false
+                this.queue.shift()
                 this.playNext(invokedMessage)
                
             })
@@ -99,7 +100,7 @@ class MusicController {
 
     }
 
-    skip(skipAmnt) {
+    skip(invokedMessage, skipAmnt) {
         let skipAmount = 1
         if (parseInt(skipAmnt)) {
             skipAmount = skipAmnt
@@ -130,7 +131,7 @@ class MusicController {
     }
     resume(invokedMessage) {
 
-        console.log(Object.getOwnPropertyNames(this.controller.MusicController.dispatcher.player.dispatcher))
+        
         try {
             this.controller.MusicController.dispatcher.player.dispatcher.resume()
             

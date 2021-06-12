@@ -8,5 +8,4 @@
         - Spotify playlists + discover weekly
         - play random song, backing track
     - random game from steam
-    - epic games beleş oyun hatırlatıcı
 

@@ -40,36 +40,29 @@ module.exports = function (query, maxResults = 1, callback) {
           }
         */
         if (result.length > 1) {
-            let videoUrls = []
-            let videoIds = []
-            let videoTitles = []
-            for (const item of result) {
-                const videoId = item.id.videoId
-                const ytUrlTemplate = "https://www.youtube.com/watch?v="
-                const videoUrl = ytUrlTemplate + videoId
-                videoIds.push(videoId)
-                videoUrls.push(videoUrl)
-                videoTitles.push(item.snippet.title)
+            const randResult = result[Math.round(Math.random() * (result.length - 1))]
+            const videoId = randResult.id.videoId
+            const ytUrlTemplate = "https://www.youtube.com/watch?v="
+            const videoUrl = ytUrlTemplate + videoId
+            const videoTitle = randResult.snippet.title   
                 
-            }
-            
-            console.log("video Urls array from searchYT.js: " + videoUrls)
+            console.log("random retrieved video " + videoUrl)
             callback({
-                videoIds: videoIds,
-                videoUrls: videoUrls,
-                videoTitles: videoTitles
+                videoId: videoId,
+                videoUrl: videoUrl,
+                videoTitle: videoTitle
             })
             
         } else {
-            console.log(result)
+            //console.log(result)
             const videoId = result[0].id.videoId
             const ytUrlTemplate = "https://www.youtube.com/watch?v="
             const videoUrl = ytUrlTemplate + videoId
-
+            const videoTitle = result[0].snippet.title
             callback({
-                videoTitle: [result[0].snippet.title],
                 videoId: videoId,
-                videoUrl: videoUrl
+                videoUrl: videoUrl,
+                videoTitle: videoTitle
             })
             
         }

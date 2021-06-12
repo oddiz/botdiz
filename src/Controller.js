@@ -127,7 +127,7 @@ module.exports = class Controller {
             this,
             {
                 name:"queue",
-                description: "Shows current queue",
+                description: "Shows current music queue",
                 needArgs: false,
                 usage: "!queue" 
             },

@@ -14,11 +14,17 @@ module.exports = function (invokedMessage, num) {
         invokedMessage.channel.send("No songs in queue.")
         return
     }
-    console.log("Current queue: " + queue)
+    //console.log("Current queue: " + queue)
     let response = "**Current queue:** " + " ```"
     let counter = 1;
     for (const song of queue) {
-        const line = counter + "-   " + song.videoTitle + "\n\n"
+        let line = ""
+        if (counter === 1) {
+
+            line = "Playing:  " + song.videoTitle + "\n\n"
+        } else {
+            line = counter + "- " + song.videoTitle + "\n\n"
+        }
         counter += 1;
         response = response + line;
     }
