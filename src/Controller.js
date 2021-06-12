@@ -135,6 +135,20 @@ module.exports = class Controller {
         
         )
         this.commands.push(queue)
+
+        const epic = new Command(
+            this,
+            {
+                name:"epic",
+                description: "Shows current epic free deals.",
+                needArgs: false;
+                usage: "!epic",
+
+
+            },
+            require("./commands/epic")
+        )
+        this.commands.push(epic)
         
     }
     
