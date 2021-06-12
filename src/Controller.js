@@ -141,7 +141,7 @@ module.exports = class Controller {
             {
                 name:"epic",
                 description: "Shows current epic free deals.",
-                needArgs: false;
+                needArgs: false,
                 usage: "!epic",
 
 
