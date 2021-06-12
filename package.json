@@ -1,11 +1,13 @@
 {
   "dependencies": {
+    "axios": "^0.21.1",
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0",
     "google-auth-library": "^7.1.2",
     "googleapis": "^76.0.0",
     "node-fetch": "^2.6.1",
     "opusscript": "^0.0.8",
+    "spotify-uri": "^2.2.0",
     "winston": "^3.3.3",
     "youtube-mp3-downloader": "^0.7.7",
     "ytdl-core": "^4.8.2"

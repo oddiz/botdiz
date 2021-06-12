@@ -67,7 +67,8 @@ module.exports = class Controller {
                 name: "play",
                 description: "Plays song from a link or finds from search.",
                 needArgs: true,
-                usage:"!play https://www.youtube.com/watch?v=<video id>\n\n!play https://open.spotify.com/track/<track id>\n\n!play badgers"
+                usage:"!play https://www.youtube.com/watch?v=<video id>\n\n!play https://open.spotify.com/track/<track id>\n\n!play badgers",
+                noBind: true
             },
             require("./commands/play")
         )
@@ -91,11 +92,50 @@ module.exports = class Controller {
                 name:"stop",
                 description: "Stops the music.",
                 needArgs: false,
-                usage: "!stop"
+                usage: "!stop",
+                noBind: true
             },
-            this.controller.MusicController.stop
+            this.MusicController.stop
         )
         this.commands.push(stop)
+        const pause = new Command(
+            this,
+            {
+                name:"pause",
+                description: "Pauses the music.",
+                needArgs: false,
+                usage: "!pause",
+                noBind: true
+            },
+            this.MusicController.pause
+        )
+        this.commands.push(pause)
+        const resume = new Command(
+            this,
+            {
+                name:"resume",
+                description: "Stops the music.",
+                needArgs: false,
+                usage: "!resume",
+                noBind: true
+            },
+            this.MusicController.resume
+        )
+        this.commands.push(resume)
+        
+        const queue = new Command(
+            this,
+            {
+                name:"queue",
+                description: "Shows current queue",
+                needArgs: false,
+                usage: "!queue" 
+            },
+            require("./commands/queue")
+        
+        )
+        this.commands.push(queue)
+        
     }
     
     handleMessage(message, controller) {

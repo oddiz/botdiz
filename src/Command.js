@@ -23,20 +23,32 @@ module.exports = class Command {
         this.description = config.description;
         this.needArgs = config.needArgs;
         this.usage = config.usage;
-        
+        this.noBind = config.noBind || false;
         this.func = func;
 
     }
 
     execute(invokedMessage, args) {
         try {
-            const boundFunc = this.func.bind(this)
-            
-            if(Array.isArray(args)){
-
-                boundFunc(invokedMessage, ...args)
+            if(!this.noBind) {
+                console.log("WILL BIND")
+                const boundFunc = this.func.bind(this)
+                //const boundFunc = this.func
+                
+                if(Array.isArray(args)){
+    
+                    boundFunc(invokedMessage, ...args)
+                } else {
+                    boundFunc(invokedMessage, args)
+                }
             } else {
-                boundFunc(invokedMessage, args)
+                console.log("WONT BIND")
+                if(Array.isArray(args)){
+    
+                    this.func(invokedMessage, ...args)
+                } else {
+                    this.func(invokedMessage, args)
+                }
             }
 
         } catch (error) {

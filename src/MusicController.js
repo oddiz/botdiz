@@ -1,4 +1,3 @@
-const { VoiceChannel } = require("discord.js");
 const { logger } = require("./logger")
 
 
@@ -8,6 +7,8 @@ class MusicController {
         this.queue = [];
         this.controller = controller;
         this.volume = 1
+        this.dispatcher;
+        this.isSpeaking = false;
     }
 
     download(invokedMessage, videoId){
@@ -38,37 +39,62 @@ class MusicController {
         }))
     }
 
-    addToQueue(videoUrls) {
-        for (const url of videoUrls) {
+    addToQueue(song) {
 
-            this.queue.push(url)
-            console.log(url)
+            this.queue.push(song) 
+
+    }
+
+    run(invokedMessage) {
+        console.log(this.isSpeaking, "is speaking?")
+
+        if (this.isSpeaking) {
+            invokedMessage.channel.send("Added to queue.")
+        } else {
+            this.playNext(invokedMessage)
         }
     }
 
-    play(invokedMessage) {
+    playNext(invokedMessage) {
+        const voiceChannel = invokedMessage.member.voice.channel
+
+        if (this.queue.length === 0){
+            invokedMessage.channel.send("Queue completed")
+            this.controller.MusicController.dispatcher.destroy()
+            this.controller.MusicController.isSpeaking = false;
+            this.controller.MusicController.queue = []
+            voiceChannel.leave()
+            
+            return
+        }
+        
         const nextInQueue = this.queue.shift();
         //const songPath = nextInQueue.file
-        const youtubeUrl = nextInQueue
-        const voiceChannel = invokedMessage.member.voice.channel
+        const youtubeUrl = nextInQueue.videoUrl
         const ytld = require("ytdl-core")
         voiceChannel.join()
         .then(connection =>{
-            this.dispatcher = connection.play(ytld(youtubeUrl, { quality: "highestaudio"}), { volume: this.volume });
 
-            this.dispacher.on("status", isSpeaking => {
+            const dispatcher = connection.play(ytld(youtubeUrl, { quality: "highestaudio"}), { volume: this.volume });
+            this.isSpeaking = true
+            this.dispatcher = dispatcher
+            dispatcher.on("start", start => {
+                console.log("Starting dispatcher")
 
-                this.isSpeaking = true
+            })
+            dispatcher.on("speaking", isSpeaking => {
+
 
             })
 
-            this.dispatcher.on("finish", end => {
+            dispatcher.on("finish", end => {
 
                 this.isSpeaking = false
-                voiceChannel.leave()
+                this.playNext(invokedMessage)
+               
             })
         })
-        .catch(err => logger.log("error", `Error while invoking play command! Err: ${err}`));
+        .catch(err => logger.log("error", `Error while invoking playNext command! Err: ${err}`));
 
 
     }
@@ -84,23 +110,31 @@ class MusicController {
         }
     }
     
-    stop() {
+    stop(invokedMessage) {
         try {
-            this.dispatcher.stop()
+            this.controller.MusicController.dispatcher.destroy()
+            this.controller.MusicController.isSpeaking = false;
+            this.controller.MusicController.queue = []
+            invokedMessage.member.voice.channel.leave()
+        } catch (error) {
+            console.log("No dispatcher at present.", this.dispatcher)
+        }
+    }
+    pause(invokedMessage) {
+        try {
+            this.controller.MusicController.dispatcher.player.dispatcher.pause()
+            invokedMessage.channel.send("Player paused")
         } catch (error) {
             console.log("No dispatcher at present.", this.dispatcher, error)
         }
     }
-    pause() {
+    resume(invokedMessage) {
+
+        console.log(Object.getOwnPropertyNames(this.controller.MusicController.dispatcher.player.dispatcher))
         try {
-            this.dispatcher.pause()
-        } catch (error) {
-            console.log("No dispatcher at present.", this.dispatcher, error)
-        }
-    }
-    resume() {
-        try {
-            this.dispatcher.resume()
+            this.controller.MusicController.dispatcher.player.dispatcher.resume()
+            
+            invokedMessage.channel.send("Player resumed")
         } catch (error) {
             console.log("No dispatcher at present.", this.dispatcher, error)
         }
