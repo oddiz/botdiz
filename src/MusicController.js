@@ -49,7 +49,7 @@ class MusicController {
         //console.log(this.isSpeaking, "is speaking?")
 
         if (this.isSpeaking) {
-            invokedMessage.channel.send("Added to queue.")
+            console.log("Added to queue.")
         } else {
             this.playNext(invokedMessage)
         }
@@ -71,15 +71,87 @@ class MusicController {
         const nextInQueue = this.queue[0];
         //const songPath = nextInQueue.file
         const youtubeUrl = nextInQueue.videoUrl
+        
+        let embedMessage = new this.controller.discord.MessageEmbed()
+        embedMessage = embedMessage
+            .setColor("#e9b463")
+            .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
+            .setTimestamp()
+        if(nextInQueue.videoThumbnailUrl) {
+            embedMessage = embedMessage
+                .setThumbnail(nextInQueue.videoThumbnailUrl)
+        }
+        
+        invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
+            let lastMessage = messages.first()
+            
+            if(lastMessage.author.bot) {
+                lastMessage.edit(embedMessage)
+            } else {
+                invokedMessage.channel.send(embedMessage)
+            }
+        });
+        let self = this;
+        const updateVideoTitle = nextInQueue.videoTitle;
+        const updatePlayer = function(invokedMessage, updateVideoTitle) {
+            setTimeout(function () {
+                invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
+                    let lastMessage = messages.first()
+                    
+                    if(lastMessage.author.bot && (lastMessage.embeds[0].fields[0].value === updateVideoTitle)) {
+                            let newEmbed = new self.controller.discord.MessageEmbed()
+                            newEmbed = newEmbed
+                            .setColor("#e9b463")
+                            .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
+                            .setTimestamp()
+                        if(nextInQueue.videoThumbnailUrl) {
+                            newEmbed = newEmbed
+                                .setThumbnail(nextInQueue.videoThumbnailUrl)
+                        }
+                        const streamtime = self.controller.MusicController.dispatcher.streamTime;
+                        const streamMins = Math.floor(streamtime / (1000 * 60) % 60)
+                        const streamSecs = Math.floor(streamtime / 1000 % 60)
+                        
+                        
+                        const videoLenght= nextInQueue.videoDuration; //secs
+                        const videoMins = Math.floor((videoLenght / 60) % 60)
+                        const videoSecs = Math.floor(videoLenght % 60)
+                        
+                        const videoLenMs = videoLenght * 1000
+                        
+                        const percentage = (streamtime * 100) / videoLenMs
+                        //console.log(percentage)
+
+                        
+                        let lines = new Array(50);
+                        lines[parseInt(Math.floor(percentage/2))] = "🟠";
+                        lines = lines.join("-")
+                        let newEmbedMessage = newEmbed
+                            .addField(`${streamMins}:${streamSecs} / ${videoMins}:${videoSecs}`, `|${lines}|`)
+                        lastMessage.edit(newEmbedMessage)
+                        
+                        updatePlayer(invokedMessage, updateVideoTitle)
+                    } else {
+                        //console.log("Exiting update player")
+                    }
+                })
+
+            }, 2000)
+            
+        }
+        updatePlayer(invokedMessage,updateVideoTitle)
         const ytld = require("ytdl-core")
         voiceChannel.join()
         .then(connection =>{
 
+            if (this.controller.MusicController.dispatcher) {
+                this.controller.MusicController.dispatcher.destroy()
+            }
             const dispatcher = connection.play(ytld(youtubeUrl, { quality: "highestaudio"}), { volume: this.volume });
             this.isSpeaking = true
             this.dispatcher = dispatcher
             dispatcher.on("start", start => {
-                console.log("Starting dispatcher")
+                logger.log("info","Starting dispatcher")
 
             })
             dispatcher.on("speaking", isSpeaking => {
@@ -107,8 +179,9 @@ class MusicController {
         }
 
         for (let i = 0; i < skipAmount; i++) {
-            this.queue.shift()
+            this.controller.MusicController.queue.shift()
         }
+        this.controller.MusicController.playNext(invokedMessage)
     }
     
     stop(invokedMessage) {

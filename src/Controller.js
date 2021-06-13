@@ -136,6 +136,18 @@ module.exports = class Controller {
         )
         this.commands.push(queue)
 
+        const skip = new Command(
+            this,
+            {
+                name:"skip",
+                description: "Skips current song, or skips specified times",
+                needArgs: false,
+                usage:"!skip or !skip 4 (to skip 4 songs)"
+            },
+            this.MusicController.skip    
+        )
+        this.commands.push(skip)
+
         const epic = new Command(
             this,
             {
