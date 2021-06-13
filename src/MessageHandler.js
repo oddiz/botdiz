@@ -15,11 +15,10 @@ class MsgHandler {
     parseMessage() {
         try {
             const message_re = new RegExp(`^${this.prefix}([a-zA-Z0-9]*) *(.*)`, "g" )
-            MsgHandler.logger.log("info", this.message_content + " -> msg content")
+            
     
             const matches = message_re.exec(this.message_content)
-            MsgHandler.logger.log("info", matches + "-> matches")
-    
+            
             return matches
             
         } catch (error) {

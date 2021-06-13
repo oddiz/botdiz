@@ -9,11 +9,13 @@
     "node-html-parser": "^3.3.5",
     "opusscript": "^0.0.8",
     "spotify-uri": "^2.2.0",
+    "spotify-web-api-node": "^5.0.2",
     "winston": "^3.3.3",
     "youtube-mp3-downloader": "^0.7.7",
     "youtube.get-video-info": "^1.0.2",
     "ytdl-core": "^4.8.2",
-    "ytpl": "^2.2.1"
+    "ytpl": "^2.2.1",
+    "ytsr": "^3.5.0"
   },
   "name": "botdiz",
   "description": "- Voice recognition\r     - watch 2 gether implementation\r     - Play from youtube, spotify, soundcloud?\r         - Youtube playlists\r         - Spotify playlists + discover weekly",

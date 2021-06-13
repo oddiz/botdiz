@@ -1,5 +1,5 @@
 const { logger } = require("./logger")
-
+const searchYT = require("./scripts/searchYT")
 
 
 class MusicController {
@@ -40,22 +40,31 @@ class MusicController {
     }
 
     addToQueue(song) {
-
+        /*
+        {
+        videoUrl: videoUrl,
+        videoId: videoId,
+        videoTitle: videoTitle,
+        videoThumbnailUrl:videoThumbnailUrl,
+        videoDuration: videoDuration
+        } 
+        */
+            
             this.queue.push(song) 
 
     }
 
     run(invokedMessage) {
-        //console.log(this.isSpeaking, "is speaking?")
 
-        if (this.isSpeaking) {
-            console.log("Added to queue.")
-        } else {
-            this.playNext(invokedMessage)
+        if (this.queue.length > 1) {
+            invokedMessage.channel.send("Added to queue")
         }
+
+        this.playNext(invokedMessage)
     }
 
     playNext(invokedMessage) {
+        const self = this
         const voiceChannel = invokedMessage.member.voice.channel
 
         if (this.queue.length === 0){
@@ -67,108 +76,171 @@ class MusicController {
             
             return
         }
+        let youtubeUrl;
         
-        const nextInQueue = this.queue[0];
-        //const songPath = nextInQueue.file
-        const youtubeUrl = nextInQueue.videoUrl
+        self.nextInQueue = self.queue[0];
         
-        let embedMessage = new this.controller.discord.MessageEmbed()
-        embedMessage = embedMessage
-            .setColor("#e9b463")
-            .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
-            .setTimestamp()
-        if(nextInQueue.videoThumbnailUrl) {
-            embedMessage = embedMessage
-                .setThumbnail(nextInQueue.videoThumbnailUrl)
+        if (self.nextInQueue.isSpotify) {
+            //if came from spotify link
+            //only videoArtist, videoTitle, isSpotify present
+            const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
+
+            const query = self.nextInQueue.videoTitle
+
+            searchYT(query, 1, (result) => {
+                                        
+                if (result) {
+                    //invokedMessage.channel.send("Video found: " + result.videoUrl)
+                    getInfoFromYoutubeUrl(result.videoUrl, result => {
+                        self.nextInQueue = result;
+                        doRest(self)
+                    })
+
+                } else {
+                    console.error("Error getting YT info from: "+ query)
+                    console.error("Error from music COntroller play next()")
+                }
+            })
+
+        } else {
+            self.nextInQueue = self.queue[0] 
+            doRest(self) 
         }
-        
-        invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
-            let lastMessage = messages.first()
+        function doRest(self) {
+
+            let embedMessage = new self.controller.discord.MessageEmbed()
             
-            if(lastMessage.author.bot) {
-                lastMessage.edit(embedMessage)
-            } else {
-                invokedMessage.channel.send(embedMessage)
+            embedMessage = embedMessage
+                .setColor("#e9b463")
+                .addField("Now Playing: ",`${self.nextInQueue.videoTitle}`)
+                .setTimestamp()
+            if(self.nextInQueue.videoThumbnailUrl) {
+                embedMessage = embedMessage
+                    .setThumbnail(self.nextInQueue.videoThumbnailUrl)
             }
-        });
-        let self = this;
-        const updateVideoTitle = nextInQueue.videoTitle;
-        const updatePlayer = function(invokedMessage, updateVideoTitle) {
-            setTimeout(function () {
-                invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
-                    let lastMessage = messages.first()
-                    
-                    if((lastMessage.embeds[0].fields[0].value === updateVideoTitle)) {
+    
+            let botMessage;
+    
+            invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
+                let lastMessage = messages.first()
+                
+                if(lastMessage.author.bot) {
+                    lastMessage.edit(embedMessage).then( message => {
+                        botMessage = message
+                        const updateVideoTitle = self.nextInQueue.videoTitle;
+    
+                        updatePlayer(invokedMessage,updateVideoTitle, botMessage)
+                    })
+                } else {
+                    invokedMessage.channel.send(embedMessage).then( message => {
+                        botMessage = message
+                        const updateVideoTitle = self.nextInQueue.videoTitle;
+    
+                        updatePlayer(invokedMessage,updateVideoTitle, botMessage)
+                    })
+                }
+            });
+    
+            const updatePlayer = function(invokedMessage, updateVideoTitle, botMessage) {
+                setTimeout(function () {
+                    let currentTitle
+
+                    try {
+                        currentTitle = self.nextInQueue.videoTitle;
+                        console.log(currentTitle)
+                        console.log(updateVideoTitle)
+
+                        console.log("Current Title, updateVideoTitle")
+                    } catch (error) {
+                        logger.log("info", "No queue present terminating update queue", error);
+                        
+                        return
+                    }
+                    if (currentTitle !== updateVideoTitle) {
+                        logger.log("info", "Disabling update loop for "+updateVideoTitle)
+                        return;
+                    }
+                    if(currentTitle === updateVideoTitle) {
                             let newEmbed = new self.controller.discord.MessageEmbed()
                             newEmbed = newEmbed
                             .setColor("#e9b463")
-                            .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
+                            .addField("Now Playing: ",`${updateVideoTitle}`)
                             .setTimestamp()
-                        if(nextInQueue.videoThumbnailUrl) {
+                        if(self.nextInQueue.videoThumbnailUrl) {
                             newEmbed = newEmbed
-                                .setThumbnail(nextInQueue.videoThumbnailUrl)
+                                .setThumbnail(self.nextInQueue.videoThumbnailUrl)
                         }
                         const streamtime = self.controller.MusicController.dispatcher.streamTime;
+                        const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
                         const streamMins = Math.floor(streamtime / (1000 * 60) % 60)
                         const streamSecs = Math.floor(streamtime / 1000 % 60)
                         
                         
-                        const videoLenght= nextInQueue.videoDuration; //secs
+                        const videoLenght= self.nextInQueue.videoDuration; //secs
+                        const videoHours = Math.floor((videoLenght / (60 *60)) % 60)
                         const videoMins = Math.floor((videoLenght / 60) % 60)
                         const videoSecs = Math.floor(videoLenght % 60)
                         
                         const videoLenMs = videoLenght * 1000
                         
                         const percentage = (streamtime * 100) / videoLenMs
-                        //console.log(percentage)
-
+    
                         
                         let lines = new Array(50);
                         lines[parseInt(Math.floor(percentage/2))] = "🟠";
                         lines = lines.join("-")
-                        let newEmbedMessage = newEmbed
-                            .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
-                        lastMessage.edit(newEmbedMessage)
+                        let newEmbedMessage;
+                        if (videoHours > 0){
+                            newEmbedMessage = newEmbed
+                            .addField(`${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')} / ${videoHours}:${videoMins.toString().padStart(2, 0)}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
+                        } else {
+                            newEmbedMessage = newEmbed
+                                .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
+                            
+                        }
+    
+                        botMessage.edit(newEmbedMessage)
                         
-                        updatePlayer(invokedMessage, updateVideoTitle)
+                        updatePlayer(invokedMessage, updateVideoTitle, botMessage)
                     } else {
-                        //console.log("Exiting update player")
+                        logger.log("info","Exiting update player")
                     }
-                })
-
-            }, 2000)
-            
-        }
-
-        updatePlayer(invokedMessage,updateVideoTitle)
-        const ytld = require("ytdl-core")
-        voiceChannel.join()
-        .then(connection =>{
-
-            if (this.controller.MusicController.dispatcher) {
-                this.controller.MusicController.dispatcher.destroy()
+                    
+    
+                }, 2000)
+                
             }
-            const dispatcher = connection.play(ytld(youtubeUrl, { quality: "highestaudio"}), { volume: this.volume });
-            this.isSpeaking = true
-            this.dispatcher = dispatcher
-            dispatcher.on("start", start => {
-                logger.log("info","Starting dispatcher")
-
+    
+            
+            const ytld = require("ytdl-core")
+            voiceChannel.join()
+            .then(connection =>{
+                logger.log("info", "Trying to start dispatcher." )
+                if (self.controller.MusicController.dispatcher) {
+                    self.controller.MusicController.dispatcher.destroy()
+                }
+                const dispatcher = connection.play(ytld(self.nextInQueue.videoUrl, { quality: "highestaudio"}), { volume: self.volume });
+                self.isSpeaking = true
+                self.dispatcher = dispatcher
+                dispatcher.on("start", start => {
+                    logger.log("info","Starting dispatcher")
+    
+                })
+                dispatcher.on("speaking", isSpeaking => {
+    
+    
+                })
+    
+                dispatcher.on("finish", end => {
+    
+                    self.isSpeaking = false
+                    self.queue.shift()
+                    self.playNext(invokedMessage)
+                   
+                })
             })
-            dispatcher.on("speaking", isSpeaking => {
-
-
-            })
-
-            dispatcher.on("finish", end => {
-
-                this.isSpeaking = false
-                this.queue.shift()
-                this.playNext(invokedMessage)
-               
-            })
-        })
-        .catch(err => logger.log("error", `Error while invoking playNext command! Err: ${err}`));
+            .catch(err => logger.log("error", `Error while invoking playNext command! Err: ${err}`));
+        }
 
 
     }
@@ -192,7 +264,7 @@ class MusicController {
             this.controller.MusicController.queue = []
             invokedMessage.member.voice.channel.leave()
         } catch (error) {
-            console.log("No dispatcher at present.", this.dispatcher)
+            logger.log("info","No dispatcher at present.", this.dispatcher)
         }
     }
     pause(invokedMessage) {
@@ -200,7 +272,7 @@ class MusicController {
             this.controller.MusicController.dispatcher.player.dispatcher.pause()
             invokedMessage.channel.send("Player paused")
         } catch (error) {
-            console.log("No dispatcher at present.", this.dispatcher, error)
+            logger.log("info", "No dispatcher at present.", this.dispatcher, error)
         }
     }
     resume(invokedMessage) {
@@ -211,7 +283,7 @@ class MusicController {
             
             invokedMessage.channel.send("Player resumed")
         } catch (error) {
-            console.log("No dispatcher at present.", this.dispatcher, error)
+            logger.log("info", "No dispatcher at present.", this.dispatcher, error)
         }
     }
 }

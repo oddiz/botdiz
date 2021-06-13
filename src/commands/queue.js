@@ -14,7 +14,7 @@ module.exports = function (invokedMessage, num) {
         invokedMessage.channel.send("No songs in queue.")
         return
     }
-    //console.log("Current queue: " + queue)
+    
     let response = "**Current queue:** " + " ```"
     let counter = 1;
     for (const song of queue) {

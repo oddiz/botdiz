@@ -1,26 +1,25 @@
 const { auth } = require("google-auth-library")
 require("dotenv").config()
 const searchYT = require("../scripts/searchYT")
+const getInfoFromYoutubeUrl = require("../scripts/getInfoFromYoutubeUrl")
 const axios = require('axios');
 const { logger } = require("../MessageHandler");
 
 module.exports = function(invokedMessage, ...args) {
     
-    let videoUrl, searchMode;
-    
+    let videoUrl, searchMode, isSpotifyPlaylist;
+    const self = this;
+    searchMode = true
     try {
         //link is passed
         videoUrl = new URL(arguments[1])
         searchMode = false
         isYoutubePlaylist = videoUrl.href.includes("&list")
-        //console.log("link parsed continuing non search mode")
 
     } catch (error) {
         //no link passed
-        //console.log("no link specified, continuing with search")
-        searchMode = true
     }
-
+    
     if (!invokedMessage.member.voice.channel) {
         invokedMessage.reply("You are not in a voice channel.")
 
@@ -31,24 +30,24 @@ module.exports = function(invokedMessage, ...args) {
 
     if (searchMode) {
         const query = args.join(" ")
-        //console.log("query is: " , query)
-
-        searchYT(query, 1, result => {
+        searchYT(query, 1, (result) => {
+                                        
             if (result) {
-                /* 
-                result = {
-                    videoId: "123", 
-                    videoUrl: "http:...com/..",
-                    videoTitle: xxtenacion 
-                }        
-                */
-                invokedMessage.channel.send("Video found: " + result.videoUrl)
-                this.controller.MusicController.addToQueue(result)
-                this.controller.MusicController.run(invokedMessage)
+                //invokedMessage.channel.send("Video found: " + result.videoUrl)
+                getInfoFromYoutubeUrl(result.videoUrl, result2 => {
+                    self.controller.MusicController.addToQueue(result2)
+                    self.controller.MusicController.run(invokedMessage)
+                })
+
             } else {
+                console.error("Error getting YT info from: "+ query)
+                console.error("Error from music COntroller play next()")
                 invokedMessage.channel.send("Video not found.")
             }
-        });
+        })
+
+        return
+        
 
     
         /* 
@@ -57,18 +56,16 @@ module.exports = function(invokedMessage, ...args) {
         const vidUrl = ytUrlTemplate + videoId
         invokedMessage.channel.send("Video found: " + vidUrl)
         */
-
+    
     } else if (isYoutubePlaylist) {
         const regex = /&list=(.*)$/;
         const playlistId = videoUrl.href.match(regex)[1];
-        //console.log(playlistId);
-        const self = this;
+        
         (async function(){
 
             let ytpl = require('ytpl');
     
             const playlist = await ytpl(playlistId, { limit: 25 });
-            //console.log(playlist.items);
             /*Array of
             {
                 title: 'More Plastic x hayve - Feel Alive [NCS Release]',
@@ -117,78 +114,147 @@ module.exports = function(invokedMessage, ...args) {
         
            
     } else {
+        //else 
         
         
         //console.log(videoUrl.hostname);
         //if link is youtube
         if (videoUrl.host.includes("youtube.com")){
             //console.log("video is from youtube")
-            const regex = /\?v=(.*)&|\?v=(.*)$/
-            const href = videoUrl.href
-            const videoId = href.match(regex)[1] || href.match(regex)[2];
-            console.log(videoId,"VIDEO ID")
-            const yt = require('youtube.get-video-info')
-            //\?v=(.*)&|\?v=(.*)$
-            let videoDuration = 0;
-            yt.retrieve(videoId, (err, res) => {
-                if (err) throw err;
+            getInfoFromYoutubeUrl(videoUrl.href, result => {
+                self.controller.MusicController.addToQueue(result)
+                self.controller.MusicController.run(invokedMessage)
 
-                try {
-                    const playerRegex = /"approxDurationMs":"(\d*)"/
-                    console.log(res.player_response)
-                    videoDuration = res.player_response.match(playerRegex)[1] / 1000    
-                } catch (error) {
-                    logger.log("error", "Regex approxDuration failed.")
-                }
-
-                try {
-                    
-                } catch (error){
-
-                }
-                
-                const oembed = "https://www.youtube.com/oembed?url="
-                const oEmbedUrl = oembed+href
-                
-                axios.get(oEmbedUrl, {
-                    headers: {
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*\/*;q=0.8",
-                        "Accept-Language": "en-US,en;q=0.5",
-                        "Connection": "keep-alive",
-                        "Alt-Used": "www.youtube.com",
-                        "Host": "www.youtube.com",
-                        "DNT": 1,
-                        "Upgrade-Insecure-Requests": 1,
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0"
-                    }
-                }).then(response => {
-                    
-                    
-                    const title = response.data.title
-                    const result = {
-                        videoTitle: title,
-                        videoUrl: href,
-                        videoDuration: videoDuration,
-                        videoThumbnailUrl: response.data.thumbnail_url
-                    }
-                    this.controller.MusicController.addToQueue(result)
-                    this.controller.MusicController.run(invokedMessage)
-                    
-                })
-                
-            }).catch( err => {
-                console.log("Error while tryting to get video info.")
             })
                 
             
         }
     
         if (videoUrl.host.includes("spotify.com")){
-            console.log("video is from spotify")
+            let spotifyAccessToken = "";
+            
+            //console.log("video is from spotify")
             
             const spotifyUri = require('spotify-uri');
             const parsed = spotifyUri.parse(videoUrl.href)
+            const SpotifyWebApi = require('spotify-web-api-node');
 
+            // credentials are optional
+            const spotifyApi = new SpotifyWebApi({
+            clientId: '476720ffd5ec4768acf06026e6aa6e10',
+            clientSecret: 'e08900763c1e46c6a924ca8cb8b4b786'
+            });
+
+            if (parsed.type === "playlist"){
+                //console.log("link is a playlist from spotify")
+                //parseplaylist
+                const playlistId = parsed.id;
+
+                spotifyApi.clientCredentialsGrant()
+                    .then(function(result) {
+                        logger.log("info", 'Spotify Api Auth worked! Your access token is: ' + result.body.access_token);
+                        spotifyAccessToken = result.body.access_token
+
+                        spotifyApi.setAccessToken(spotifyAccessToken)
+                        spotifyApi.getPlaylist(playlistId, { limit: 25} )
+                            .then(function(data) {
+                                //console.log('Some information about this playlist', data.body.tracks.items[0]);
+                                for (const item of data.body.tracks.items){
+                                    const videoName = item.track.name;
+                                    const videoArtist = item.track.artists[0].name
+                                    const videoTitle = videoArtist + " - " + videoName
+                                    const package = {
+                                        videoArtist: videoArtist,
+                                        videoName: videoName,
+                                        videoTitle: videoTitle,
+                                        isSpotify: true
+                                    }
+                                    self.controller.MusicController.addToQueue(package)
+                                    
+                                    
+                                }
+                                self.controller.MusicController.run(invokedMessage)
+                                    
+                            }, function(err) {
+                                logger.log("error", 'Something went wrong!', err);
+                            });
+                    })
+
+            } else if (parsed.type === "track"){
+                console.log("link is a track from spotify")
+                const trackId = parsed.id;
+    
+                spotifyApi.clientCredentialsGrant()
+                    .then(function(result) {
+                        logger.log("info", 'Spotify Api Auth worked! Your access token is: ' + result.body.access_token);
+                        spotifyAccessToken = result.body.access_token
+                        spotifyApi.setAccessToken(spotifyAccessToken)
+                        
+                        spotifyApi.getAudioFeaturesForTrack(trackId)
+                        .then(function(data) {
+    
+                            const spotifyApiTrackUrl= "https://api.spotify.com/v1/tracks/"
+                            const songId = trackId
+                            const searchApiUrl = spotifyApiTrackUrl + songId;
+                            //console.log(searchApiUrl)
+                            axios.get(searchApiUrl, {
+                                headers:{
+                                    "Accept": "application/json",
+                                    "Content-Type": "application/json",
+                                    "Authorization": "Bearer "+spotifyAccessToken
+                                }
+                            }).then(result => {
+                                const artistName = result.data.artists[0].name
+                                //console.log("artist name:", artistName)
+                                const songName = result.data.name
+                                //console.log("songName: ", songName )
+                                const isSpotify = true
+                                
+                                const package = {
+                                    videoArtist: artistName,
+                                    videoTitle: songName,
+                                    isSpotify: isSpotify
+                                }
+                                self.controller.MusicController.addToQueue(package)
+                                self.controller.MusicController.run(invokedMessage)
+                                /*
+                                searchYT(query, 1, (result) => {
+                                     
+                                    //{
+                                    //    videoId: "123", 
+                                    //    videoUrl: "http:...com/..",
+                                    //    videoTitle: xxtenacion 
+                                    //}        
+                                    
+                                   if (result) {
+                                       //invokedMessage.channel.send("Video found: " + result.videoUrl)
+                                       getInfoFromYoutubeUrl(result.videoUrl, result => {
+                                           self.controller.MusicController.addToQueue(result)
+                                           self.controller.MusicController.run(invokedMessage)
+                                        })
+                                    } else {
+                                        invokedMessage.channel.send("Video not found with query: "+ query)
+                                    }
+                                })
+                                */
+                                
+                            }).catch(error => {
+                                console.error("Error while using spotify AI. Error : " + error)
+                            })
+
+                        }, function(err) {
+                            logger.log("error", err);
+                            return
+                        });
+                    }).catch(function(err) {
+                        logger.log("error", 'If this is printed, it probably means that you used invalid ' +
+                        'clientId and clientSecret values. Please check!');
+                        logger.log("error", 'Hint: ');
+                        logger.log("error", err);
+                    });
+            }
+                /* 
+*/
             //console.log(parsed)
             /*
             Track {
@@ -197,44 +263,7 @@ module.exports = function(invokedMessage, ...args) {
                 id: '73EByXGIiEe7e3SRNLcipP'
             } 
             */
-            const spotifyApiTrackUrl= "https://api.spotify.com/v1/tracks/"
-            const songId = parsed.id
-            const searchApiUrl = spotifyApiTrackUrl + songId;
-            //console.log(searchApiUrl)
-            axios.get(searchApiUrl, {
-                headers:{
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer "+process.env.SPOTIFY_TOKEN
-                }
-            }).then(result => {
-                const artistName = result.data.artists[0].name
-                //console.log("artist name:", artistName)
-                const songName = result.data.name
-                //console.log("songName: ", songName )
-                
-                const query  = songName + " " + artistName
-                const searchYT = require('../scripts/searchYT')
-
-                searchYT(query, 1, (result) => {
-                /* 
-                {
-                    videoId: "123", 
-                    videoUrl: "http:...com/..",
-                    videoTitle: xxtenacion 
-                }        
-                */
-                    if (result) {
-                        invokedMessage.channel.send("Video found: " + result.videoUrl)
-
-                    } else {
-                        invokedMessage.channel.send("Video not found with query: "+ query)
-                    }
-                })
-                
-            }).catch(error => {
-                //console.log("Error while using spotify AI. Error : " + error)
-            })
+            
 
         }
     }

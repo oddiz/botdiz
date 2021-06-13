@@ -8,12 +8,11 @@ module.exports = function (invokedMessage) {
             "content-type": "application/json; charset=utf-8"
         }
     }).then(result => {
-        //console.log(result.data.data.Catalog.searchStore.elements)
         const Discord = this.controller.discord
         
         for (element of result.data.data.Catalog.searchStore.elements){
             const effectiveDate = Date.parse(element.effectiveDate)
-            console.log("Effective Date: " + effectiveDate, "from: ", element.effectiveDate)
+            //console.log("Effective Date: " + effectiveDate, "from: ", element.effectiveDate)
             const date = new Date()
             const currentDate = date.getTime()
             
@@ -23,7 +22,7 @@ module.exports = function (invokedMessage) {
             let futureDeals = []
             if (dateDiff < 0 || element.promotions.promotionalOffers.length > 0) {
                 //promotion active
-                console.log("Promotion active for: ", element.title)
+                //console.log("Promotion active for: ", element.title)
                 
                 
                 
