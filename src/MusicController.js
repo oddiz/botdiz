@@ -98,7 +98,7 @@ class MusicController {
                 invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
                     let lastMessage = messages.first()
                     
-                    if(lastMessage.author.bot && (lastMessage.embeds[0].fields[0].value === updateVideoTitle)) {
+                    if((lastMessage.embeds[0].fields[0].value === updateVideoTitle)) {
                             let newEmbed = new self.controller.discord.MessageEmbed()
                             newEmbed = newEmbed
                             .setColor("#e9b463")
@@ -127,7 +127,7 @@ class MusicController {
                         lines[parseInt(Math.floor(percentage/2))] = "🟠";
                         lines = lines.join("-")
                         let newEmbedMessage = newEmbed
-                            .addField(`${streamMins}:${streamSecs} / ${videoMins}:${videoSecs}`, `|${lines}|`)
+                            .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
                         lastMessage.edit(newEmbedMessage)
                         
                         updatePlayer(invokedMessage, updateVideoTitle)
@@ -139,6 +139,7 @@ class MusicController {
             }, 2000)
             
         }
+
         updatePlayer(invokedMessage,updateVideoTitle)
         const ytld = require("ytdl-core")
         voiceChannel.join()

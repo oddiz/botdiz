@@ -2,6 +2,7 @@ const { auth } = require("google-auth-library")
 require("dotenv").config()
 const searchYT = require("../scripts/searchYT")
 const axios = require('axios');
+const { logger } = require("../MessageHandler");
 
 module.exports = function(invokedMessage, ...args) {
     
@@ -18,6 +19,12 @@ module.exports = function(invokedMessage, ...args) {
         //no link passed
         //console.log("no link specified, continuing with search")
         searchMode = true
+    }
+
+    if (!invokedMessage.member.voice.channel) {
+        invokedMessage.reply("You are not in a voice channel.")
+
+        return
     }
 
     
@@ -125,8 +132,20 @@ module.exports = function(invokedMessage, ...args) {
             let videoDuration = 0;
             yt.retrieve(videoId, (err, res) => {
                 if (err) throw err;
-                const playerRegex = /"approxDurationMs":"(\d*)"/
-                videoDuration = res.player_response.match(playerRegex)[1] / 1000
+
+                try {
+                    const playerRegex = /"approxDurationMs":"(\d*)"/
+                    console.log(res.player_response)
+                    videoDuration = res.player_response.match(playerRegex)[1] / 1000    
+                } catch (error) {
+                    logger.log("error", "Regex approxDuration failed.")
+                }
+
+                try {
+                    
+                } catch (error){
+
+                }
                 
                 const oembed = "https://www.youtube.com/oembed?url="
                 const oEmbedUrl = oembed+href
@@ -149,13 +168,16 @@ module.exports = function(invokedMessage, ...args) {
                     const result = {
                         videoTitle: title,
                         videoUrl: href,
-                        videoDuration: videoDuration
+                        videoDuration: videoDuration,
+                        videoThumbnailUrl: response.data.thumbnail_url
                     }
                     this.controller.MusicController.addToQueue(result)
                     this.controller.MusicController.run(invokedMessage)
                     
                 })
                 
+            }).catch( err => {
+                console.log("Error while tryting to get video info.")
             })
                 
             
