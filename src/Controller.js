@@ -175,6 +175,17 @@ module.exports = class Controller {
             require("./commands/epic")
         )
         this.commands.push(epic)
+
+        const invite = new Command(
+            this,
+            {
+                name:"invite",
+                description: "Gets invite link for the bot to use in other servers.",
+                needArgs: false,
+                usage: "!invite"
+            }
+        )
+        this.commands.push(invite)
         
     }
     
