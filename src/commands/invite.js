@@ -1,6 +1,6 @@
 module.exports = function(invokedMessage,) {
     //takes "on" or "off" as argument
-    const inviteLink = "https://discord.com/oauth2/authorize?client_id=851497395190890518&scope=bot+applications.commands&permissions=3825192512"
+    const inviteLink = "https://discord.com/oauth2/authorize?client_id=851497395190890518&scope=bot+applications.commands&permissions=8"
     let newEmbed = new this.controller.discord.MessageEmbed()
 
     newEmbed = newEmbed

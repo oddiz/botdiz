@@ -183,7 +183,8 @@ module.exports = class Controller {
                 description: "Gets invite link for the bot to use in other servers.",
                 needArgs: false,
                 usage: "!invite"
-            }
+            },
+            require("./commands/invite")
         )
         this.commands.push(invite)
         
