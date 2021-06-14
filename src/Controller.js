@@ -142,11 +142,25 @@ module.exports = class Controller {
                 name:"skip",
                 description: "Skips current song, or skips specified times",
                 needArgs: false,
-                usage:"!skip or !skip 4 (to skip 4 songs)"
+                usage:"!skip or !skip 4 (to skip 4 songs, including current one)",
+                noBind:true
             },
             this.MusicController.skip    
         )
         this.commands.push(skip)
+
+        const status = new Command(
+            this,
+            {
+                name: "status",
+                description: "Shows the status of current playing song",
+                needArgs: false,
+                usage: "!status",
+
+            },
+            require('./commands/status')
+        )
+        this.commands.push(status)
 
         const epic = new Command(
             this,

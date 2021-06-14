@@ -7,7 +7,7 @@ const { logger } = require("../MessageHandler");
 
 module.exports = function(invokedMessage, ...args) {
     
-    let videoUrl, searchMode, isSpotifyPlaylist;
+    let videoUrl, searchMode
     const self = this;
     searchMode = true
     try {
@@ -181,7 +181,7 @@ module.exports = function(invokedMessage, ...args) {
                     })
 
             } else if (parsed.type === "track"){
-                console.log("link is a track from spotify")
+                
                 const trackId = parsed.id;
     
                 spotifyApi.clientCredentialsGrant()

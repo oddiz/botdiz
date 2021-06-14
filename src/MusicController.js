@@ -62,6 +62,43 @@ class MusicController {
 
         this.playNext(invokedMessage)
     }
+    
+    getCurrentSong() {
+        try {
+            if (this.queue.length > 0){
+                //console.log("CURRENT SONG IS: " + JSON.stringify(this.queue[0]))
+                return this.queue[0]
+            } else {
+                //console.log("NO SONGS IN THE QUEUE")
+            }
+            
+        } catch (error) {
+            logger.log("error", "Error while running getCurrentSong() Error: " + error)
+        }
+    }
+
+    updateCurrentSong(song) {
+        try {
+            if (this.queue.length > 0) {
+                //console.log("UPDATED CURRENT FROM TO: "+ JSON.stringify(this.queue[0]))
+                this.queue[0] = song
+                //console.log("UPDATED CURRENT SONG TO: "+ JSON.stringify(song))
+            } else {
+                //console.log("NO SONGS IN THE QUEUE.")
+            }
+             
+        } catch (error) {
+            logger.log("error", "Error while running updateCurrentSong() Error: " + error)
+        }
+    }
+
+    clearQueue() {
+        try {
+            this.queue = []
+        } catch (error) {
+            logger.log("error", "Error while running clearQueue() Error: " + error)
+        }
+    }
 
     playNext(invokedMessage) {
         const self = this
@@ -69,31 +106,36 @@ class MusicController {
         //console.log(self)
         if (this.queue.length === 0){
             invokedMessage.channel.send("Queue completed")
-            this.controller.MusicController.dispatcher.destroy()
-            this.controller.MusicController.isSpeaking = false;
-            this.controller.MusicController.queue = []
+            if (this.dispatcher) {
+                this.dispatcher.destroy()
+            }
+            this.isSpeaking = false;
+            this.queue = []
+            
             voiceChannel.leave()
             
             return
         }
-        let youtubeUrl;
         
-        self.nextInQueue = self.queue[0];
         
-        if (self.nextInQueue.isSpotify) {
+        let nextInQueue = this.getCurrentSong();
+        
+        if (nextInQueue.isSpotify) {
             //if came from spotify link
             //only videoArtist, videoTitle, isSpotify present
             const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
 
-            const query = self.nextInQueue.videoTitle
-
+            const query = nextInQueue.videoTitle
+            
             searchYT(query, 1, (result) => {
                                         
                 if (result) {
                     //invokedMessage.channel.send("Video found: " + result.videoUrl)
                     getInfoFromYoutubeUrl(result.videoUrl, result => {
-                        self.nextInQueue = result;
-                        doRest(self)
+                        this.updateCurrentSong(result);
+                        nextInQueue = this.getCurrentSong();
+                        
+                        doRest(self, nextInQueue)
                     })
 
                 } else {
@@ -103,20 +145,22 @@ class MusicController {
             })
 
         } else {
-            self.nextInQueue = self.queue[0] 
-            doRest(self) 
+            nextInQueue = this.getCurrentSong();
+            
+            doRest(self, this.getCurrentSong()) 
         }
-        function doRest(self) {
+
+        function doRest(self, nextInQueue) {
 
             let embedMessage = new self.controller.discord.MessageEmbed()
             
             embedMessage = embedMessage
                 .setColor("#e9b463")
-                .addField("Now Playing: ",`${self.nextInQueue.videoTitle}`)
+                .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
                 .setTimestamp()
-            if(self.nextInQueue.videoThumbnailUrl) {
+            if(nextInQueue.videoThumbnailUrl) {
                 embedMessage = embedMessage
-                    .setThumbnail(self.nextInQueue.videoThumbnailUrl)
+                    .setThumbnail(nextInQueue.videoThumbnailUrl)
             }
     
             let botMessage;
@@ -127,49 +171,45 @@ class MusicController {
                 if(lastMessage.author.bot) {
                     lastMessage.edit(embedMessage).then( message => {
                         botMessage = message
-                        const updateVideoTitle = self.nextInQueue.videoTitle;
+                        const originalVideoTitle = self.getCurrentSong().videoTitle;
     
-                        updatePlayer(self, invokedMessage,updateVideoTitle, botMessage)
+                        updatePlayer(self, invokedMessage,originalVideoTitle, botMessage)
                     })
                 } else {
                     invokedMessage.channel.send(embedMessage).then( message => {
                         botMessage = message
-                        const updateVideoTitle = self.nextInQueue.videoTitle;
+                        const originalVideoTitle = self.getCurrentSong().videoTitle;
     
-                        updatePlayer(self, invokedMessage,updateVideoTitle, botMessage)
+                        updatePlayer(self, invokedMessage,originalVideoTitle, botMessage)
                     })
                 }
             });
     
-            const updatePlayer = function(self, invokedMessage, updateVideoTitle, botMessage) {
+            const updatePlayer = function(self, invokedMessage, originalVideoTitle, botMessage) {
                 setTimeout(function () {
                     let currentTitle
 
                     try {
-                        currentTitle = self.nextInQueue.videoTitle;
-                        //console.log(self)
-                        console.log(currentTitle)
-                        console.log(updateVideoTitle)
-
-                        console.log("Current Title, updateVideoTitle")
+                        currentTitle = self.getCurrentSong().videoTitle;
+                        
                     } catch (error) {
-                        logger.log("info", "No queue present terminating update queue", error);
+                        logger.log("info", "No queue present terminating update queue");
                         
                         return
                     }
-                    if (currentTitle !== updateVideoTitle) {
-                        logger.log("info", "Disabling update loop for "+updateVideoTitle)
+                    if (currentTitle !== originalVideoTitle) {
+                        logger.log("info", "Disabling update loop for "+originalVideoTitle)
                         return;
                     }
-                    if(currentTitle === updateVideoTitle) {
+                    if(currentTitle === originalVideoTitle) {
                             let newEmbed = new self.controller.discord.MessageEmbed()
                             newEmbed = newEmbed
                             .setColor("#e9b463")
-                            .addField("Now Playing: ",`${updateVideoTitle}`)
+                            .addField("Now Playing: ",`${originalVideoTitle}`)
                             .setTimestamp()
-                        if(self.nextInQueue.videoThumbnailUrl) {
+                        if(nextInQueue.videoThumbnailUrl) {
                             newEmbed = newEmbed
-                                .setThumbnail(self.nextInQueue.videoThumbnailUrl)
+                                .setThumbnail(nextInQueue.videoThumbnailUrl)
                         }
                         const streamtime = self.controller.MusicController.dispatcher.streamTime;
                         const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
@@ -177,7 +217,7 @@ class MusicController {
                         const streamSecs = Math.floor(streamtime / 1000 % 60)
                         
                         
-                        const videoLenght= self.nextInQueue.videoDuration; //secs
+                        const videoLenght= nextInQueue.videoDuration; //secs
                         const videoHours = Math.floor((videoLenght / (60 *60)) % 60)
                         const videoMins = Math.floor((videoLenght / 60) % 60)
                         const videoSecs = Math.floor(videoLenght % 60)
@@ -199,10 +239,19 @@ class MusicController {
                                 .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
                             
                         }
-    
-                        botMessage.edit(newEmbedMessage)
                         
-                        updatePlayer(self, invokedMessage, updateVideoTitle, botMessage)
+                        if (botMessage.channel.lastMessage.content.includes("status")) {
+                            
+                            botMessage.channel.send(newEmbedMessage).then(message => {
+                                botMessage = message
+                                updatePlayer(self, invokedMessage, originalVideoTitle, botMessage)
+                            })
+                            
+                        } else {
+                            botMessage.edit(newEmbedMessage)
+                            updatePlayer(self, invokedMessage, originalVideoTitle, botMessage)
+                        }
+                        
                     } else {
                         logger.log("info","Exiting update player")
                     }
@@ -220,7 +269,7 @@ class MusicController {
                 if (self.controller.MusicController.dispatcher) {
                     self.controller.MusicController.dispatcher.destroy()
                 }
-                const dispatcher = connection.play(ytld(self.nextInQueue.videoUrl, { quality: "highestaudio"}), { volume: self.volume });
+                const dispatcher = connection.play(ytld(nextInQueue.videoUrl, { quality: "highestaudio"}), { volume: self.volume });
                 self.isSpeaking = true
                 self.dispatcher = dispatcher
                 dispatcher.on("start", start => {
@@ -233,14 +282,25 @@ class MusicController {
                 })
     
                 dispatcher.on("finish", end => {
-    
+                    
                     self.isSpeaking = false
-                    self.queue.shift()
-                    self.playNext(invokedMessage)
+                    
+                    if (self.queue.length > 1){
+                        self.queue.shift()
+                        self.playNext(invokedMessage)
+
+                    } else if(self.queue.length = 1) {
+                        self.queue.shift()
+                        logger.log("info", "All songs played")
+
+                        return
+                    } else {
+                        logger.log("error", "This shouldn't be happening: dispatch.on finish invoked with no songs in queue")
+                    }
                    
                 })
             })
-            .catch(err => logger.log("error", `Error while invoking playNext command! Err: ${err}`));
+            .catch(err => logger.log("error", `Error while invoking playNext()! Err: ${err}`));
         }
 
 
@@ -248,10 +308,13 @@ class MusicController {
 
     skip(invokedMessage, skipAmnt) {
         let skipAmount = 1
+
         if (parseInt(skipAmnt)) {
             skipAmount = skipAmnt
         }
-
+        if (skipAmount > this.controller.MusicController.queue.length) {
+            skipAmount = this.controller.MusicController.queue.length
+        }
         for (let i = 0; i < skipAmount; i++) {
             this.controller.MusicController.queue.shift()
         }
@@ -262,11 +325,10 @@ class MusicController {
         try {
             this.controller.MusicController.dispatcher.destroy()
             this.controller.MusicController.isSpeaking = false;
-            this.controller.MusicController.queue = []
-            this.controller.nextInQueue = []
+            this.controller.MusicController.clearQueue()
             invokedMessage.member.voice.channel.leave()
         } catch (error) {
-            logger.log("info","No dispatcher at present.", this.dispatcher)
+            logger.log("info","Error while running MusicController.stop().", error)
         }
     }
     pause(invokedMessage) {

@@ -37,7 +37,7 @@ module.exports = function(videoUrl, callback) {
         } catch (error){
             logger.log("error", "Regex approxDuration failed.")
         }
-        console.log("LENGTH SECONDS DURATION: ", videoDuration)
+        
         
         const oembed = "https://www.youtube.com/oembed?url="
         const oEmbedUrl = oembed+href
@@ -55,7 +55,6 @@ module.exports = function(videoUrl, callback) {
             }
         }).then(response => {
             
-            
             const title = response.data.title
             const result = {
                 videoTitle: title,
@@ -64,12 +63,12 @@ module.exports = function(videoUrl, callback) {
                 videoDuration: videoDuration,
                 videoThumbnailUrl: response.data.thumbnail_url
             }
-            console.log("get youtube info from url succeed. result: ", result)
+            //console.log("get youtube info from url succeed. result: ", result)
             callback(result)
 
             
         }).catch( err => {
-            console.log("Error while trying to get video info inside getInfoFromYoutube\n ERROR: ", err)
+            logger.log("error", "Error while trying to get video info inside getInfoFromYoutube\n ERROR: ", err)
         })
         
     })
