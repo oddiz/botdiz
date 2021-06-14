@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@discordjs/opus": "^0.5.3",
     "axios": "^0.21.1",
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0",
@@ -7,7 +8,6 @@
     "googleapis": "^76.0.0",
     "node-fetch": "^2.6.1",
     "node-html-parser": "^3.3.5",
-    "opusscript": "^0.0.8",
     "spotify-uri": "^2.2.0",
     "spotify-web-api-node": "^5.0.2",
     "winston": "^3.3.3",
