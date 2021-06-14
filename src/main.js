@@ -3,6 +3,7 @@ require('dotenv').config()
 
 const Discord = require('discord.js')
 const client = new Discord.Client();
+let GuildControllers = []
 /*
 const winston = require('winston')
 const logger = winston.createLogger({
@@ -16,21 +17,34 @@ const logger = winston.createLogger({
 const { logger } = require("./logger")
 
 client.on('ready', () => {
+    client.user.setActivity(`!help`, {type: 'LISTENING'})
+    
+    for (const guild of client.guilds.cache) {
+        
+        const MsgHandler = require('./MessageHandler.js');
+        const MusicController = require('./MusicController');
+        const Ctrl = require('./Controller.js');
+        const Controller = new Ctrl(Discord, client, MsgHandler, MusicController) ;
+        Controller.init()
+        
+        GuildControllers.push({
+            guildId: guild[0],
+            guildObj: guild[1],
+            controller: Controller
+        })
+        logger.log("info", `Creating controller for guild: ${guild[1].name}.`)
+    }
+
     logger.log('info', 'The bot is online!')
-    client.user.setActivity(`${this.PREFIX}help`, {type: 'LISTENING'})
 });
 client.on('debug', m => logger.log('debug', m));
 client.on('warn', m => logger.log('warn', m));
 client.on('error', m => logger.log('error', m));
 
-const MsgHandler = require('./MessageHandler.js');
-const MusicController = require('./MusicController');
-const Ctrl = require('./Controller.js');
-const Controller = new Ctrl(Discord, client, MsgHandler, MusicController) ;
-Controller.init()
-
 client.on("message", message => {
-    Controller.handleMessage(message, Controller);
+    let messageGuildId = message.guild.id
+    const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
+    guildController.handleMessage(message);
 })
 
 

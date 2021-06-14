@@ -9,6 +9,7 @@ class MusicController {
         this.volume = 1
         this.dispatcher;
         this.isSpeaking = false;
+        this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
     }
 
     download(invokedMessage, videoId){
@@ -106,6 +107,7 @@ class MusicController {
         //console.log(self)
         if (this.queue.length === 0){
             invokedMessage.channel.send("Queue completed")
+            invokedMessage.guild.me.voice.channel.leave();
             if (this.dispatcher) {
                 this.dispatcher.destroy()
             }
@@ -187,6 +189,7 @@ class MusicController {
     
             const updatePlayer = function(self, invokedMessage, originalVideoTitle, botMessage) {
                 setTimeout(function () {
+                    
                     let currentTitle
 
                     try {
@@ -257,7 +260,7 @@ class MusicController {
                     }
                     
     
-                }, 2000)
+                }, self.UPDATE_INTERVAL)
                 
             }
     
@@ -285,15 +288,10 @@ class MusicController {
                     
                     self.isSpeaking = false
                     
-                    if (self.queue.length > 1){
+                    if (self.queue.length > 0){
                         self.queue.shift()
                         self.playNext(invokedMessage)
 
-                    } else if(self.queue.length = 1) {
-                        self.queue.shift()
-                        logger.log("info", "All songs played")
-
-                        return
                     } else {
                         logger.log("error", "This shouldn't be happening: dispatch.on finish invoked with no songs in queue")
                     }
@@ -309,8 +307,9 @@ class MusicController {
     skip(invokedMessage, skipAmnt) {
         let skipAmount = 1
 
-        if (parseInt(skipAmnt)) {
-            skipAmount = skipAmnt
+        if (this.controller.MusicController.queue.length == 0){
+            invokedMessage.reply("No playlist to skip ⚠")
+            return
         }
         if (skipAmount > this.controller.MusicController.queue.length) {
             skipAmount = this.controller.MusicController.queue.length
@@ -326,15 +325,21 @@ class MusicController {
             this.controller.MusicController.dispatcher.destroy()
             this.controller.MusicController.isSpeaking = false;
             this.controller.MusicController.clearQueue()
-            invokedMessage.member.voice.channel.leave()
+            invokedMessage.guild.me.voice.channel.leave();
         } catch (error) {
             logger.log("info","Error while running MusicController.stop().", error)
         }
     }
     pause(invokedMessage) {
+
         try {
-            this.controller.MusicController.dispatcher.player.dispatcher.pause()
-            invokedMessage.channel.send("Player paused")
+            if (this.controller.MusicController.dispatcher.paused) {
+                invokedMessage.reply("Player already paused")
+                 
+            } else {
+                this.controller.MusicController.dispatcher.pause()
+                invokedMessage.channel.send("Player paused")
+            }
         } catch (error) {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)
         }
@@ -343,9 +348,13 @@ class MusicController {
 
         
         try {
-            this.controller.MusicController.dispatcher.player.dispatcher.resume()
-            
-            invokedMessage.channel.send("Player resumed")
+            if (!this.controller.MusicController.dispatcher.paused) {
+                invokedMessage.reply("Player already playing")
+                 
+            } else {
+                this.controller.MusicController.dispatcher.resume()
+                invokedMessage.channel.send("Player resumed")
+            }
         } catch (error) {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)
         }

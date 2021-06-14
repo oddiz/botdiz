@@ -145,7 +145,7 @@ module.exports = class Controller {
                 usage:"!skip or !skip 4 (to skip 4 songs, including current one)",
                 noBind:true
             },
-            this.MusicController.skip    
+            require("./commands/skip")   
         )
         this.commands.push(skip)
 
@@ -178,7 +178,7 @@ module.exports = class Controller {
         
     }
     
-    handleMessage(message, controller) {
+    handleMessage(message) {
         if (message.author.bot || !message.content.startsWith(this.PREFIX)) return;
 
         const msgObj = new this.MsgHandler(message, this.PREFIX);

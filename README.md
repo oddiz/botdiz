@@ -7,4 +7,3 @@
         - play discover weekly
         - play random song, backing track
     - random game from steam
-
