@@ -9,3 +9,11 @@ class EmbedPlayer {
         currentTitle = ""
     }
 }
+/*
+default implementation is bugged!
+
+can't get current title in dispatch
+
+make new module to handle updating embed player
+
+*/

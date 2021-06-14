@@ -141,8 +141,8 @@ module.exports = function(invokedMessage, ...args) {
 
             // credentials are optional
             const spotifyApi = new SpotifyWebApi({
-            clientId: '476720ffd5ec4768acf06026e6aa6e10',
-            clientSecret: 'e08900763c1e46c6a924ca8cb8b4b786'
+            clientId: process.env.SPOTIFY_CLIENTID,
+            clientSecret: process.env.SPOTIFY_CLIENTSECRET
             });
 
             if (parsed.type === "playlist"){

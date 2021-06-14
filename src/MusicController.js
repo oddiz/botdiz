@@ -66,7 +66,7 @@ class MusicController {
     playNext(invokedMessage) {
         const self = this
         const voiceChannel = invokedMessage.member.voice.channel
-
+        //console.log(self)
         if (this.queue.length === 0){
             invokedMessage.channel.send("Queue completed")
             this.controller.MusicController.dispatcher.destroy()
@@ -129,24 +129,25 @@ class MusicController {
                         botMessage = message
                         const updateVideoTitle = self.nextInQueue.videoTitle;
     
-                        updatePlayer(invokedMessage,updateVideoTitle, botMessage)
+                        updatePlayer(self, invokedMessage,updateVideoTitle, botMessage)
                     })
                 } else {
                     invokedMessage.channel.send(embedMessage).then( message => {
                         botMessage = message
                         const updateVideoTitle = self.nextInQueue.videoTitle;
     
-                        updatePlayer(invokedMessage,updateVideoTitle, botMessage)
+                        updatePlayer(self, invokedMessage,updateVideoTitle, botMessage)
                     })
                 }
             });
     
-            const updatePlayer = function(invokedMessage, updateVideoTitle, botMessage) {
+            const updatePlayer = function(self, invokedMessage, updateVideoTitle, botMessage) {
                 setTimeout(function () {
                     let currentTitle
 
                     try {
                         currentTitle = self.nextInQueue.videoTitle;
+                        //console.log(self)
                         console.log(currentTitle)
                         console.log(updateVideoTitle)
 
@@ -201,7 +202,7 @@ class MusicController {
     
                         botMessage.edit(newEmbedMessage)
                         
-                        updatePlayer(invokedMessage, updateVideoTitle, botMessage)
+                        updatePlayer(self, invokedMessage, updateVideoTitle, botMessage)
                     } else {
                         logger.log("info","Exiting update player")
                     }
@@ -262,6 +263,7 @@ class MusicController {
             this.controller.MusicController.dispatcher.destroy()
             this.controller.MusicController.isSpeaking = false;
             this.controller.MusicController.queue = []
+            this.controller.nextInQueue = []
             invokedMessage.member.voice.channel.leave()
         } catch (error) {
             logger.log("info","No dispatcher at present.", this.dispatcher)
