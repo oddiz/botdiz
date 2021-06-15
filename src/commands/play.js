@@ -15,9 +15,14 @@ module.exports = function(invokedMessage, ...args) {
         return
     }
 
+    const voiceChannel = invokedMessage.member.voice.channel
+    
+    if (!voiceChannel) {
+        invokedMessage.reply("You are not in a voice channel.")
+        return
+    }
     //if no music controller active
     if (!this.controller.MusicController) {
-        const voiceChannel = invokedMessage.member.voice.channel
 
         this.controller.MusicController = new MusicController(this.controller, joinVoiceChannel({
             channelId: voiceChannel.id,
