@@ -4,9 +4,32 @@ const searchYT = require("../scripts/searchYT")
 const getInfoFromYoutubeUrl = require("../scripts/getInfoFromYoutubeUrl")
 const axios = require('axios');
 const { logger } = require("../MessageHandler");
-
+const MusicController = require("../MusicController");
+const { joinVoiceChannel } = require("@discordjs/voice");
 module.exports = function(invokedMessage, ...args) {
     
+    // if no arguments passed
+    if (arguments[1] === "") {
+        this.wrongUsage(invokedMessage, this.name, "")
+        
+        return
+    }
+
+    //if no music controller active
+    if (!this.controller.MusicController) {
+        const voiceChannel = invokedMessage.member.voice.channel
+
+        this.controller.MusicController = new MusicController(this.controller, joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: voiceChannel.guild.id,
+            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+            selfMute: false,
+            selfDeaf: false
+        }))
+
+        //this.controller.MusicController.on("error", console.warn)
+    }
+
     let videoUrl, searchMode
     const self = this;
     searchMode = true
@@ -20,11 +43,7 @@ module.exports = function(invokedMessage, ...args) {
         //no link passed
     }
     
-    if (!invokedMessage.member.voice.channel) {
-        invokedMessage.reply("You are not in a voice channel.")
 
-        return
-    }
 
     
 
@@ -36,7 +55,7 @@ module.exports = function(invokedMessage, ...args) {
                 //invokedMessage.channel.send("Video found: " + result.videoUrl)
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
                     self.controller.MusicController.addToQueue(result2)
-                    self.controller.MusicController.run(invokedMessage)
+                    self.controller.MusicController.playNext(invokedMessage)
                 })
 
             } else {
@@ -108,7 +127,7 @@ module.exports = function(invokedMessage, ...args) {
                 
             }
             invokedMessage.channel.send("Playlist added to queue.")
-            self.controller.MusicController.run(invokedMessage)
+            self.controller.MusicController.playNext(invokedMessage)
 
         })()
         
@@ -123,11 +142,10 @@ module.exports = function(invokedMessage, ...args) {
             //console.log("video is from youtube")
             getInfoFromYoutubeUrl(videoUrl.href, result => {
                 self.controller.MusicController.addToQueue(result)
-                self.controller.MusicController.run(invokedMessage)
+                self.controller.MusicController.playNext(invokedMessage)
 
+                return
             })
-                
-            
         }
     
         if (videoUrl.host.includes("spotify.com")){
@@ -173,7 +191,7 @@ module.exports = function(invokedMessage, ...args) {
                                     
                                     
                                 }
-                                self.controller.MusicController.run(invokedMessage)
+                                self.controller.MusicController.playNext(invokedMessage)
                                     
                             }, function(err) {
                                 logger.log("error", 'Something went wrong!', err);
@@ -216,7 +234,7 @@ module.exports = function(invokedMessage, ...args) {
                                     isSpotify: isSpotify
                                 }
                                 self.controller.MusicController.addToQueue(package)
-                                self.controller.MusicController.run(invokedMessage)
+                                self.controller.MusicController.playNext(invokedMessage)
                                 /*
                                 searchYT(query, 1, (result) => {
                                      
@@ -230,7 +248,7 @@ module.exports = function(invokedMessage, ...args) {
                                        //invokedMessage.channel.send("Video found: " + result.videoUrl)
                                        getInfoFromYoutubeUrl(result.videoUrl, result => {
                                            self.controller.MusicController.addToQueue(result)
-                                           self.controller.MusicController.run(invokedMessage)
+                                           self.controller.MusicController.playNext(invokedMessage)
                                         })
                                     } else {
                                         invokedMessage.channel.send("Video not found with query: "+ query)

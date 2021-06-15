@@ -8,8 +8,9 @@ module.exports = function (invokedMessage) {
             "content-type": "application/json; charset=utf-8"
         }
     }).then(result => {
-        const Discord = this.controller.discord
-        
+        const Discord = require('discord.js')
+        let activeDeals = []
+        let futureDeals = []
         for (element of result.data.data.Catalog.searchStore.elements){
             const effectiveDate = Date.parse(element.effectiveDate)
             //console.log("Effective Date: " + effectiveDate, "from: ", element.effectiveDate)
@@ -18,8 +19,7 @@ module.exports = function (invokedMessage) {
             
             const dateDiff = effectiveDate - currentDate;
 
-            let activeDeals = []
-            let futureDeals = []
+            
             if (dateDiff < 0 || element.promotions.promotionalOffers.length > 0) {
                 //promotion active
                 //console.log("Promotion active for: ", element.title)
@@ -27,12 +27,13 @@ module.exports = function (invokedMessage) {
                 
                 
                 let embedMessage = new Discord.MessageEmbed()
-                embedMessage = embedMessage
+                embedMessage
                     .setColor("#0FF28F")
                     .setTitle(element.title)
                     .setThumbnail(element.keyImages[2].url)
                     .setTimestamp()
                     .setDescription("Free now on Epic Store!")
+
 
                 activeDeals.push(embedMessage)
             } else {
@@ -52,28 +53,15 @@ module.exports = function (invokedMessage) {
                     .setDescription(`Will be free in: **${days} Days** **${hours} Hours** **${minutes} Minutes** **${seconds} Seconds**`)
 
                 futureDeals.push(embedMessage)
-            }
-            //current deals first
-            async function sendCurrent() {
-                let promises = []
-                for (const embed of activeDeals){
-                    
-                    promises.push(invokedMessage.reply(embed))
-
-                }
-                Promise.all(promises).then((values) => {
-                    //future deals later
-                    for (const embed of futureDeals) {
-                
-                        invokedMessage.reply(embed)
-                    }
-                    
-                })
-            }
-
-            sendCurrent()
+            }  
             
         }
+        invokedMessage.reply( {embeds: activeDeals})
+        .then((replyMessage)=> {
+            replyMessage.reply( {embeds: futureDeals})
+        })
+    }).catch(err => {
+        console.log(err)
     })
 
 }

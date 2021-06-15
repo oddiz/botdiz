@@ -56,7 +56,9 @@ module.exports = class Command {
     }
     wrongUsage(invokedMessage, commandName, errText = "Wrong usage of command!") {
         //notify chat about the wrong usage
-        invokedMessage.channel.send(`${errText}`)
+        if (errText !== "") {
+            invokedMessage.channel.send(`${errText}`)
+        }   
 
         //show help of specified command
         const helpCommand = this.controller.commands.find( ( { name } ) => name === "help" )

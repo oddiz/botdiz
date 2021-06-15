@@ -5,7 +5,7 @@ module.exports = class Controller {
     
     
     
-    constructor(discord, client, MsgHandler, MusicController) {
+    constructor(discord, client, MsgHandler) {
 
         this.PREFIX = "!"
         this.debugMode = false
@@ -13,8 +13,7 @@ module.exports = class Controller {
         this.discord = discord
         this.client = client;
         this.MsgHandler = MsgHandler;
-        this.MusicController = new MusicController(this)
-
+        this.MusicController;
         this.commands = []
     }
 
@@ -95,7 +94,7 @@ module.exports = class Controller {
                 usage: "!stop",
                 noBind: true
             },
-            this.MusicController.stop
+            require("./commands/stop")
         )
         this.commands.push(stop)
         const pause = new Command(
@@ -107,7 +106,7 @@ module.exports = class Controller {
                 usage: "!pause",
                 noBind: true
             },
-            this.MusicController.pause
+            require("./commands/pause")
         )
         this.commands.push(pause)
         const resume = new Command(
@@ -119,7 +118,7 @@ module.exports = class Controller {
                 usage: "!resume",
                 noBind: true
             },
-            this.MusicController.resume
+            require("./commands/resume")
         )
         this.commands.push(resume)
         

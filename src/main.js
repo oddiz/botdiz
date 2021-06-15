@@ -1,8 +1,9 @@
 require('dotenv').config()
 
-
 const Discord = require('discord.js')
-const client = new Discord.Client();
+const client = new Discord.Client( { intents: [
+    Discord.Intents.ALL
+]});
 let GuildControllers = []
 /*
 const winston = require('winston')
@@ -18,7 +19,6 @@ const { logger } = require("./logger")
 
 client.on('ready', () => {
     client.user.setActivity(`!help`, {type: 'LISTENING'})
-    
     for (const guild of client.guilds.cache) {
         
         const MsgHandler = require('./MessageHandler.js');

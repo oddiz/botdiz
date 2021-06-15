@@ -1,15 +1,101 @@
 const { logger } = require("./logger")
 const searchYT = require("./scripts/searchYT")
+const {
+	AudioPlayer,
+	AudioPlayerStatus,
+	AudioResource,
+	createAudioPlayer,
+	entersState,
+	VoiceConnectionDisconnectReason,
+	VoiceConnectionStatus,
+    createAudioResource,
+    StreamType,
+    demuxProbe
+} = require('@discordjs/voice');
+const ytdl = require("ytdl-core");
 
-
-class MusicController {
-    constructor(controller) {
-        this.queue = [];
+module.exports = class MusicController {
+    constructor(controller, voiceConnection) {
         this.controller = controller;
         this.volume = 1
-        this.dispatcher;
-        this.isSpeaking = false;
+        
+        this.readyLock = false;
         this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
+        
+        this.audioPlayer = createAudioPlayer()
+        this.voiceConnection = voiceConnection; 
+        
+        this.queue = [];
+        
+        this.voiceConnection.on('stateChange', async (_, newState) => {
+			if (newState.status === VoiceConnectionStatus.Disconnected) {
+				if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
+					/*
+						If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
+						but there is a chance the connection will recover itself if the reason of the disconnect was due to
+						switching voice channels. This is also the same code for the bot being kicked from the voice channel,
+						so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
+						the voice connection.
+					*/
+					try {
+						await entersState(this.voiceConnection, VoiceConnectionStatus.Connecting, 5000);
+						// Probably moved voice channel
+					} catch {
+						this.voiceConnection.destroy();
+						// Probably removed from voice channel
+					}
+				} else if (this.voiceConnection.reconnectAttempts < 5) {
+					/*
+						The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
+					*/
+					await wait((this.voiceConnection.reconnectAttempts + 1) * 5000);
+					this.voiceConnection.reconnect();
+				} else {
+					/*
+						The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
+					*/
+					this.voiceConnection.destroy();
+				}
+			} else if (newState.status === VoiceConnectionStatus.Destroyed) {
+				/*
+					Once destroyed, stop the controller
+				*/
+				this.stop();
+			} else if (
+				!this.readyLock &&
+				(newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
+			) {
+				/*
+					In the Signalling or Connecting states, we set a 20 second time limit for the connection to become ready
+					before destroying the voice connection. This stops the voice connection permanently existing in one of these
+					states.
+				*/
+				this.readyLock = true;
+				try {
+					await entersState(this.voiceConnection, VoiceConnectionStatus.Ready, 20000);
+				} catch {
+					if (this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) this.voiceConnection.destroy();
+				} finally {
+					this.readyLock = false;
+				}
+			}
+		});
+        
+        // Configure audio player
+		this.audioPlayer.on('stateChange', (oldState, newState) => {
+			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
+				// If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
+				// The queue is then processed to start playing the next track, if one is available.
+				void this.playNext();
+			} else if (newState.status === AudioPlayerStatus.Playing) {
+				// If the Playing state has been entered, then a new track has started playback.
+                console.log("Now playing!!!")
+			}
+		});
+
+		this.audioPlayer.on('error', (error) => console.log("On error error:", error));
+
+		voiceConnection.subscribe(this.audioPlayer);
     }
 
     download(invokedMessage, videoId){
@@ -54,7 +140,7 @@ class MusicController {
             this.queue.push(song) 
 
     }
-
+/* 
     run(invokedMessage) {
 
         if (this.queue.length > 1) {
@@ -63,6 +149,7 @@ class MusicController {
 
         this.playNext(invokedMessage)
     }
+*/
     
     getCurrentSong() {
         try {
@@ -101,206 +188,130 @@ class MusicController {
         }
     }
 
-    playNext(invokedMessage) {
-        const self = this
-        const voiceChannel = invokedMessage.member.voice.channel
-        //console.log(self)
-        if (this.queue.length === 0){
-            invokedMessage.channel.send("Queue completed")
-            invokedMessage.guild.me.voice.channel.leave();
-            if (this.dispatcher) {
-                this.dispatcher.destroy()
+    async processNextSong() {
+        try {
+            //console.log(self)   
+            let nextInQueue = this.getCurrentSong();
+                    
+            if (nextInQueue.isSpotify) {
+                //if came from spotify link
+                //only videoArtist, videoTitle, isSpotify present
+                const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
+    
+                const query = nextInQueue.videoTitle
+                
+                searchYT(query, 1, (result) => {
+                                            
+                    if (result) {
+                        //invokedMessage.channel.send("Video found: " + result.videoUrl)
+                        getInfoFromYoutubeUrl(result.videoUrl, result => {
+                            this.updateCurrentSong(result);
+                            nextInQueue = this.getCurrentSong();
+                            
+                            return nextInQueue
+                        })
+    
+                    } else {
+                        console.error("Error getting YT info from: "+ query)
+                        console.error("Error from music COntroller play next()")
+                    }
+                })
+    
+            } else {
+                
+                return nextInQueue
             }
-            this.isSpeaking = false;
-            this.queue = []
             
-            voiceChannel.leave()
+        } catch (error) {
+            logger.log("error", "ERROR while processing the queue.")
             
+            return false
+        }
+    }
+
+    manageSongEmbed(invokedMessage, nextInQueue) {
+        
+        let botMessage;
+        const updatePlayer = require("./scripts/updatePlayer")
+        
+        const { MessageEmbed } = require("discord.js")
+        let embedMessage = new MessageEmbed()
+        
+        embedMessage
+            .setColor("#e9b463")
+            .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
+            .setTimestamp()
+        if(nextInQueue.videoThumbnailUrl) {
+            embedMessage = embedMessage
+                .setThumbnail(nextInQueue.videoThumbnailUrl)
+        }
+        
+        invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
+            let lastMessage = messages.first()
+            
+            if(lastMessage.author.bot) {
+                lastMessage.edit(embedMessage).then( message => {
+                    botMessage = message
+                    const originalVideoTitle = nextInQueue.videoTitle;
+
+                    updatePlayer(this, invokedMessage, nextInQueue, botMessage)
+
+                    return true
+                }).catch(err=>{console.log("Error while executing manageSongEmbed() / edit embed"), err})
+            } else {
+                invokedMessage.channel.send( { embeds: [embedMessage]}).then( message => {
+                    botMessage = message
+                    const originalVideoTitle = this.getCurrentSong().videoTitle;
+                    
+                    updatePlayer(this, invokedMessage,nextInQueue, botMessage)
+
+                    return true
+                }).catch(err=>{console.log("Error while executing manageSongEmbed() / send new embed", err)})
+            }
+        });
+
+    }
+
+    async playNext(invokedMessage) {
+        const self = this
+
+        const nextInQueue = await this.processNextSong()
+        console.log(nextInQueue, "returned from process next song")
+        
+        if (!nextInQueue) {
+            console.log(`Next in queue is ${nextInQueue}, Current queue: ${this.queue}`)
             return
         }
-        
-        
-        let nextInQueue = this.getCurrentSong();
-        
-        if (nextInQueue.isSpotify) {
-            //if came from spotify link
-            //only videoArtist, videoTitle, isSpotify present
-            const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
 
-            const query = nextInQueue.videoTitle
+        /**
+         * Creates a message that shows song info then assigns an updater.
+         */
+         
+       
+ 
+        /**
+         * Create a player and play the song
+         */
+   
+        const spawnAudioResource = require("./scripts/spawnAudioResource")
+        
+        try {
+            logger.log("info", "Trying to create Audio Resource." )    
+            const resource = await spawnAudioResource(nextInQueue);
+            console.log("Got resources")
+            this.audioPlayer.play(resource, { volume: MusicController.volume });
+            console.log("Should be playing now")
+            this.manageSongEmbed(invokedMessage, nextInQueue)
             
-            searchYT(query, 1, (result) => {
-                                        
-                if (result) {
-                    //invokedMessage.channel.send("Video found: " + result.videoUrl)
-                    getInfoFromYoutubeUrl(result.videoUrl, result => {
-                        this.updateCurrentSong(result);
-                        nextInQueue = this.getCurrentSong();
-                        
-                        doRest(self, nextInQueue)
-                    })
-
-                } else {
-                    console.error("Error getting YT info from: "+ query)
-                    console.error("Error from music COntroller play next()")
-                }
-            })
-
-        } else {
-            nextInQueue = this.getCurrentSong();
-            
-            doRest(self, this.getCurrentSong()) 
+        } catch (error) {
+            logger.log("error", "Error occured while trying to create Audio Resource.", error )  
+            //console.log("trying next")
+            //this.playNext()
+            return
+            this.manageSongEmbed(invokedMessage, nextInQueue)
         }
 
-        function doRest(self, nextInQueue) {
-
-            let embedMessage = new self.controller.discord.MessageEmbed()
-            
-            embedMessage = embedMessage
-                .setColor("#e9b463")
-                .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
-                .setTimestamp()
-            if(nextInQueue.videoThumbnailUrl) {
-                embedMessage = embedMessage
-                    .setThumbnail(nextInQueue.videoThumbnailUrl)
-            }
-    
-            let botMessage;
-    
-            invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
-                let lastMessage = messages.first()
-                
-                if(lastMessage.author.bot) {
-                    lastMessage.edit(embedMessage).then( message => {
-                        botMessage = message
-                        const originalVideoTitle = self.getCurrentSong().videoTitle;
-    
-                        updatePlayer(self, invokedMessage,originalVideoTitle, botMessage)
-                    })
-                } else {
-                    invokedMessage.channel.send(embedMessage).then( message => {
-                        botMessage = message
-                        const originalVideoTitle = self.getCurrentSong().videoTitle;
-    
-                        updatePlayer(self, invokedMessage,originalVideoTitle, botMessage)
-                    })
-                }
-            });
-    
-            const updatePlayer = function(self, invokedMessage, originalVideoTitle, botMessage) {
-                setTimeout(function () {
-                    
-                    let currentTitle
-
-                    try {
-                        currentTitle = self.getCurrentSong().videoTitle;
-                        
-                    } catch (error) {
-                        logger.log("info", "No queue present terminating update queue");
-                        
-                        return
-                    }
-                    if (currentTitle !== originalVideoTitle) {
-                        logger.log("info", "Disabling update loop for "+originalVideoTitle)
-                        return;
-                    }
-                    if(currentTitle === originalVideoTitle) {
-                            let newEmbed = new self.controller.discord.MessageEmbed()
-                            newEmbed = newEmbed
-                            .setColor("#e9b463")
-                            .addField("Now Playing: ",`${originalVideoTitle}`)
-                            .setTimestamp()
-                        if(nextInQueue.videoThumbnailUrl) {
-                            newEmbed = newEmbed
-                                .setThumbnail(nextInQueue.videoThumbnailUrl)
-                        }
-                        const streamtime = self.controller.MusicController.dispatcher.streamTime;
-                        const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
-                        const streamMins = Math.floor(streamtime / (1000 * 60) % 60)
-                        const streamSecs = Math.floor(streamtime / 1000 % 60)
-                        
-                        
-                        const videoLenght= nextInQueue.videoDuration; //secs
-                        const videoHours = Math.floor((videoLenght / (60 *60)) % 60)
-                        const videoMins = Math.floor((videoLenght / 60) % 60)
-                        const videoSecs = Math.floor(videoLenght % 60)
-                        
-                        const videoLenMs = videoLenght * 1000
-                        
-                        const percentage = (streamtime * 100) / videoLenMs
-    
-                        
-                        let lines = new Array(50);
-                        lines[parseInt(Math.floor(percentage/2))] = "🟠";
-                        lines = lines.join("-")
-                        let newEmbedMessage;
-                        if (videoHours > 0){
-                            newEmbedMessage = newEmbed
-                            .addField(`${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')} / ${videoHours}:${videoMins.toString().padStart(2, 0)}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
-                        } else {
-                            newEmbedMessage = newEmbed
-                                .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
-                            
-                        }
-                        
-                        if (botMessage.channel.lastMessage.content.includes("status")) {
-                            
-                            botMessage.channel.send(newEmbedMessage).then(message => {
-                                botMessage = message
-                                updatePlayer(self, invokedMessage, originalVideoTitle, botMessage)
-                            })
-                            
-                        } else {
-                            botMessage.edit(newEmbedMessage)
-                            updatePlayer(self, invokedMessage, originalVideoTitle, botMessage)
-                        }
-                        
-                    } else {
-                        logger.log("info","Exiting update player")
-                    }
-                    
-    
-                }, self.UPDATE_INTERVAL)
-                
-            }
-    
-            
-            const ytld = require("ytdl-core")
-            voiceChannel.join()
-            .then(connection =>{
-                logger.log("info", "Trying to start dispatcher." )
-                if (self.controller.MusicController.dispatcher) {
-                    self.controller.MusicController.dispatcher.destroy()
-                }
-                const dispatcher = connection.play(ytld(nextInQueue.videoUrl, { quality: "highestaudio"}), { volume: self.volume });
-                self.isSpeaking = true
-                self.dispatcher = dispatcher
-                dispatcher.on("start", start => {
-                    logger.log("info","Starting dispatcher")
-    
-                })
-                dispatcher.on("speaking", isSpeaking => {
-    
-    
-                })
-    
-                dispatcher.on("finish", end => {
-                    
-                    self.isSpeaking = false
-                    
-                    if (self.queue.length > 0){
-                        self.queue.shift()
-                        self.playNext(invokedMessage)
-
-                    } else {
-                        logger.log("error", "This shouldn't be happening: dispatch.on finish invoked with no songs in queue")
-                    }
-                   
-                })
-            })
-            .catch(err => logger.log("error", `Error while invoking playNext()! Err: ${err}`));
-        }
-
+        
 
     }
 
@@ -322,10 +333,10 @@ class MusicController {
     
     stop(invokedMessage) {
         try {
-            this.controller.MusicController.dispatcher.destroy()
-            this.controller.MusicController.isSpeaking = false;
-            this.controller.MusicController.clearQueue()
-            invokedMessage.guild.me.voice.channel.leave();
+            this.dispatcher.destroy()
+            this.isSpeaking = false;
+            this.clearQueue()
+            
         } catch (error) {
             logger.log("info","Error while running MusicController.stop().", error)
         }
@@ -360,5 +371,3 @@ class MusicController {
         }
     }
 }
-
-module.exports = MusicController
