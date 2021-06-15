@@ -10,9 +10,11 @@ const {
 	VoiceConnectionStatus,
     createAudioResource,
     StreamType,
-    demuxProbe
+    demuxProbe,
+    NoSubscriberBehavior
 } = require('@discordjs/voice');
 const ytdl = require("ytdl-core");
+const prism = require('prism-media')
 
 module.exports = class MusicController {
     constructor(controller, voiceConnection) {
@@ -22,10 +24,17 @@ module.exports = class MusicController {
         this.readyLock = false;
         this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
         
-        this.audioPlayer = createAudioPlayer()
+        this.audioPlayer = createAudioPlayer({
+            behaviors: {
+                noSubscriber: NoSubscriberBehavior.Stop,
+                maxMissedFrames: Math.round(config.maxTransmissionGap / 20)
+            }
+        })
         this.voiceConnection = voiceConnection; 
         
         this.queue = [];
+
+        voiceConnection.subscribe(this.audioPlayer);
         
         this.voiceConnection.on('stateChange', async (_, newState) => {
 			if (newState.status === VoiceConnectionStatus.Disconnected) {
@@ -86,16 +95,17 @@ module.exports = class MusicController {
 			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
 				// If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
 				// The queue is then processed to start playing the next track, if one is available.
+                console.log("Playing to idle state change. Trying next in queue")
 				void this.playNext();
 			} else if (newState.status === AudioPlayerStatus.Playing) {
-				// If the Playing state has been entered, then a new track has started playback.
+                // If the Playing state has been entered, then a new track has started playback.
                 console.log("Now playing!!!")
 			}
 		});
 
 		this.audioPlayer.on('error', (error) => console.log("On error error:", error));
 
-		voiceConnection.subscribe(this.audioPlayer);
+	
     }
 
     download(invokedMessage, videoId){
