@@ -27,7 +27,7 @@ module.exports = class MusicController {
         this.audioPlayer = createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Stop,
-                maxMissedFrames: Math.round(config.maxTransmissionGap / 20)
+                maxMissedFrames: Math.round(5000 / 20)
             }
         })
         this.voiceConnection = voiceConnection; 

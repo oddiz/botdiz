@@ -8,7 +8,7 @@ module.exports = function spawnAudioResource(nextInQueue) {
             {
                 o: '-',
                 q: '',
-                f: 'bestaudio',
+                f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
                 r: '100K',
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
