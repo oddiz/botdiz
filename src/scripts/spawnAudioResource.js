@@ -9,7 +9,7 @@ module.exports = function spawnAudioResource(nextInQueue) {
                 o: '-',
                 q: '',
                 f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio/bestvideo/best',
-                r: '100K',
+                r: '20M',
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
         );
