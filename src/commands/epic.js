@@ -1,13 +1,22 @@
-module.exports = function (invokedMessage) {
-    
+module.exports = async function (invokedMessage) {
+
     const axios = require('axios')
     const epicApiUrl = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=tr-TR&country=TR&allowCountries=TR"
+
+    
 
     axios.get(epicApiUrl, { 
         headers:{
             "content-type": "application/json; charset=utf-8"
         }
     }).then(result => {
+        if (result.status !== 200) {
+            this.reply("Can't reach Epic servers at the moment please try again in a moment.")
+
+            logger.log("error", "Couldn't reach epic API status code: "+ result.status)
+            return
+        }
+        
         const Discord = require('discord.js')
         let activeDeals = []
         let futureDeals = []
@@ -56,12 +65,12 @@ module.exports = function (invokedMessage) {
             }  
             
         }
-        invokedMessage.reply( {embeds: activeDeals})
-        .then((replyMessage)=> {
-            replyMessage.reply( {embeds: futureDeals})
-        })
+        
+        this.reply( {embeds: [...activeDeals, ...futureDeals]})
+        
     }).catch(err => {
-        console.log(err)
+        
+        console.log("Error while reachine epic API" + err)
     })
 
 }

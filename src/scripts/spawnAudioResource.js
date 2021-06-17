@@ -9,7 +9,7 @@ module.exports = function spawnAudioResource(nextInQueue) {
                 o: '-',
                 q: '',
                 f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio/bestvideo/best',
-                r: '20M',
+                r: '10M',
             },
             { stdio: ['ignore', 'pipe', 'ignore'] },
         );
@@ -29,13 +29,11 @@ module.exports = function spawnAudioResource(nextInQueue) {
             reject(error);
         };
         console.log("process will spawn?")
-        process
-            .once('spawn', () => {
+        
                 console.log("ping")
                 demuxProbe(stream)
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
-            })
-            .catch(onError);
+            
     });
 }

@@ -6,8 +6,9 @@ const axios = require('axios');
 const { logger } = require("../MessageHandler");
 const MusicController = require("../MusicController");
 const { joinVoiceChannel } = require("@discordjs/voice");
-module.exports = function(invokedMessage, ...args) {
-    
+
+module.exports = async function(invokedMessage, ...args) {
+
     // if no arguments passed
     if (arguments[1] === "") {
         this.wrongUsage(invokedMessage, this.name, "")
@@ -18,13 +19,13 @@ module.exports = function(invokedMessage, ...args) {
     const voiceChannel = invokedMessage.member.voice.channel
     
     if (!voiceChannel) {
-        invokedMessage.reply("You are not in a voice channel.")
+        this.reply("You are not in a voice channel.")
         return
     }
     //if no music controller active
     if (!this.controller.MusicController) {
 
-        this.controller.MusicController = new MusicController(this.controller, joinVoiceChannel({
+        this.controller.MusicController = new MusicController(this.controller, this, joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
@@ -59,14 +60,14 @@ module.exports = function(invokedMessage, ...args) {
             if (result) {
                 //invokedMessage.channel.send("Video found: " + result.videoUrl)
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
-                    self.controller.MusicController.addToQueue(result2)
-                    self.controller.MusicController.playNext(invokedMessage)
+                    this.controller.MusicController.addToQueue(result2, invokedMessage)
+                    this.controller.MusicController.processQueue(invokedMessage);
                 })
 
             } else {
                 console.error("Error getting YT info from: "+ query)
                 console.error("Error from music COntroller play next()")
-                invokedMessage.channel.send("Video not found.")
+                this.reply("Video not found.")
             }
         })
 
@@ -128,11 +129,11 @@ module.exports = function(invokedMessage, ...args) {
                     videoDuration: videoDuration
                 }
 
-                self.controller.MusicController.addToQueue(package)
+                this.controller.MusicController.addToQueue(package, invokedMessage)
                 
             }
-            invokedMessage.channel.send("Playlist added to queue.")
-            self.controller.MusicController.playNext(invokedMessage)
+            this.reply("Playlist added to queue.")
+            this.controller.MusicController.processQueue(invokedMessage);
 
         })()
         
@@ -146,9 +147,9 @@ module.exports = function(invokedMessage, ...args) {
         if (videoUrl.host.includes("youtube.com")){
             //console.log("video is from youtube")
             getInfoFromYoutubeUrl(videoUrl.href, result => {
-                self.controller.MusicController.addToQueue(result)
-                self.controller.MusicController.playNext(invokedMessage)
-
+                this.controller.MusicController.addToQueue(result, invokedMessage)
+                this.controller.MusicController.processQueue(invokedMessage);
+                
                 return
             })
         }
@@ -192,12 +193,10 @@ module.exports = function(invokedMessage, ...args) {
                                         videoTitle: videoTitle,
                                         isSpotify: true
                                     }
-                                    self.controller.MusicController.addToQueue(package)
-                                    
-                                    
+                                    this.controller.MusicController.addToQueue(package, invokedMessage)
                                 }
-                                self.controller.MusicController.playNext(invokedMessage)
-                                    
+                                this.reply("Playlist added to queue.")
+                                this.controller.MusicController.processQueue(invokedMessage);
                             }, function(err) {
                                 logger.log("error", 'Something went wrong!', err);
                             });
@@ -238,27 +237,14 @@ module.exports = function(invokedMessage, ...args) {
                                     videoTitle: songName,
                                     isSpotify: isSpotify
                                 }
-                                self.controller.MusicController.addToQueue(package)
-                                self.controller.MusicController.playNext(invokedMessage)
-                                /*
-                                searchYT(query, 1, (result) => {
-                                     
-                                    //{
+                                this.controller.MusicController.addToQueue(package, invokedMessage)
+                                this.controller.MusicController.processQueue(invokedMessage);
+                                /*     
+                                    //
                                     //    videoId: "123", 
                                     //    videoUrl: "http:...com/..",
                                     //    videoTitle: xxtenacion 
-                                    //}        
-                                    
-                                   if (result) {
-                                       //invokedMessage.channel.send("Video found: " + result.videoUrl)
-                                       getInfoFromYoutubeUrl(result.videoUrl, result => {
-                                           self.controller.MusicController.addToQueue(result)
-                                           self.controller.MusicController.playNext(invokedMessage)
-                                        })
-                                    } else {
-                                        invokedMessage.channel.send("Video not found with query: "+ query)
-                                    }
-                                })
+                                    //     
                                 */
                                 
                             }).catch(error => {

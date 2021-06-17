@@ -1,10 +1,18 @@
+const { logger } = require("../logger")
+
 module.exports = function (invokedMessage, skipAmount) {
+
+    if (!this.controller.MusicController) {
+        this.reply("Bot is currently not playing.")
+
+        return 
+    }
 
     if (arguments.length > 2) {
         this.wrongUsage(invokedMessage, this.name, "Too many arguments for skip.")
 
         return
-    } else if (arguments.length == 2) {
+    } else if (arguments.length <= 2) {
         skipAmountInt = parseInt(skipAmount)    
         if (Number.isInteger(skipAmountInt)) {
             if (skipAmountInt >= 0) {

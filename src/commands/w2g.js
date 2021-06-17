@@ -1,7 +1,9 @@
 require('dotenv').config()
 const fetch = require('node-fetch')
 
-module.exports = function(invokedMessage, ...args) {
+module.exports = async function(invokedMessage, ...args) {
+    
+    const self = this
 
     let videoUrl, searchMode;
     try {
@@ -23,7 +25,7 @@ module.exports = function(invokedMessage, ...args) {
                 const ytUrlTemplate = "https://www.youtube.com/watch?v="
                 videoUrl = ytUrlTemplate + videoId
                 
-                invokedMessage.channel.send("Video found: " + videoUrl)
+                self.reply("Video found: " + videoUrl)
 
                 fetch("https://w2g.tv/rooms/create.json", {
                     method: 'POST',
@@ -42,7 +44,7 @@ module.exports = function(invokedMessage, ...args) {
                 .then(function (data) {
 
                     const w2gRoom = "https://w2g.tv/rooms/" + data.streamkey;
-                    invokedMessage.channel.send("**Room is ready:**\n" + w2gRoom)
+                    self.reply("**Room is ready:**\n" + w2gRoom, { followup: true })
                 });
             } else {
 
@@ -68,7 +70,7 @@ module.exports = function(invokedMessage, ...args) {
         .then(function (data) {
 
             const w2gRoom = "https://w2g.tv/rooms/" + data.streamkey;
-            invokedMessage.channel.send("**Room is ready:**\n" + w2gRoom)
+            self.reply("**Room is ready:**\n" + w2gRoom)
         });
     }
 

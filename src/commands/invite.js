@@ -8,7 +8,7 @@ module.exports = function(invokedMessage,) {
         .setTitle("Invite Link")
         .setURL(inviteLink)
     
-    invokedMessage.channel.send({ embeds: [newEmbed]})
+        this.reply({ embeds: [newEmbed]})
     
 }
 

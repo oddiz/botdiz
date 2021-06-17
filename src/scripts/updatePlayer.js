@@ -1,7 +1,8 @@
-const { MessageEmbed } = require('discord.js')
+const { MessageEmbed } = require('discord.js');
+const MsgHandler = require('../MessageHandler');
+const { logger } = require('../logger')
 
-
-module.exports = function updatePlayer(MusicController, invokedMessage, nextInQueue, botMessage) {
+module.exports = function updatePlayer(MusicController, invokedMessage, nextInQueue, command) {
     setTimeout(function () {
         
         let currentTitle
@@ -15,7 +16,7 @@ module.exports = function updatePlayer(MusicController, invokedMessage, nextInQu
             return
         }
         if (currentTitle !== nextInQueue.videoTitle) {
-            logger.log("info", "Disabling update loop for "+originalVideoTitle)
+            logger.log("info", "Disabling update loop for "+nextInQueue.videoTitle )
             return;
         }
         if(currentTitle === nextInQueue.videoTitle) {
@@ -28,7 +29,8 @@ module.exports = function updatePlayer(MusicController, invokedMessage, nextInQu
                 newEmbed = newEmbed
                     .setThumbnail(nextInQueue.videoThumbnailUrl)
             }
-            const streamtime = 1000;
+            console.log(MusicController.audioPlayer._state.playbackDuration)
+            const streamtime = MusicController.audioPlayer._state.playbackDuration;
             const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
             const streamMins = Math.floor(streamtime / (1000 * 60) % 60)
             const streamSecs = Math.floor(streamtime / 1000 % 60)
@@ -57,16 +59,17 @@ module.exports = function updatePlayer(MusicController, invokedMessage, nextInQu
                 
             }
             
-            if (botMessage.channel.lastMessage.content.includes("status")) {
+            if (invokedMessage.channel.lastMessage.content.includes("status")) {
                 
-                botMessage.channel.send({ embeds: [newEmbedMessage]}).then(message => {
+                command.reply({ embeds: [newEmbedMessage]}).then(message => {
                     botMessage = message
-                    updatePlayer(MusicController, invokedMessage, nextInQueue, botMessage)
+                    updatePlayer(MusicController, invokedMessage, nextInQueue, command)
                 })
                 
             } else {
-                botMessage.edit(newEmbedMessage)
-                updatePlayer(MusicController, invokedMessage, nextInQueue, botMessage)
+                
+                command.reply({ embeds: [newEmbedMessage]})
+                updatePlayer(MusicController, invokedMessage, nextInQueue, command)
             }
             
         } else {

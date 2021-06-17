@@ -1,5 +1,5 @@
 
-module.exports = function (invokedMessage, num) {
+module.exports = function (invokedMessage) {
 
     if (arguments.lenght > 2) {
         this.wrongUsage(invokedMessage, this.name)
@@ -7,13 +7,24 @@ module.exports = function (invokedMessage, num) {
         return
     }
 
+    let queue;
 
-    const queue = this.controller.MusicController.queue
+    /**
+     * If there is not Music Controller present or there are no songs in queue
+     */
+    try {
+        queue = this.controller.MusicController.queue
+        if (queue.length === 0) {
+            this.reply("No songs in queue.")
+            return
+        }
+    } catch (err) {
+        this.reply("No songs in queue.")
 
-    if (queue.length === 0) {
-        invokedMessage.channel.send("No songs in queue.")
         return
     }
+
+
     
     let response = "**Current queue:** " + " ```"
     let counter = 1;
@@ -30,6 +41,6 @@ module.exports = function (invokedMessage, num) {
     }
     response = response + "```"
     
-    invokedMessage.channel.send(response)
+    this.reply(response)
 
 }

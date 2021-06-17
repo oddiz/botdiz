@@ -26,13 +26,31 @@ module.exports = class Command {
         this.noBind = config.noBind || false;
         this.func = func;
 
+        this.options = false;
+        if (config.options) {
+            this.options = config.options
+        }
+
+        this.lastInvokedMessage;
+        this.lastIsInteraction;
+
     }
 
-    execute(invokedMessage, args) {
+    async execute(invokedMessage, args, isInteraction) {
+        this.lastInvokedMessage = invokedMessage;
+        this.lastIsInterraction = isInteraction;
+        if(this.controller.debugMode) {
+            const response = `Command: ${this.name}, Args: ${args}`
+            this.reply(response)
+        }
+        
+        if (isInteraction) {
+            await this.lastInvokedMessage.defer()
+        }
+
         try {
             if(!this.noBind) {
                 const boundFunc = this.func.bind(this)
-                //const boundFunc = this.func
                 
                 if(Array.isArray(args)){
     
@@ -54,10 +72,63 @@ module.exports = class Command {
         }
 
     }
+
+    async reply(content, options = { followup: false }) {
+        
+        function isEmpty(map) {
+            return map && map.size === 0
+        }
+
+        
+        //check if invoked message is still there
+        const lastInvokedChannel = await this.lastInvokedMessage.channel.fetch(true)
+        const foundMap = await lastInvokedChannel.messages.fetch(this.lastInvokedMessage)
+
+        //if not there send normal message and return
+        if(isEmpty(foundMap)) {
+            lastInvokedChannel.send(content)
+            console.log("unless clear command this shouldn't be happening")
+            return
+        }
+        
+
+        if(this.lastIsInterraction) {
+            //if we have interaction
+            
+            if (options.followup){
+                this.lastInvokedMessage.followUp(content)
+            } else {
+                this.lastInvokedMessage.editReply(content).catch(err=> {
+                    console.log(err + "Error happened so just send the message i guess....")
+                    this.lastInvokedMessage.channel.send(content)
+                })
+            }
+
+        } else {
+            //if normal command
+
+            this.lastInvokedMessage.reply(content)
+        }
+    }
+
+    convertSlashCommand() {
+        let command = {
+            name: this.name,
+            description: this.description
+        }
+
+        if (this.options) {
+            command.options = this.options
+        }
+
+        return command
+    }
     wrongUsage(invokedMessage, commandName, errText = "Wrong usage of command!") {
+        
+        
         //notify chat about the wrong usage
         if (errText !== "") {
-            invokedMessage.channel.send(`${errText}`)
+            this.reply(`${errText}`)
         }   
 
         //show help of specified command

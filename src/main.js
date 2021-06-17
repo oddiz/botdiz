@@ -42,10 +42,17 @@ client.on('warn', m => logger.log('warn', m));
 client.on('error', m => logger.log('error', m));
 
 client.on("message", message => {
+    
+    if (message.interaction) {return}
     let messageGuildId = message.guild.id
     const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
     guildController.handleMessage(message);
 })
 
+client.on("interaction", interaction => {
+    let messageGuildId = interaction.guild.id
+    const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
+    guildController.handleInteraction(interaction);
+})
 
 client.login(process.env.DISCORD_TOKEN)

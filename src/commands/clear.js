@@ -1,7 +1,9 @@
 
-module.exports = function (invokedMessage, num) {
-    if (!invokedMessage.member.hasPermission('MANAGE_MESSAGES')){
-        invokedMessage.reply("You do not have enough permissions to use this command.")
+module.exports = async function (invokedMessage, num) {
+    const guildmember = await invokedMessage.member.fetch()
+    
+    if (!guildmember.permissions.has("MANAGE_MESSAGES")){
+        this.reply("You do not have enough permissions to use this command.")
         
         return 
     }
@@ -12,6 +14,12 @@ module.exports = function (invokedMessage, num) {
         return
     }
 
-    invokedMessage.channel.bulkDelete(num, true)
+    if (num <= 100){
+        await invokedMessage.channel.bulkDelete(num, true)
+    } else {
+        this.wrongUsage(invokedMessage,this.name, "Value should be less than or equal to 100.")
+    }
+
+    this.reply(`Deleted ${num} messages`, { ephemeral: true })
 
 }

@@ -1,5 +1,8 @@
 const { logger } = require("./logger")
 const searchYT = require("./scripts/searchYT")
+const updatePlayer = require("./scripts/updatePlayer")
+const { MessageEmbed } = require("discord.js")
+
 const {
 	AudioPlayer,
 	AudioPlayerStatus,
@@ -17,13 +20,15 @@ const ytdl = require("ytdl-core");
 const prism = require('prism-media')
 
 module.exports = class MusicController {
-    constructor(controller, voiceConnection) {
+    constructor(controller, Command, voiceConnection) {
         this.controller = controller;
         this.volume = 1
-        
+        this.command = Command
         this.readyLock = false;
         this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
         
+        this.lastInvokedMessage;
+
         this.audioPlayer = createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Stop,
@@ -58,11 +63,13 @@ module.exports = class MusicController {
 						The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
 					*/
 					await wait((this.voiceConnection.reconnectAttempts + 1) * 5000);
+                    logger.log("error", `Voice connection encountered error. Trying to connect again. Attempt ${this.voiceConnection.reconnectAttempts} / 5`)
 					this.voiceConnection.reconnect();
 				} else {
 					/*
 						The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
 					*/
+                    logger.log("error", `Couldn't reconnect. Destroying voice connection.`)
 					this.voiceConnection.destroy();
 				}
 			} else if (newState.status === VoiceConnectionStatus.Destroyed) {
@@ -95,8 +102,9 @@ module.exports = class MusicController {
 			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
 				// If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
 				// The queue is then processed to start playing the next track, if one is available.
+
                 console.log("Playing to idle state change. Trying next in queue")
-				void this.playNext();
+				void this.processQueue(invokedMessage);
 			} else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
                 console.log("Now playing!!!")
@@ -127,7 +135,7 @@ module.exports = class MusicController {
         YD.on("finished", (err, data)=>{
             logger.log("info", "Download finished")
             logger.log("info", JSON.stringify(data))
-            this.addToQueue(data)
+            this.addToQueue(data, invokedMessage)
             this.play(invokedMessage)
         })
 
@@ -148,18 +156,20 @@ module.exports = class MusicController {
         */
             
             this.queue.push(song) 
-
+            
     }
-/* 
-    run(invokedMessage) {
 
-        if (this.queue.length > 1) {
-            invokedMessage.channel.send("Added to queue")
-        }
-
-        this.playNext(invokedMessage)
+    async processQueue(invokedMessage) {
+        // If the queue is locked (already being processed), is empty, or the audio player is already playing something, return
+        if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle || this.queue.length === 0) {
+			return;
+		}
+        this.queueLock = true;
+        this.invokedMessage = invokedMessage
+        this.playNext(invokedMessage);
+        this.queueLock = false;
     }
-*/
+    
     
     getCurrentSong() {
         try {
@@ -168,6 +178,8 @@ module.exports = class MusicController {
                 return this.queue[0]
             } else {
                 //console.log("NO SONGS IN THE QUEUE")
+
+                return false
             }
             
         } catch (error) {
@@ -239,66 +251,75 @@ module.exports = class MusicController {
         }
     }
 
-    manageSongEmbed(invokedMessage, nextInQueue) {
+    async manageSongEmbed(invokedMessage, nextInQueue) {
         
         let botMessage;
-        const updatePlayer = require("./scripts/updatePlayer")
         
-        const { MessageEmbed } = require("discord.js")
         let embedMessage = new MessageEmbed()
         
         embedMessage
             .setColor("#e9b463")
             .addField("Now Playing: ",`${nextInQueue.videoTitle}`)
             .setTimestamp()
+
+
         if(nextInQueue.videoThumbnailUrl) {
             embedMessage = embedMessage
                 .setThumbnail(nextInQueue.videoThumbnailUrl)
         }
         
-        invokedMessage.channel.messages.fetch({ limit: 1}).then(messages => {
-            let lastMessage = messages.first()
             
-            if(lastMessage.author.bot) {
-                lastMessage.edit(embedMessage).then( message => {
-                    botMessage = message
-                    const originalVideoTitle = nextInQueue.videoTitle;
+        await this.command.reply( { embeds: [embedMessage]})
+        
+        
+        botMessage = invokedMessage
+        const originalVideoTitle = this.getCurrentSong().videoTitle;
+        
+        updatePlayer(this, invokedMessage,nextInQueue, this.command)
 
-                    updatePlayer(this, invokedMessage, nextInQueue, botMessage)
+        return true
 
-                    return true
-                }).catch(err=>{console.log("Error while executing manageSongEmbed() / edit embed"), err})
-            } else {
-                invokedMessage.channel.send( { embeds: [embedMessage]}).then( message => {
-                    botMessage = message
-                    const originalVideoTitle = this.getCurrentSong().videoTitle;
-                    
-                    updatePlayer(this, invokedMessage,nextInQueue, botMessage)
-
-                    return true
-                }).catch(err=>{console.log("Error while executing manageSongEmbed() / send new embed", err)})
-            }
-        });
-
+        /* 
+        if(lastMessage.author.bot) {
+            lastMessage.edit(embedMessage).then( message => {
+                botMessage = message
+                const originalVideoTitle = nextInQueue.videoTitle;
+                
+                updatePlayer(this, invokedMessage, nextInQueue, botMessage)
+                
+                return true
+            }).catch(err=>{console.log("Error while executing manageSongEmbed() / edit embed"), err})
+        }
+        */
+        
+        
     }
 
     async playNext(invokedMessage) {
         const self = this
 
-        const nextInQueue = await this.processNextSong()
-        console.log(nextInQueue, "returned from process next song")
-        
-        if (!nextInQueue) {
-            console.log(`Next in queue is ${nextInQueue}, Current queue: ${this.queue}`)
-            return
+        if (invokedMessage.type === "APPLICATION_COMMAND") {
+            
         }
 
+        const nextInQueue = await this.processNextSong()
+        //console.log(nextInQueue, "returned from process next song")
+        
+        if (!nextInQueue) {
+            this.command.reply("No songs left in queue. Stopping player.")
+            this.stop()
+            return
+        }
+        
+        
         /**
          * Creates a message that shows song info then assigns an updater.
-         */
-         
-       
- 
+         */       
+        //console.log(invokedMessage)
+        
+        const messageEmbedded = await this.manageSongEmbed(invokedMessage, nextInQueue)
+        
+        
         /**
          * Create a player and play the song
          */
@@ -311,56 +332,61 @@ module.exports = class MusicController {
             console.log("Got resources")
             this.audioPlayer.play(resource, { volume: MusicController.volume });
             console.log("Should be playing now")
-            this.manageSongEmbed(invokedMessage, nextInQueue)
+            
             
         } catch (error) {
             logger.log("error", "Error occured while trying to create Audio Resource.", error )  
             //console.log("trying next")
             //this.playNext()
             return
-            this.manageSongEmbed(invokedMessage, nextInQueue)
+            
         }
 
         
 
     }
 
-    skip(invokedMessage, skipAmnt) {
-        let skipAmount = 1
-
-        if (this.controller.MusicController.queue.length == 0){
-            invokedMessage.reply("No playlist to skip ⚠")
+    skip(invokedMessage, skipAmount) {
+        
+        if (this.queue.length == 0){
+            this.command.reply("No playlist to skip ⚠")
             return
         }
+        
         if (skipAmount > this.controller.MusicController.queue.length) {
             skipAmount = this.controller.MusicController.queue.length
         }
-        for (let i = 0; i < skipAmount; i++) {
-            this.controller.MusicController.queue.shift()
+
+        if (!skipAmount || skipAmount === 1){
+            this.command.reply(`Skipping ${this.getCurrentSong.videoTitle}`)
+            this.playNext(invokedMessage)
+
+        } else {
+            for (let i = 0; i < skipAmount; i++) {
+                this.queue.shift()
+            }
+            this.command.reply(`Skipping ${skipAmount} songs`)
+            this.playNext(invokedMessage)
         }
-        this.controller.MusicController.playNext(invokedMessage)
     }
     
     stop(invokedMessage) {
         try {
-            this.dispatcher.destroy()
-            this.isSpeaking = false;
             this.clearQueue()
-            
+            this.controller.MusicController = null
+            this.audioPlayer.stop(true)
+            this.command.reply("Stopped music player.")
+            logger.log("info", "Stopped music player and destroyed MusicController")
         } catch (error) {
             logger.log("info","Error while running MusicController.stop().", error)
         }
     }
     pause(invokedMessage) {
-
+        
         try {
-            if (this.controller.MusicController.dispatcher.paused) {
-                invokedMessage.reply("Player already paused")
-                 
-            } else {
-                this.controller.MusicController.dispatcher.pause()
-                invokedMessage.channel.send("Player paused")
-            }
+            
+                this.audioPlayer.pause()
+            
         } catch (error) {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)
         }
@@ -369,12 +395,17 @@ module.exports = class MusicController {
 
         
         try {
-            if (!this.controller.MusicController.dispatcher.paused) {
-                invokedMessage.reply("Player already playing")
+            if (this.audioPlayer.state.status === AudioPlayerStatus.Playing) {
+                this.command.reply("Player already playing")
                  
+            } else if (this.audioPlayer.state.status === AudioPlayerStatus.Paused){
+                this.audioPlayer.resume()
+                this.command.reply("Player resumed")
+            } else if (this.audioPlayer.state.status === AudioPlayerStatus.Idle){
+                //player is not playing
+                console.log("player status is idle. paused?? if not maybe add failsafe here")
             } else {
-                this.controller.MusicController.dispatcher.resume()
-                invokedMessage.channel.send("Player resumed")
+                console.log("why are we here? MusicController.resume()")
             }
         } catch (error) {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)

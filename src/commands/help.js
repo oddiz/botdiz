@@ -22,11 +22,11 @@ module.exports = function(invokedMessage, commandName) {
                 .addField("Description", foundCommand.description)
                 .addField("Usage", foundCommand.usage)
 
-            invokedMessage.channel.send({ embeds: [embedMessage]})
+                this.reply({ embeds: [embedMessage]})
             
             return
         } else {
-            invokedMessage.channel.send(`Unable to find command: ${PREFIX + commandName}`)
+            this.reply(`Unable to find command: ${PREFIX + commandName}`)
         }
     }
 
@@ -45,5 +45,5 @@ module.exports = function(invokedMessage, commandName) {
     } 
     
 
-    invokedMessage.channel.send({ embeds: [embedMessage]})
+    this.reply({ embeds: [embedMessage]})
 }
