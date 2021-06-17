@@ -18,7 +18,7 @@ const {
 } = require('@discordjs/voice');
 const ytdl = require("ytdl-core");
 const prism = require('prism-media')
-
+const UpdatePlayerInfo = require('./UpdatePlayerInfo')
 module.exports = class MusicController {
     constructor(controller, Command, voiceConnection) {
         this.controller = controller;
@@ -26,7 +26,8 @@ module.exports = class MusicController {
         this.command = Command
         this.readyLock = false;
         this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
-        
+        this.UpdatePlayerInfo = new UpdatePlayerInfo(this)
+
         this.lastInvokedMessage;
 
         this.audioPlayer = createAudioPlayer({
@@ -251,7 +252,7 @@ module.exports = class MusicController {
         }
     }
 
-    async manageSongEmbed(invokedMessage, nextInQueue) {
+    async createSongEmbed(invokedMessage, nextInQueue) {
         
         let botMessage;
         

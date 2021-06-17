@@ -20,6 +20,6 @@ module.exports = async function (invokedMessage, num) {
         this.wrongUsage(invokedMessage,this.name, "Value should be less than or equal to 100.")
     }
 
-    this.reply(`Deleted ${num} messages`, { ephemeral: true })
+    this.reply({content: `Deleted ${num} messages`,  ephemeral: true })
 
 }

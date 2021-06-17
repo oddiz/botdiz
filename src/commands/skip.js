@@ -29,6 +29,6 @@ module.exports = function (invokedMessage, skipAmount) {
             
         }
     } else {
-        console.log("Something wrong happened at skip.js. ")
+        logger.log("error","Something wrong happened at skip.js. ")
     }
 }

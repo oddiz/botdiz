@@ -142,10 +142,8 @@ module.exports = async function(invokedMessage, ...args) {
         //else 
         
         
-        //console.log(videoUrl.hostname);
         //if link is youtube
         if (videoUrl.host.includes("youtube.com")){
-            //console.log("video is from youtube")
             getInfoFromYoutubeUrl(videoUrl.href, result => {
                 this.controller.MusicController.addToQueue(result, invokedMessage)
                 this.controller.MusicController.processQueue(invokedMessage);
@@ -157,7 +155,6 @@ module.exports = async function(invokedMessage, ...args) {
         if (videoUrl.host.includes("spotify.com")){
             let spotifyAccessToken = "";
             
-            //console.log("video is from spotify")
             
             const spotifyUri = require('spotify-uri');
             const parsed = spotifyUri.parse(videoUrl.href)
@@ -170,7 +167,6 @@ module.exports = async function(invokedMessage, ...args) {
             });
 
             if (parsed.type === "playlist"){
-                //console.log("link is a playlist from spotify")
                 //parseplaylist
                 const playlistId = parsed.id;
 
@@ -182,7 +178,7 @@ module.exports = async function(invokedMessage, ...args) {
                         spotifyApi.setAccessToken(spotifyAccessToken)
                         spotifyApi.getPlaylist(playlistId, { limit: 25} )
                             .then(function(data) {
-                                //console.log('Some information about this playlist', data.body.tracks.items[0]);
+
                                 for (const item of data.body.tracks.items){
                                     const videoName = item.track.name;
                                     const videoArtist = item.track.artists[0].name

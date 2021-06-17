@@ -10,6 +10,7 @@ module.exports = async function (invokedMessage) {
             "content-type": "application/json; charset=utf-8"
         }
     }).then(result => {
+        console.log(result)
         if (result.status !== 200) {
             this.reply("Can't reach Epic servers at the moment please try again in a moment.")
 
@@ -22,14 +23,13 @@ module.exports = async function (invokedMessage) {
         let futureDeals = []
         for (element of result.data.data.Catalog.searchStore.elements){
             const effectiveDate = Date.parse(element.effectiveDate)
-            //console.log("Effective Date: " + effectiveDate, "from: ", element.effectiveDate)
             const date = new Date()
             const currentDate = date.getTime()
             
             const dateDiff = effectiveDate - currentDate;
 
             
-            if (dateDiff < 0 || element.promotions.promotionalOffers.length > 0) {
+            if (dateDiff < 0 || (element.promotions && element.promotions.promotionalOffers.length > 0)) {
                 //promotion active
                 //console.log("Promotion active for: ", element.title)
                 
@@ -46,6 +46,10 @@ module.exports = async function (invokedMessage) {
 
                 activeDeals.push(embedMessage)
             } else {
+                if (dateDiff > 1000 * 60 * 60 * 24 * 60) {
+                    //hacky solution- if future deal is more than 60 days
+                    continue
+                }
                 //promotion not active
                 const seconds = Math.floor((dateDiff / (1000) % 60))
                 const minutes = Math.floor((dateDiff / (1000 * 60) % 60))
@@ -70,7 +74,7 @@ module.exports = async function (invokedMessage) {
         
     }).catch(err => {
         
-        console.log("Error while reachine epic API" + err)
+        console.log("Error while reaching epic API" + err)
     })
 
 }

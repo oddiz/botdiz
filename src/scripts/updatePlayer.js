@@ -1,6 +1,4 @@
-const { MessageEmbed } = require('discord.js');
-const MsgHandler = require('../MessageHandler');
-const { logger } = require('../logger')
+
 
 module.exports = function updatePlayer(MusicController, invokedMessage, nextInQueue, command) {
     setTimeout(function () {
@@ -29,7 +27,7 @@ module.exports = function updatePlayer(MusicController, invokedMessage, nextInQu
                 newEmbed = newEmbed
                     .setThumbnail(nextInQueue.videoThumbnailUrl)
             }
-            console.log(MusicController.audioPlayer._state.playbackDuration)
+
             const streamtime = MusicController.audioPlayer._state.playbackDuration;
             const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
             const streamMins = Math.floor(streamtime / (1000 * 60) % 60)

@@ -35,7 +35,7 @@ module.exports = function(videoUrl, callback) {
             videoDuration = res.player_response.match(playerRegex)[1]  
             console.log("using lengthSeconds") 
         } catch (error){
-            logger.log("error", "Regex approxDuration failed.")
+            logger.log("error", "Regex lengthSeconds failed.")
         }
         
         
@@ -63,7 +63,6 @@ module.exports = function(videoUrl, callback) {
                 videoDuration: videoDuration,
                 videoThumbnailUrl: response.data.thumbnail_url
             }
-            //console.log("get youtube info from url succeed. result: ", result)
             callback(result)
 
             

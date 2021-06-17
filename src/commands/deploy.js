@@ -1,11 +1,19 @@
 module.exports = async function(invokedMessage) {
     
    
-    let guildOwner = await invokedMessage.guild.fetchOwner()
-    guildOwner = guildOwner.user
-    console.log(guildOwner)
-    if (invokedMessage.author == this.controller.oddiz || invokedMessage.author == guildOwner) {
-        console.log("this is me or guild owner")
+    const guildOwner = await invokedMessage.guild.fetchOwner()
+    const guildOwnerId = guildOwner.user.id
+
+    let messageUserId;
+
+    if (this.lastIsInterraction) {
+        messageUserId = invokedMessage.user.id
+    } else {
+        messageUserId = invokedMessage.author.id
+    }
+
+    if (messageUserId == this.controller.oddiz.id || messageUserId == guildOwnerId) {
+
         let slashCommands = [];
 
         for (command of this.controller.commands) {

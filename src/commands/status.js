@@ -1,7 +1,16 @@
+const { AudioPlayerStatus } = require("@discordjs/voice")
+
 module.exports = function (invokedMessage) {
     
-    if (this.controller.MusicController.dispatcher.destroyed) {
-        this.wrongUsage(invokedMessage, this.name, "Nothing is currently playing.")
+    if (!this.controller.MusicController) {
+        
+        this.reply("Nothing is playing")
+    } else {
+        if(this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
+            this.reply("Nothing is playing")
+        } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Playing){
+            this.reply("Is playing")
+        }
     }
 
     

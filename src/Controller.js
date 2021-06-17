@@ -62,7 +62,7 @@ module.exports = class Controller {
 
         const commandName = interaction.commandName
         const args = interaction.options.map(option => option.value)
-        //console.log(interaction.options)
+
         
         if (this.debugMode) {
             

@@ -98,8 +98,10 @@ module.exports = class Command {
             if (options.followup){
                 this.lastInvokedMessage.followUp(content)
             } else {
+
                 this.lastInvokedMessage.editReply(content).catch(err=> {
                     console.log(err + "Error happened so just send the message i guess....")
+
                     this.lastInvokedMessage.channel.send(content)
                 })
             }
@@ -107,7 +109,7 @@ module.exports = class Command {
         } else {
             //if normal command
 
-            this.lastInvokedMessage.reply(content)
+            this.lastInvokedMessage.channel.send(content)
         }
     }
 

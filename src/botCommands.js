@@ -31,7 +31,15 @@ module.exports = function (Controller){
                 name: "help",
                 description: "Shows available commands",
                 needArgs: false,
-                usage: "!help <command> or !help"
+                usage: "!help <command> or !help",
+                options: [
+                    {
+                        type: "STRING",
+                        name: "command",
+                        description: "Search for a specific command.",
+                        required: false,
+                    }
+                ]
             },
             require("./commands/help")
         ),

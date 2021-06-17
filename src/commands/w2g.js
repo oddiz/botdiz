@@ -16,7 +16,6 @@ module.exports = async function(invokedMessage, ...args) {
 
     if (searchMode) {
         const query = args.join(" ")
-        //console.log("query is: " , query)
         const searchYT = require("../scripts/searchYT");
 
         searchYT(query, 1, (result => {
