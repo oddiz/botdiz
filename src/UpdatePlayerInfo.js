@@ -27,14 +27,13 @@ module.exports = class UpdatePlayerInfo {
         while (!this.quit){
             if (!(this.messageToEdit && this.currentSong)){
                 await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL + 2000));
-                console.log("Awaiting song info")
+
                 continue
             }
             try {
                 
                 this.looping = true;
-                console.log("Updating loop. (updatePlayer.js:25)")
-                console.log("Current Song:", this.currentSong.videoTitle)
+
                 let newEmbed = new MessageEmbed()
                     newEmbed = newEmbed
                     .setColor("#e9b463")
@@ -80,7 +79,7 @@ module.exports = class UpdatePlayerInfo {
                 this.messageToEdit.editReply({ embeds: [newEmbedMessage]})
 
             } catch (error) {
-                console.log("Error in update loop.", error)
+                logger.log("error", "Error in update loop.", error)
             }
             await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
         }

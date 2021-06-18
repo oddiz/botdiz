@@ -17,6 +17,6 @@ module.exports = async function (invokedMessage) {
     } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Playing){
         this.reply("Player already playing")
     } else {
-        console.log("This shouldn't happen @ resume.js")
+        logger.log("error","This shouldn't happen @ resume.js")
     }
 }

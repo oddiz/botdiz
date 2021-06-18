@@ -29,9 +29,8 @@ module.exports = function spawnAudioResource(nextInQueue) {
             stream.resume();
             reject(error);
         };
-        console.log("process will spawn?")
         
-                console.log("ping")
+        
                 demuxProbe(stream)
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);

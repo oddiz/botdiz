@@ -14,7 +14,6 @@ module.exports = function(videoUrl, callback) {
                 videoThumbnailUrl: response.data.thumbnail_url
             }
     */
-   console.log(videoUrl)
     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
     const href = videoUrl
     const videoId = href.match(regex)[1]
@@ -38,7 +37,6 @@ module.exports = function(videoUrl, callback) {
             videoDuration += parseInt(videoDurationString[i]) * secCounter;
             
             secCounter *= 60
-            console.log(videoDuration,secCounter)
         }   
 
         const videoInfo = {
@@ -49,7 +47,7 @@ module.exports = function(videoUrl, callback) {
             videoThumbnailUrl: result[1],
             videoDuration: videoDuration
         }
-        console.log(videoInfo)
+
         callback(videoInfo)
 
     }).catch( err => {
@@ -77,17 +75,17 @@ module.exports = function(videoUrl, callback) {
 
         try {
             const playerRegex = /"approxDurationMs":"(\d*)"/
-            //console.log(res.player_response)
+
             videoDuration = res.player_response.match(playerRegex)[1] / 1000   
-            console.log("using approxduration") 
+
         } catch (error) {
             logger.log("error", "Regex approxDuration failed.")
         }
-        //console.log("APPROX DURATION: ", videoDuration)
+
         try {
             const playerRegex = /"lengthSeconds":"(\d*)"/
             videoDuration = res.player_response.match(playerRegex)[1]  
-            console.log("using lengthSeconds") 
+
         } catch (error){
             logger.log("error", "Regex lengthSeconds failed.")
         }

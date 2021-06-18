@@ -87,7 +87,6 @@ module.exports = class Command {
         //if not there send normal message and return
         if(isEmpty(foundMap)) {
             lastInvokedChannel.send(content)
-            console.log("unless clear command this shouldn't be happening")
             return
         }
         

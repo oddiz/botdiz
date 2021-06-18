@@ -8,7 +8,6 @@ module.exports = function (invokedMessage, skipAmount) {
         return 
     }
 
-    console.log(arguments)
 
     if (arguments.length > 2) {
         this.wrongUsage(invokedMessage, this.name, "Too many arguments for skip.")

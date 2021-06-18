@@ -10,7 +10,7 @@ module.exports = async function (invokedMessage) {
             "content-type": "application/json; charset=utf-8"
         }
     }).then(result => {
-        console.log(result)
+        
         if (result.status !== 200) {
             this.reply("Can't reach Epic servers at the moment please try again in a moment.")
 

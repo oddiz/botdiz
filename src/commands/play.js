@@ -24,7 +24,6 @@ module.exports = async function(invokedMessage, ...args) {
     }
     //if no music controller active
     if (!this.controller.MusicController) {
-        console.log("CREATING MUSIC CONTROLLER")
         this.controller.MusicController = new MusicController(this.controller, this, joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
@@ -126,7 +125,7 @@ module.exports = async function(invokedMessage, ...args) {
                     const i = videoUrl.search("&list")
                     videoUrl = videoUrl.slice(0, i)
                 } catch (error) {
-                    console.log("couldn't slice videoURL. (play.js)", videoUrl, i)
+                    logger.log("error", "couldn't slice videoURL. (play.js)", videoUrl, i)
                 }
 
                 const package = {

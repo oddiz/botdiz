@@ -115,7 +115,7 @@ module.exports = class MusicController {
 			}
 		});
 
-		this.audioPlayer.on('error', (error) => console.log("On error error:", error));
+		this.audioPlayer.on('error', (error) => logger.log("error", "Audio player error :", error));
 
 	
     }
@@ -321,7 +321,6 @@ module.exports = class MusicController {
         }
 
         const nextInQueue = await this.processNextSong()
-        console.log(nextInQueue, "returned from process next song")
 
         //wait a few moments so player doesn't skuff
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -338,7 +337,7 @@ module.exports = class MusicController {
         /**
          * Creates a message that shows song info then assigns an updater.
          */       
-        //console.log(invokedMessage)
+    
         
         const messageEmbedded = await this.createSongEmbed(invokedMessage, nextInQueue)
         
@@ -353,9 +352,7 @@ module.exports = class MusicController {
             logger.log("info", "Trying to create Audio Resource." )    
             const resource = await spawnAudioResource(nextInQueue);
             console.log("Got resources")
-            this.audioPlayer.play(resource, { volume: MusicController.volume });
-            console.log("Should be playing now")
-            
+            this.audioPlayer.play(resource, { volume: MusicController.volume });          
             
         } catch (error) {
             logger.log("error", "Error occured while trying to create Audio Resource.", error )  
@@ -397,19 +394,19 @@ module.exports = class MusicController {
     stop(invokedMessage) {
         try {
             this.clearQueue()
-            console.log("Queue cleared")
+            logger.log("info", "Queue cleared")
 
             this.controller.MusicController = null
-            console.log("Music Controller destroyed")
+            logger.log("info", "Music Controller destroyed")
 
             this.audioPlayer.stop(true)
-            console.log("Audio Player stopped.")
+            logger.log("info", "Audio Player stopped.")
             
             this.UpdatePlayerInfo.stop()
-            console.log("Player updater stopped")
+            logger.log("info", "Player updater stopped")
 
             this.voiceConnection.destroy();
-            console.log("Voice connection destroyed.")
+            logger.log("info", "Voice connection destroyed.")
             logger.log("info", "Stopped music player and destroyed MusicController")
         } catch (error) {
             logger.log("error","Error while running MusicController.stop().", error)
