@@ -8,6 +8,8 @@ module.exports = function (invokedMessage, skipAmount) {
         return 
     }
 
+    console.log(arguments)
+
     if (arguments.length > 2) {
         this.wrongUsage(invokedMessage, this.name, "Too many arguments for skip.")
 
@@ -15,15 +17,17 @@ module.exports = function (invokedMessage, skipAmount) {
     } else if (arguments.length <= 2) {
         skipAmountInt = parseInt(skipAmount)    
         if (Number.isInteger(skipAmountInt)) {
-            if (skipAmountInt >= 0) {
+            if (skipAmountInt >= 2) {
                 this.controller.MusicController.skip(invokedMessage, skipAmountInt)
+                this.reply(`Skipping ${skipAmountInt} songs.`)
             } else {
                 this.wrongUsage(invokedMessage, this.name, "Can't skip back in time.")
 
                 return
             }
-        } else if (skipAmount === ""){
+        } else if (skipAmount === "" || arguments.length === 1){
             this.controller.MusicController.skip(invokedMessage, 1)
+            this.reply("Skipping 1 song.")
         } else {
             this.wrongUsage(invokedMessage, this.name)
             

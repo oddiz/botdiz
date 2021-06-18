@@ -27,10 +27,10 @@ module.exports = function (invokedMessage) {
 
     
     let response = "**Current queue:** " + " ```"
-    let counter = 1;
+    let counter = 0;
     for (const song of queue) {
         let line = ""
-        if (counter === 1) {
+        if (counter === 0) {
 
             line = "Playing:  " + song.videoTitle + "\n\n"
         } else {

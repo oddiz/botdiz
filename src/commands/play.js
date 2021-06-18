@@ -24,7 +24,7 @@ module.exports = async function(invokedMessage, ...args) {
     }
     //if no music controller active
     if (!this.controller.MusicController) {
-
+        console.log("CREATING MUSIC CONTROLLER")
         this.controller.MusicController = new MusicController(this.controller, this, joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
@@ -43,7 +43,7 @@ module.exports = async function(invokedMessage, ...args) {
         //link is passed
         videoUrl = new URL(arguments[1])
         searchMode = false
-        isYoutubePlaylist = videoUrl.href.includes("&list")
+        isYoutubePlaylist = (videoUrl.href.includes("list") || videoUrl.href.includes("playlist")) && !videoUrl.href.includes("&index")
 
     } catch (error) {
         //no link passed
@@ -83,10 +83,11 @@ module.exports = async function(invokedMessage, ...args) {
         */
     
     } else if (isYoutubePlaylist) {
-        const regex = /&list=(.*)$/;
+        const regex = /^.*youtu.be\/|list=([^#\&\?]*).*/;
         const playlistId = videoUrl.href.match(regex)[1];
-        
-        (async function(){
+        const self = this
+
+        async function getYtPlaylist(){
 
             let ytpl = require('ytpl');
     
@@ -117,10 +118,17 @@ module.exports = async function(invokedMessage, ...args) {
             */
             for (const item of playlist.items) {
                 const videoTitle = item.title
-                const videoUrl = item.url
                 const videoId = item.id
                 const videoThumbnailUrl = item.bestThumbnail.url
                 const videoDuration = item.durationSec
+                let videoUrl = item.url
+                try {
+                    const i = videoUrl.search("&list")
+                    videoUrl = videoUrl.slice(0, i)
+                } catch (error) {
+                    console.log("couldn't slice videoURL. (play.js)", videoUrl, i)
+                }
+
                 const package = {
                     videoUrl: videoUrl,
                     videoId: videoId,
@@ -128,14 +136,18 @@ module.exports = async function(invokedMessage, ...args) {
                     videoThumbnailUrl:videoThumbnailUrl,
                     videoDuration: videoDuration
                 }
+                
 
-                this.controller.MusicController.addToQueue(package, invokedMessage)
+                self.controller.MusicController.addToQueue(package, invokedMessage)
                 
             }
-            this.reply("Playlist added to queue.")
-            this.controller.MusicController.processQueue(invokedMessage);
+            self.reply("Playlist added to queue.")
+            self.controller.MusicController.processQueue(invokedMessage);
+            return true
+        }
+        await getYtPlaylist()
 
-        })()
+        return true
         
            
     } else {

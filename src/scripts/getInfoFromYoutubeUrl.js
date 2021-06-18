@@ -1,5 +1,7 @@
 const { logger } = require("../logger")
 const axios = require('axios');
+const youtubedl = require('youtube-dl-exec')
+
 
 module.exports = function(videoUrl, callback) {
     /*
@@ -12,12 +14,64 @@ module.exports = function(videoUrl, callback) {
                 videoThumbnailUrl: response.data.thumbnail_url
             }
     */
-    const regex = /\?v=(.*)&|\?v=(.*)$/
+   console.log(videoUrl)
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
     const href = videoUrl
-    const videoId = href.match(regex)[1] || href.match(regex)[2];
-    const yt = require('youtube.get-video-info')
+    const videoId = href.match(regex)[1]
     //\?v=(.*)&|\?v=(.*)$
     let videoDuration = 0;
+    
+    youtubedl(videoId, {
+        s: true,
+        e: true,
+        getThumbnail: true,
+        getDuration: true,
+    }).then(response => {
+        const result = response.split("\n")
+        
+        let videoDurationString = result[2].split(":")
+
+        let videoDuration = 0;
+        let secCounter = 1
+        
+        for (let i = videoDurationString.length-1; i >= 0; i--) {
+            videoDuration += parseInt(videoDurationString[i]) * secCounter;
+            
+            secCounter *= 60
+            console.log(videoDuration,secCounter)
+        }   
+
+        const videoInfo = {
+            videoUrl: href,
+            videoId: videoId,
+            
+            videoTitle: result[0],
+            videoThumbnailUrl: result[1],
+            videoDuration: videoDuration
+        }
+        console.log(videoInfo)
+        callback(videoInfo)
+
+    }).catch( err => {
+        logger.log("error", "Error while trying to get video info inside getInfoFromYoutube\n ERROR: ", err)
+    })
+    
+}
+    
+/*
+    {
+        videoTitle: title,
+        videoUrl: href,
+        videoId: videoId,
+        videoDuration: videoDuration,
+        videoThumbnailUrl: response.data.thumbnail_url
+    }
+    
+    
+   
+    
+
+    const yt = require('youtube.get-video-info')
     yt.retrieve(videoId, (err, res) => {
         if (err) throw err;
 
@@ -71,4 +125,5 @@ module.exports = function(videoUrl, callback) {
         })
         
     })
-}
+
+*/

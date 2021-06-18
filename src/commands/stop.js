@@ -1,4 +1,4 @@
-module.exports = function (invokedMessage) {
+module.exports = async function (invokedMessage) {
     
     if (!this.controller.MusicController) {
         this.reply("Bot is currently not playing.")
@@ -6,6 +6,7 @@ module.exports = function (invokedMessage) {
         return 
     }
 
-    this.controller.MusicController.stop(invokedMessage)
+    await this.controller.MusicController.stop(invokedMessage)
+    this.reply("Stopped music player")
 
 }
