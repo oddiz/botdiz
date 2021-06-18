@@ -17,7 +17,7 @@ module.exports = function (invokedMessage, skipAmount) {
         skipAmountInt = parseInt(skipAmount)    
         if (Number.isInteger(skipAmountInt)) {
             if (skipAmountInt >= 2) {
-                this.controller.MusicController.skip(invokedMessage, skipAmountInt)
+                this.controller.MusicController.skip(skipAmountInt)
                 this.reply(`Skipping ${skipAmountInt} songs.`)
             } else {
                 this.wrongUsage(invokedMessage, this.name, "Can't skip back in time.")
@@ -25,8 +25,15 @@ module.exports = function (invokedMessage, skipAmount) {
                 return
             }
         } else if (skipAmount === "" || arguments.length === 1){
-            this.controller.MusicController.skip(invokedMessage, 1)
-            this.reply("Skipping 1 song.")
+            const currentSong = this.controller.MusicController.getCurrentSong()
+            if (currentSong) {
+                this.reply(`Skipping ${currentSong.videoTitle}`)
+                this.controller.MusicController.skip(1)
+            } else {
+                this.reply("Bot is currently not playing.")
+            }
+
+            return
         } else {
             this.wrongUsage(invokedMessage, this.name)
             

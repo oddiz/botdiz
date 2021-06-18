@@ -73,7 +73,7 @@ module.exports = class Command {
 
     }
 
-    async reply(content, options = { followup: false }) {
+    async reply(content, options = { followup: false, new:false }) {
         
         function isEmpty(map) {
             return map && map.size === 0
@@ -95,20 +95,25 @@ module.exports = class Command {
             //if we have interaction
             
             if (options.followup){
-                this.lastInvokedMessage.followUp(content)
-            } else {
-
-                this.lastInvokedMessage.editReply(content).catch(err=> {
-                    console.log(err + "Error happened so just send the message i guess....")
-
-                    this.lastInvokedMessage.channel.send(content)
-                })
+                return this.lastInvokedMessage.followUp(content)
+                
+            } 
+            
+            if (options.new) {
+                return this.lastInvokedMessage.channel.send(content)
             }
+
+            return await this.lastInvokedMessage.editReply(content).catch(err=> {
+                console.log(err + "Error happened so just send the message i guess....")
+
+                return this.lastInvokedMessage.channel.send(content)
+            })
+        
 
         } else {
             //if normal command
 
-            this.lastInvokedMessage.channel.send(content)
+            return this.lastInvokedMessage.channel.send(content)
         }
     }
 

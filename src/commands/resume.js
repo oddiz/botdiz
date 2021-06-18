@@ -11,7 +11,7 @@ module.exports = async function (invokedMessage) {
         
         await this.controller.MusicController.resume(invokedMessage)
         
-        this.reply("Player resumed")
+        this.reply("▶️")
     } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
         this.reply("Player is not active")
     } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Playing){

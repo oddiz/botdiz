@@ -38,6 +38,7 @@ module.exports = class MusicController {
         })
         this.voiceConnection = voiceConnection; 
         
+        this.currentSong;
         this.queue = [];
 
         voiceConnection.subscribe(this.audioPlayer);
@@ -100,13 +101,13 @@ module.exports = class MusicController {
         
         // Configure audio player
 		this.audioPlayer.on('stateChange', (oldState, newState) => {
-			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
+			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle && !this.skipping) {
 				// If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
 				// The queue is then processed to start playing the next track, if one is available.
 
                 console.log("Playing to idle state change. Trying next in queue")
-                this.queue.shift()
-				void this.processQueue(this.command.lastInvokedMessage);
+                
+				void this.playNext();
 
 
 			} else if (newState.status === AudioPlayerStatus.Playing) {
@@ -118,34 +119,6 @@ module.exports = class MusicController {
 		this.audioPlayer.on('error', (error) => logger.log("error", "Audio player error :", error));
 
 	
-    }
-
-    download(invokedMessage, videoId){
-        const YtMp3Downloader = require("youtube-mp3-downloader")
-        
-        const config = require("./config.json");
-
-        const YD = new YtMp3Downloader({
-            "ffmpegPath": config.ffmpegPath,        // FFmpeg binary location
-            "outputPath": "./temp",    // Output file location (default: the home directory)
-            "youtubeVideoQuality": "highestaudio",  // Desired video quality (default: highestaudio)
-            "queueParallelism": 10,                  // Download parallelism (default: 1)
-            "progressTimeout": 2000,                // Interval in ms for the progress reports (default: 1000)
-            "allowWebm": false                      // Enable download from WebM sources (default: false)
-        });
-
-        YD.download(videoId, videoId+".mp3");
-
-        YD.on("finished", (err, data)=>{
-            logger.log("info", "Download finished")
-            logger.log("info", JSON.stringify(data))
-            this.addToQueue(data, invokedMessage)
-            this.play(invokedMessage)
-        })
-
-        YD.on("progress", (progress => {
-            logger.log("info", JSON.stringify(progress))
-        }))
     }
 
     addToQueue(song) {
@@ -163,51 +136,33 @@ module.exports = class MusicController {
             
     }
 
-    async processQueue(invokedMessage) {
+    async processQueue() {
+
+        if (this.queue.length)
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
             this.command.reply("Added to queue")
 			return;
-		} else if (this.queue.length === 0){
-            this.command.reply("Queue ended, stopping player 🛑", {followup:true})
-
-            this.stop()
+		} else if (this.audioPlayer.state.status == AudioPlayerStatus.Idle){
+            this.playNext();
 
             return
         }
-        this.queueLock = true;
-        this.invokedMessage = invokedMessage
-        this.playNext(invokedMessage);
         
-        this.queueLock = false;
     }
     
     
     getCurrentSong() {
-        try {
-            if (this.queue.length > 0){
-                //console.log("CURRENT SONG IS: " + JSON.stringify(this.queue[0]))
-                return this.queue[0]
-            } else {
-                //console.log("NO SONGS IN THE QUEUE")
+     
 
-                return false
-            }
+        return this.currentSong;
             
-        } catch (error) {
-            logger.log("error", "Error while running getCurrentSong() Error: " + error)
-        }
+      
     }
 
     updateCurrentSong(song) {
         try {
-            if (this.queue.length > 0) {
-                //console.log("UPDATED CURRENT FROM TO: "+ JSON.stringify(this.queue[0]))
-                this.queue[0] = song
-                //console.log("UPDATED CURRENT SONG TO: "+ JSON.stringify(song))
-            } else {
-                //console.log("NO SONGS IN THE QUEUE.")
-            }
+            this.currentSong = song
              
         } catch (error) {
             logger.log("error", "Error while running updateCurrentSong() Error: " + error)
@@ -226,9 +181,13 @@ module.exports = class MusicController {
         try {
             //console.log(self)
             if (this.queue.length === 0) {
+                this.command.reply("Queue ended, stopping player 🛑", {new: true})
+
+                this.stop()
                 
+                return false
             }   
-            let nextInQueue = this.getCurrentSong();
+            let nextInQueue = this.queue[0];
             this.queueLock = true
             if (nextInQueue.isSpotify) {
                 //if came from spotify link
@@ -242,10 +201,11 @@ module.exports = class MusicController {
                     if (result) {
                         //invokedMessage.channel.send("Video found: " + result.videoUrl)
                         getInfoFromYoutubeUrl(result.videoUrl, result => {
-                            this.updateCurrentSong(result);
-                            nextInQueue = this.getCurrentSong();
+                            nextInQueue = result;
+                            this.updateCurrentSong(nextInQueue);
                             
                             this.queueLock = false
+                            this.queue.shift()
                             return nextInQueue
                         })
     
@@ -257,7 +217,8 @@ module.exports = class MusicController {
     
             } else {
                 this.queueLock = false
-                
+                this.updateCurrentSong(nextInQueue);
+                this.queue.shift()
                 return nextInQueue
             }
             
@@ -268,7 +229,7 @@ module.exports = class MusicController {
         }
     }
 
-    async createSongEmbed(invokedMessage, currentSong) {
+    async createSongEmbed(currentSong) {
         
         let botMessage;
         
@@ -285,14 +246,11 @@ module.exports = class MusicController {
                 .setThumbnail(currentSong.videoThumbnailUrl)
         }
         
-            
-        await this.command.reply( { embeds: [embedMessage]})
+        await this.command.reply( { content: "▶️" })
+        botMessage = await this.command.reply( { embeds: [embedMessage]}, { new:true })
         
         
-        botMessage = invokedMessage
-        const originalVideoTitle = this.getCurrentSong().videoTitle;
-        
-        this.UpdatePlayerInfo.changeMessage(invokedMessage) 
+        this.UpdatePlayerInfo.changeMessage(botMessage) 
         this.UpdatePlayerInfo.changeSong(currentSong) 
 
         return true
@@ -313,33 +271,22 @@ module.exports = class MusicController {
         
     }
 
-    async playNext(invokedMessage) {
-        const self = this
-
-        if (invokedMessage.type === "APPLICATION_COMMAND") {
-            
-        }
-
+    async playNext() {
+        console.log(this.queue)
         const nextInQueue = await this.processNextSong()
+
+        if (!nextInQueue) {
+            //no song is next
+            return
+        }
 
         //wait a few moments so player doesn't skuff
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        
-        if (!nextInQueue) {
-            invokedMessage.channel.send("No songs left in queue. Stopping player.")
-            this.stop()
-            return
-        }
-        
-        
-        
         /**
          * Creates a message that shows song info then assigns an updater.
          */       
-    
-        
-        const messageEmbedded = await this.createSongEmbed(invokedMessage, nextInQueue)
+        await this.createSongEmbed(nextInQueue)
         
         
         /**
@@ -352,7 +299,9 @@ module.exports = class MusicController {
             logger.log("info", "Trying to create Audio Resource." )    
             const resource = await spawnAudioResource(nextInQueue);
             console.log("Got resources")
-            this.audioPlayer.play(resource, { volume: MusicController.volume });          
+            await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
+            
+            return
             
         } catch (error) {
             logger.log("error", "Error occured while trying to create Audio Resource.", error )  
@@ -366,8 +315,20 @@ module.exports = class MusicController {
 
     }
 
-    skip(invokedMessage, skipAmount) {
+    async skip(skipAmount) {
         
+        this.skipping = true
+        for (let i = 1; i < skipAmount; i++) {
+            this.queue.shift()
+        }
+
+        await this.playNext()
+        this.skipping = false
+
+        return
+
+
+
         if (this.queue.length == 0){
             this.command.reply("No playlist to skip ⚠")
             return
@@ -379,19 +340,19 @@ module.exports = class MusicController {
 
         if (!skipAmount || skipAmount === 1){
             this.command.reply(`Skipping ${this.getCurrentSong.videoTitle}`)
-            this.queue.shift()
-            this.playNext(invokedMessage)
+            
+            this.playNext()
 
         } else {
-            for (let i = 0; i < skipAmount; i++) {
+            for (let i = 1; i < skipAmount; i++) {
                 this.queue.shift()
             }
             this.command.reply(`Skipping ${skipAmount} songs`)
-            this.playNext(invokedMessage)
+            this.playNext()
         }
     }
     
-    stop(invokedMessage) {
+    stop() {
         try {
             this.clearQueue()
             logger.log("info", "Queue cleared")
@@ -412,7 +373,7 @@ module.exports = class MusicController {
             logger.log("error","Error while running MusicController.stop().", error)
         }
     }
-    pause(invokedMessage) {
+    pause() {
         
         try {
             
@@ -422,7 +383,7 @@ module.exports = class MusicController {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)
         }
     }
-    resume(invokedMessage) {
+    resume() {
 
         
         try {

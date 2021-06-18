@@ -2,7 +2,7 @@ const { raw  } = require('youtube-dl-exec')
 const { createAudioResource ,demuxProbe } = require('@discordjs/voice')
 module.exports = function spawnAudioResource(nextInQueue) {
     return new Promise((resolve, reject) => {
-        console.log(nextInQueue.videoUrl)
+        
         const process = raw(
             nextInQueue.videoUrl,
             {

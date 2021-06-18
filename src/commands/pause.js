@@ -13,7 +13,7 @@ module.exports = async function (invokedMessage) {
     } else {
         await this.controller.MusicController.pause(invokedMessage)
         
-        this.reply("Player paused. /resume to continue playing.")
+        this.reply("⏸️ /resume to continue playing.")
     }
 
     

@@ -1,3 +1,4 @@
+const { clouderrorreporting_v1beta1 } = require("googleapis");
 
 module.exports = function (invokedMessage) {
 
@@ -7,19 +8,20 @@ module.exports = function (invokedMessage) {
         return
     }
 
-    let queue;
+    let queue,current;
 
     /**
      * If there is not Music Controller present or there are no songs in queue
      */
     try {
+        current = this.controller.MusicController.getCurrentSong()
         queue = this.controller.MusicController.queue
-        if (queue.length === 0) {
+        if (queue.length === 0 && !current) {
             this.reply("No songs in queue.")
             return
         }
     } catch (err) {
-        this.reply("No songs in queue.")
+        logger.log("error", "Error trying to get queue or current@queue.js", err)
 
         return
     }
@@ -27,15 +29,14 @@ module.exports = function (invokedMessage) {
 
     
     let response = "**Current queue:** " + " ```"
-    let counter = 0;
+    
+    response = response + "Playing: " + current.videoTitle + "\n\n";
+    let counter = 1;
     for (const song of queue) {
         let line = ""
-        if (counter === 0) {
-
-            line = "Playing:  " + song.videoTitle + "\n\n"
-        } else {
-            line = counter + "- " + song.videoTitle + "\n\n"
-        }
+        
+        line = counter + "- " + song.videoTitle + "\n\n"
+        
         counter += 1;
         response = response + line;
     }

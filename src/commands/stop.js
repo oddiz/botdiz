@@ -7,6 +7,6 @@ module.exports = async function (invokedMessage) {
     }
 
     await this.controller.MusicController.stop(invokedMessage)
-    this.reply("Stopped music player")
+    this.reply("⏹️")
 
 }

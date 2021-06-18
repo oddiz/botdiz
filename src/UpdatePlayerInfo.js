@@ -10,7 +10,7 @@ module.exports = class UpdatePlayerInfo {
         this.currentSong;
 
         this.quit = false
-        this.counter = 0
+        this.loopCount = 1
     }
 
     start() {
@@ -77,9 +77,9 @@ module.exports = class UpdatePlayerInfo {
                 }
                 
 
-                await this.messageToEdit.editReply({ embeds: [newEmbedMessage]})
-                console.log(`Message edited ${this.counter} times.`)
-                this.counter ++;
+                await this.messageToEdit.edit({ embeds: [newEmbedMessage]})
+                
+                this.loopCount ++;
 
             } catch (error) {
                 logger.log("error", "Error in update loop.", error)
