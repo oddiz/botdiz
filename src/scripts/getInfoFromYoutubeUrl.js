@@ -20,7 +20,7 @@ module.exports = function(videoUrl, callback) {
     //\?v=(.*)&|\?v=(.*)$
     let videoDuration = 0;
     
-    youtubedl(videoId, {
+    youtubedl(videoUrl, {
         s: true,
         e: true,
         getThumbnail: true,
