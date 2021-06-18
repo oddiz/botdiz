@@ -55,4 +55,8 @@ client.on("interaction", interaction => {
     guildController.handleInteraction(interaction);
 })
 
+client.on("rateLimit", data => {
+    console.log(data)
+})
+
 client.login(process.env.DISCORD_TOKEN)

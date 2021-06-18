@@ -10,7 +10,7 @@ module.exports = class UpdatePlayerInfo {
         this.currentSong;
 
         this.quit = false
-
+        this.counter = 0
     }
 
     start() {
@@ -75,8 +75,11 @@ module.exports = class UpdatePlayerInfo {
                         .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
                     
                 }
-    
-                this.messageToEdit.editReply({ embeds: [newEmbedMessage]})
+                
+
+                await this.messageToEdit.editReply({ embeds: [newEmbedMessage]})
+                console.log(`Message edited ${this.counter} times.`)
+                this.counter ++;
 
             } catch (error) {
                 logger.log("error", "Error in update loop.", error)
