@@ -4,10 +4,13 @@ module.exports = function (invokedMessage, skipAmount) {
 
     if (!this.controller.MusicController) {
         this.reply("Bot is currently not playing.")
-
+        
         return 
     }
-
+    const currentSong = this.controller.MusicController.getCurrentSong()
+    if (!currentSong) {
+        this.reply("Bot is currently not playing.")
+    }
 
     if (arguments.length > 2) {
         this.wrongUsage(invokedMessage, this.name, "Too many arguments for skip.")
@@ -19,19 +22,23 @@ module.exports = function (invokedMessage, skipAmount) {
             if (skipAmountInt >= 2) {
                 this.controller.MusicController.skip(skipAmountInt)
                 this.reply(`Skipping ${skipAmountInt} songs.`)
-            } else {
+            } else if(skipAmountInt == 1) {
+                this.reply(`Skipping ${currentSong.videoTitle}`)
+                this.controller.MusicController.skip(1)
+
+            } else if (skipAmountInt == 0) {
+                this.wrongUsage(invokedMessage, this.name, "Huh?")
+
+                return
+            
+            } else{
                 this.wrongUsage(invokedMessage, this.name, "Can't skip back in time.")
 
                 return
             }
         } else if (skipAmount === "" || arguments.length === 1){
-            const currentSong = this.controller.MusicController.getCurrentSong()
-            if (currentSong) {
-                this.reply(`Skipping ${currentSong.videoTitle}`)
+            this.reply(`Skipping ${currentSong.videoTitle}`)
                 this.controller.MusicController.skip(1)
-            } else {
-                this.reply("Bot is currently not playing.")
-            }
 
             return
         } else {

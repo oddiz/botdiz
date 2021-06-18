@@ -35,6 +35,12 @@ module.exports = async function(invokedMessage, ...args) {
         //this.controller.MusicController.on("error", console.warn)
     }
 
+    if(this.controller.MusicController.queueLock) {
+        this.reply("Already processing queue try again in moment.")
+        
+        return
+    }
+    this.controller.MusicController.queueLock = true
     let videoUrl, searchMode
     const self = this;
     searchMode = true
@@ -60,6 +66,7 @@ module.exports = async function(invokedMessage, ...args) {
                 //invokedMessage.channel.send("Video found: " + result.videoUrl)
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
                     this.controller.MusicController.addToQueue(result2, invokedMessage)
+                    this.controller.MusicController.queueLock = false
                     this.controller.MusicController.processQueue(invokedMessage);
                 })
 
@@ -140,7 +147,8 @@ module.exports = async function(invokedMessage, ...args) {
                 self.controller.MusicController.addToQueue(package, invokedMessage)
                 
             }
-            self.reply("Playlist added to queue.")
+            
+            
             self.controller.MusicController.processQueue(invokedMessage);
             return true
         }
@@ -157,6 +165,7 @@ module.exports = async function(invokedMessage, ...args) {
         if (videoUrl.host.includes("youtube.com")){
             getInfoFromYoutubeUrl(videoUrl.href, result => {
                 this.controller.MusicController.addToQueue(result, invokedMessage)
+                this.controller.MusicController.queueLock = false
                 this.controller.MusicController.processQueue(invokedMessage);
                 
                 return

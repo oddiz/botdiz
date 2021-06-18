@@ -142,8 +142,10 @@ module.exports = class MusicController {
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
             this.command.reply("Added to queue")
+            this.queueLock = false
 			return;
 		} else if (this.audioPlayer.state.status == AudioPlayerStatus.Idle){
+            this.queueLock = false
             this.playNext();
 
             return
