@@ -13,3 +13,8 @@
         - play discover weekly
         - play random song, backing track
     - random game from steam
+
+## BUGS
+
+    - status puts in wrong channel
+    

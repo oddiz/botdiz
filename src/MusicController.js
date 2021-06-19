@@ -365,13 +365,13 @@ module.exports = class MusicController {
             this.UpdatePlayerInfo.stop()
             logger.log("info", "Player updater stopped")
             
-            this.voiceConnection.destroy();
-            logger.log("info", "Voice connection destroyed.")
+            //this.voiceConnection.destroy();
+            //logger.log("info", "Voice connection destroyed.")
 
-            this.controller.MusicController = null
-            logger.log("info", "Music Controller destroyed")
+            //this.controller.MusicController = null
+            //logger.log("info", "Music Controller destroyed")
 
-            logger.log("info", "Stopped music player and destroyed MusicController")
+            //logger.log("info", "Stopped music player and destroyed MusicController")
         } catch (error) {
             logger.log("error","Error while running MusicController.stop().", error)
         }

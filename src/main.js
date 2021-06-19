@@ -1,5 +1,6 @@
 require('dotenv').config()
 
+const { logger } = require("./logger")
 const Discord = require('discord.js')
 const client = new Discord.Client( { intents: [
     Discord.Intents.ALL
@@ -9,17 +10,7 @@ const MsgHandler = require('./MessageHandler.js');
 const MusicController = require('./MusicController');
 const Ctrl = require('./Controller.js');
 let GuildControllers = []
-/*
-const winston = require('winston')
-const logger = winston.createLogger({
-	transports: [
-		new winston.transports.Console(),
-		new winston.transports.File({ filename: 'log' }),
-	],
-	format: winston.format.printf(log => `[${log.level.toUpperCase()}] - ${log.message}`),
-});
-*/
-const { logger } = require("./logger")
+
 
 client.on('ready', () => {
     client.user.setActivity(`/help`, {type: 'LISTENING'})

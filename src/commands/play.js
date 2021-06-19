@@ -24,7 +24,7 @@ module.exports = async function(invokedMessage, ...args) {
     }
     //if no music controller active
     if (!this.controller.MusicController) {
-        this.controller.MusicController = new MusicController(this.controller, this, joinVoiceChannel({
+        this.controller.MusicController = new MusicController(this.controller, this, joinVoiceChannel({ 
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
