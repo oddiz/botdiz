@@ -1,5 +1,5 @@
 const { logger } = require("./logger");
-
+const { MessageEmbed } = require('discord.js')
 module.exports = class Controller {
     
     
@@ -54,13 +54,22 @@ module.exports = class Controller {
 
         const msgObj = new this.MsgHandler(message, this.PREFIX);
         const responseObj = msgObj.run()
-
+        
         /*
         {
             command: this.command,
             args: this.args
         } 
         */
+        let newEmbed = new MessageEmbed
+        newEmbed.addField(`/${responseObj.command} kullan`,
+                        "Botdiz akıllandı, artık komutlar için / kullanıyor."
+                        )
+                .setColor("#e9b463")
+                        
+       message.channel.send({ embeds: [newEmbed]})
+
+       return
 
         if (this.debugMode) {
             const response = `Command: ${responseObj.command}, Args: ${responseObj.args}`
