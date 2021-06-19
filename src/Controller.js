@@ -24,7 +24,14 @@ module.exports = class Controller {
         
         const populateCommands = require('./botCommands')
         this.commands = populateCommands(this)
-        this.deploySlashCommands()
+        this.guild.commands.fetch().then( commands => {
+            if (commands.size > 0) {
+                //
+            } else {
+                logger.log("info", "Deploying slash commands")
+                this.deploySlashCommands()
+            }
+        })
     }
 
     deploySlashCommands() {

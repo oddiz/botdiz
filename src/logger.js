@@ -2,10 +2,28 @@ const winston = require('winston')
 
 const logger = winston.createLogger({
 	transports: [
-		new winston.transports.Console(),
-		new winston.transports.File({ filename: 'log' }),
+		new winston.transports.Console({
+            timestamp: () => (new Date()).toLocaleTimeString(),
+            format: winston.format.combine(
+                        winston.format.colorize(),
+                        winston.format.simple()
+                    )
+        }),
+		new winston.transports.File({ 
+            filename: 'log',
+            format: winston.format.simple()
+        }),
 	],
-	format: winston.format.printf(log => `[${log.level.toUpperCase()}] - ${log.message}`),
+	
+    
+
 });
+
+winston.addColors({
+    error: 'red',
+    warn: 'yellow',
+    info: 'cyan',
+    debug: 'green'
+})
 
 exports.logger = logger
