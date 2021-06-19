@@ -4,11 +4,11 @@ module.exports = class Controller {
     
     
     
-    constructor(discord, client, MsgHandler) {
+    constructor(discord, client, MsgHandler, guild) {
 
         this.PREFIX = "!"
         this.debugMode = false
-
+        this.guild = guild
         this.discord = discord
         this.client = client;
         this.MsgHandler = MsgHandler;
@@ -21,12 +21,25 @@ module.exports = class Controller {
     }
 
     init() {
-        this.client.on('ready', () => {
-            this.client.user.setActivity(`${this.PREFIX}help`, {type: 'LISTENING'})
-        });
+        
         const populateCommands = require('./botCommands')
         this.commands = populateCommands(this)
+        this.deploySlashCommands()
+    }
+
+    deploySlashCommands() {
+        let slashCommands = [];
+
+        for (const command of this.commands) {
+            slashCommands.push(command.convertSlashCommand())
+        }
         
+        this.guild.commands.set(slashCommands)
+    }
+
+    destroy() {
+        this.MusicController?.stop();
+        this.MusicController = null;
     }
     
     handleMessage(message) {
