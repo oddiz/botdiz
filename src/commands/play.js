@@ -23,13 +23,8 @@ module.exports = async function(invokedMessage, ...args) {
         
         return
     }
-    //if no music controller active
-    if (!this.controller.MusicController) {
-        
-        this.controller.MusicController = new MusicController(this.controller, this)
 
-        //this.controller.MusicController.on("error", console.warn)
-    }
+
     this.controller.MusicController.command = this
 
     const botVoiceChannel = invokedMessage.guild.me.voice.channel
@@ -102,6 +97,19 @@ module.exports = async function(invokedMessage, ...args) {
         
                 this.controller.MusicController.setVoiceConnection(voiceConnection)
             }
+
+        } else if (!this.controller.MusicController.voiceConnection) {
+            //bot is in same voice channel but it doesn't have a voice connection
+
+            let voiceConnection = await joinVoiceChannel({ 
+                channelId: memberVoiceChannel.id,
+                guildId: memberVoiceChannel.guild.id,
+                adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
+                selfMute: false,
+                selfDeaf: false
+            })
+
+            this.controller.MusicController.setVoiceConnection(voiceConnection)
         }
     }
 
@@ -233,7 +241,7 @@ module.exports = async function(invokedMessage, ...args) {
                 self.controller.MusicController.addToQueue(package)
                 
             }
-            this.reply("Playlist added 👍")
+            self.reply("Playlist added 👍")
             self.controller.MusicController.queueLock = false
             self.controller.MusicController.processQueue();
             return 

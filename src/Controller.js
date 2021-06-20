@@ -19,6 +19,9 @@ module.exports = class Controller {
         this.client.application.fetch().then((app) => {
             this.oddiz = app.owner
         })
+
+        this.roleColor = guild.me.roles?.color?.color || "#e9b463"
+        console.log(this.roleColor)
     }
 
     init() {

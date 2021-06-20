@@ -30,12 +30,6 @@ module.exports = class MusicController {
         this.UpdatePlayerInfo.start()
         this.lastInvokedMessage;
 
-        this.audioPlayer = createAudioPlayer({
-            behaviors: {
-                noSubscriber: NoSubscriberBehavior.Stop,
-                maxMissedFrames: Math.round(5000 / 20)
-            }
-        })
         this.audioPlayerStatus;
 
         this.voiceConnection; 
@@ -48,6 +42,88 @@ module.exports = class MusicController {
         
         
         
+        
+
+	
+    }
+
+    setVoiceConnection(VoiceConnection) {
+        
+        this.audioPlayer = createAudioPlayer({
+            behaviors: {
+                noSubscriber: NoSubscriberBehavior.Stop,
+                maxMissedFrames: Math.round(5000 / 20)
+            }
+        })
+
+        this.voiceConnection = VoiceConnection
+        this.voiceConnection.subscribe(this.audioPlayer);
+        
+
+        this.voiceConnection.on('stateChange', async (_, newState) => {
+            this.voiceConnectionState = newState.status
+            
+			if (newState.status === VoiceConnectionStatus.Disconnected) {
+				if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
+                    
+					/*
+						If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
+						but there is a chance the connection will recover itself if the reason of the disconnect was due to
+						switching voice channels. This is also the same code for the bot being kicked from the voice channel,
+						so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
+						the voice connection.
+					*/
+					try {
+						await entersState(this.voiceConnection, VoiceConnectionStatus.Connecting, 5000);
+						// Probably moved voice channel
+					} catch {
+						this.voiceConnection.destroy();
+						// Probably removed from voice channel
+					}
+				} else if (this.voiceConnection.reconnectAttempts < 5) {
+                    
+					/*
+						The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
+					*/
+					await wait((this.voiceConnection.reconnectAttempts + 1) * 5000);
+                    logger.log("error", `Voice connection encountered error. Trying to connect again. Attempt ${this.voiceConnection.reconnectAttempts} / 5`)
+					this.voiceConnection.reconnect();
+				} else {
+                    
+					/*
+						The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
+					*/
+                    logger.log("error", `Couldn't reconnect. Destroying voice connection.`)
+					this.voiceConnection.destroy();
+				}
+			} else if (newState.status === VoiceConnectionStatus.Destroyed) {
+                
+				/*
+					Once destroyed, stop the controller
+				*/
+				this.stop();
+			} else if (
+				!this.readyLock &&
+				(newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
+			) {
+                
+				/*
+					In the Signalling or Connecting states, we set a 20 second time limit for the connection to become ready
+					before destroying the voice connection. This stops the voice connection permanently existing in one of these
+					states.
+				*/
+                
+				this.readyLock = true;
+				try {
+					await entersState(this.voiceConnection, VoiceConnectionStatus.Ready, 20000);
+				} catch {
+					if (this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) this.voiceConnection.destroy();
+				} finally {
+					this.readyLock = false;
+				}
+			}
+		});
+
         // Configure audio player
 		this.audioPlayer.on('stateChange', (oldState, newState) => {
             this.audioPlayerStatus = newState.status
@@ -80,69 +156,6 @@ module.exports = class MusicController {
 
 		this.audioPlayer.on('error', (error) => logger.log("error", "Audio player error :", error));
 
-	
-    }
-
-    setVoiceConnection(VoiceConnection) {
-        this.voiceConnection = VoiceConnection
-        this.voiceConnection.subscribe(this.audioPlayer);
-
-        this.voiceConnection.on('stateChange', async (_, newState) => {
-            this.voiceConnectionState = newState.status
-			if (newState.status === VoiceConnectionStatus.Disconnected) {
-				if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
-					/*
-						If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
-						but there is a chance the connection will recover itself if the reason of the disconnect was due to
-						switching voice channels. This is also the same code for the bot being kicked from the voice channel,
-						so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
-						the voice connection.
-					*/
-					try {
-						await entersState(this.voiceConnection, VoiceConnectionStatus.Connecting, 5000);
-						// Probably moved voice channel
-					} catch {
-						this.voiceConnection.destroy();
-						// Probably removed from voice channel
-					}
-				} else if (this.voiceConnection.reconnectAttempts < 5) {
-					/*
-						The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
-					*/
-					await wait((this.voiceConnection.reconnectAttempts + 1) * 5000);
-                    logger.log("error", `Voice connection encountered error. Trying to connect again. Attempt ${this.voiceConnection.reconnectAttempts} / 5`)
-					this.voiceConnection.reconnect();
-				} else {
-					/*
-						The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
-					*/
-                    logger.log("error", `Couldn't reconnect. Destroying voice connection.`)
-					this.voiceConnection.destroy();
-				}
-			} else if (newState.status === VoiceConnectionStatus.Destroyed) {
-				/*
-					Once destroyed, stop the controller
-				*/
-				this.stop();
-			} else if (
-				!this.readyLock &&
-				(newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
-			) {
-				/*
-					In the Signalling or Connecting states, we set a 20 second time limit for the connection to become ready
-					before destroying the voice connection. This stops the voice connection permanently existing in one of these
-					states.
-				*/
-				this.readyLock = true;
-				try {
-					await entersState(this.voiceConnection, VoiceConnectionStatus.Ready, 20000);
-				} catch {
-					if (this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) this.voiceConnection.destroy();
-				} finally {
-					this.readyLock = false;
-				}
-			}
-		});
     }
 
     addToQueue(song) {
@@ -162,7 +175,7 @@ module.exports = class MusicController {
 
     async processQueue() {
 
-
+        console.log(this.audioPlayer.state.status)
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
             
@@ -207,56 +220,75 @@ module.exports = class MusicController {
         }
     }
 
-    async processNextSong() {
-        try {
-            //console.log(self)
-            if (this.queue.length === 0) {
-                this.command.reply("Queue ended, stopping player 🛑", {new: true})
-
-                this.stop()
-                
-                return false
-            }   
-            let nextInQueue = this.queue[0];
-            this.queueLock = true
-            if (nextInQueue.isSpotify) {
-                //if came from spotify link
-                //only videoArtist, videoTitle, isSpotify present
-                const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
-    
-                const query = nextInQueue.videoTitle
-                
-                searchYT(query, 1, (result) => {
-                                            
-                    if (result) {
-                        //invokedMessage.channel.send("Video found: " + result.videoUrl)
-                        getInfoFromYoutubeUrl(result.videoUrl, result => {
-                            nextInQueue = result;
-                            this.updateCurrentSong(nextInQueue);
-                            
-                            this.queueLock = false
-                            this.queue.shift()
-                            return nextInQueue
-                        })
-    
-                    } else {
-                        console.error("Error getting YT info from: "+ query)
-                        console.error("Error from music COntroller play next()")
-                    }
-                })
-    
-            } else {
-                this.queueLock = false
-                this.updateCurrentSong(nextInQueue);
-                this.queue.shift()
-                return nextInQueue
-            }
+    processNextSong() {
+        return new Promise((resolve, reject) => {
             
-        } catch (error) {
+            try {
+                //console.log(self)
+                if (this.queue.length === 0) {
+                    this.command.reply("Queue ended, stopping player 🛑", {new: true})
+    
+                    this.stop()
+                    
+                    resolve(false)
+                }   
+                let nextInQueue = this.queue[0];
+                this.queueLock = true
+                if (nextInQueue.isSpotify) {
+                    //if came from spotify link
+                    //only videoArtist, videoTitle, isSpotify present
+                    const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
+        
+                    const query = nextInQueue.videoTitle + " " +nextInQueue.videoArtist
+                    
+                    searchYT(query, 1, (result) => {
+                                                
+                        if (result) {
+                            //invokedMessage.channel.send("Video found: " + result.videoUrl)
+                            getInfoFromYoutubeUrl(result.videoUrl, result => {
+                                nextInQueue = result;
+                                this.updateCurrentSong(nextInQueue);
+                                
+                                this.queueLock = false
+                                this.queue.shift()
+    
+                                console.log(nextInQueue, "1")
+                                resolve(nextInQueue)
+                            })
+        
+                        } else {
+                            console.error("Error getting YT info from: "+ query)
+                            console.error("Error from music COntroller play next()")
+                        }
+                    })
+        
+                } else {
+                    this.queueLock = false
+                    this.updateCurrentSong(nextInQueue);
+                    this.queue.shift()
+                    resolve(nextInQueue)
+                }
+            } catch (error) {
+                logger.log("error", "Error in processNextSong()", error)
+                reject(error)
+            }
+        
+        
+        
+        
+        
+        
+        
+        })
+            
+        
+
+
+
             logger.log("error", "ERROR while processing the queue.")
             
             return false
-        }
+        
     }
 
     async createSongEmbed(currentSong) {
@@ -266,7 +298,7 @@ module.exports = class MusicController {
         let embedMessage = new MessageEmbed()
         
         embedMessage
-            .setColor("#e9b463")
+            .setColor(this.controller.roleColor)
             .addField("Now Playing: ",`${currentSong.videoTitle}`)
             .setTimestamp()
 
@@ -307,6 +339,8 @@ module.exports = class MusicController {
     async playNext() {
         const nextInQueue = await this.processNextSong()
 
+        console.log(nextInQueue, "2")
+        
         if (!nextInQueue) {
             //no song is next
             return

@@ -36,7 +36,7 @@ module.exports = class UpdatePlayerInfo {
 
                 let newEmbed = new MessageEmbed()
                     newEmbed = newEmbed
-                    .setColor("#e9b463")
+                    .setColor(this.MusicController.controller.roleColor)
                     .addField("Now Playing: ",`${this.currentSong.videoTitle}`)
                     .setTimestamp()
                 if(this.currentSong.videoThumbnailUrl) {

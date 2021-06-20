@@ -27,7 +27,7 @@ module.exports = function (invokedMessage) {
 
 
     
-    let response = "**Current queue:** \n" + " ```apache"
+    let response = "**Current queue:**" + " ```apache\n"
     
     response = response + "Playing: " + current.videoTitle + "\n\n";
     let counter = 1;

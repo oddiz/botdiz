@@ -15,10 +15,13 @@
     - random game from steam
     - leave channel after everyone leaves + kill music player
     - queue page with buttons
+    - oddiz Embed Class (set color to role color, add easy way to print messages in style - even only string)
+    - bot maintainer: 
+        - leave voice if no one is in it after x minutes
+
 ## BUGS
 
     * After disabling channel leave:
 
-        - youtube playlist didn't play
-        - spotift track didn't play
+        - 
         - 
