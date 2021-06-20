@@ -65,9 +65,9 @@ module.exports = async function(invokedMessage, ...args) {
             if (result) {
                 //invokedMessage.channel.send("Video found: " + result.videoUrl)
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
-                    this.controller.MusicController.addToQueue(result2, invokedMessage)
+                    this.controller.MusicController.addToQueue(result2)
                     this.controller.MusicController.queueLock = false
-                    this.controller.MusicController.processQueue(invokedMessage);
+                    this.controller.MusicController.processQueue();
                 })
 
             } else {
@@ -144,17 +144,17 @@ module.exports = async function(invokedMessage, ...args) {
                 }
                 
 
-                self.controller.MusicController.addToQueue(package, invokedMessage)
+                self.controller.MusicController.addToQueue(package)
                 
             }
             
-            
-            self.controller.MusicController.processQueue(invokedMessage);
-            return true
+            this.controller.MusicController.queueLock = false
+            self.controller.MusicController.processQueue();
+            return 
         }
         await getYtPlaylist()
 
-        return true
+        return 
         
            
     } else {
@@ -211,8 +211,9 @@ module.exports = async function(invokedMessage, ...args) {
                                     }
                                     this.controller.MusicController.addToQueue(package, invokedMessage)
                                 }
-                                this.reply("Playlist added to queue.")
-                                this.controller.MusicController.processQueue(invokedMessage);
+                                self.reply("Playlist added to queue.")
+                                self.controller.MusicController.queueLock = false
+                                self.controller.MusicController.processQueue(invokedMessage);
                             }, function(err) {
                                 logger.log("error", 'Something went wrong!', err);
                             });
@@ -253,8 +254,9 @@ module.exports = async function(invokedMessage, ...args) {
                                     videoTitle: songName,
                                     isSpotify: isSpotify
                                 }
-                                this.controller.MusicController.addToQueue(package, invokedMessage)
-                                this.controller.MusicController.processQueue(invokedMessage);
+                                self.controller.MusicController.addToQueue(package)
+                                self.controller.MusicController.queueLock = false
+                                self.controller.MusicController.processQueue();
                                 /*     
                                     //
                                     //    videoId: "123", 

@@ -7,6 +7,9 @@ module.exports = function (invokedMessage, skipAmount) {
         
         return 
     }
+    //set music controller's reply depending on this command
+    this.controller.MusicController.command = this
+    
     const currentSong = this.controller.MusicController.getCurrentSong()
     if (!currentSong) {
         this.reply("Bot is currently not playing.")

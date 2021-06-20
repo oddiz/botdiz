@@ -13,7 +13,9 @@ module.exports = function (invokedMessage) {
             const currentSong = this.controller.MusicController.getCurrentSong()
 
             
+            this.controller.MusicController.command = this
             this.controller.MusicController.createSongEmbed(currentSong)
+            
             
         }
     }

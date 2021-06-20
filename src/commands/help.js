@@ -9,10 +9,9 @@ module.exports = function(invokedMessage, commandName) {
     const Discord = this.controller.discord
     let embedMessage = new Discord.MessageEmbed()
     const PREFIX = this.controller.PREFIX
-
     embedMessage = embedMessage
         .setColor("#e9b463")
-        .setThumbnail("https://i.imgur.com/pW7874x.jpeg")
+        .setThumbnail(this.controller.client.user.avatarURL())
         .setTimestamp()
     if (commandName) {
         const foundCommand = this.controller.commands.find( ( { name } ) => name === commandName )

@@ -248,7 +248,8 @@ module.exports = class MusicController {
                 .setThumbnail(currentSong.videoThumbnailUrl)
         }
         
-        await this.command.reply( { content: "▶️" })
+        console.log(this.command)
+        await this.command.reply( { content: "ヾ(⌒ー⌒)ノ" })
         botMessage = await this.command.reply( { embeds: [embedMessage]}, { new:true })
         
         
