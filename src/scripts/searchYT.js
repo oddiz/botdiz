@@ -10,23 +10,30 @@ module.exports = async function (query, maxResults = 1, callback) {
 
 
     ytsr(filter1.url, { limit: maxResults }).then(result => {
+        try {
+            const foundVid = result.items[0]
+            if (foundVid.type === "video") {
+                videoUrl = foundVid.url;
+                videoId = foundVid.id;
+                videoTitle = foundVid.title;
+                videoThumbnailUrl = foundVid.bestThumbnail.url
+                
+            }
+            
+            const package = {
+                videoUrl: videoUrl,
+                videoId: videoId,
+                videoTitle: videoTitle,
+                videoThumbnailUrl:videoThumbnailUrl
+            }
 
-        const foundVid = result.items[0]
-        if (foundVid.type === "video") {
-            videoUrl = foundVid.url;
-            videoId = foundVid.id;
-            videoTitle = foundVid.title;
-            videoThumbnailUrl = foundVid.bestThumbnail.url
+            callback(package)
+            
+        } catch (error) {
+            
+            callback(false)
             
         }
-        
-        const package = {
-            videoUrl: videoUrl,
-            videoId: videoId,
-            videoTitle: videoTitle,
-            videoThumbnailUrl:videoThumbnailUrl
-        }
-        callback(package)
     })
 
     // const { google } = require("googleapis");

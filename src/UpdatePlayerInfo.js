@@ -44,7 +44,7 @@ module.exports = class UpdatePlayerInfo {
                         .setThumbnail(this.currentSong.videoThumbnailUrl)
                 }
     
-                const streamtime = this.MusicController.audioPlayer._state.playbackDuration;
+                const streamtime = this.MusicController.audioPlayer._state.playbackDuration || 0;
                 const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
                 const streamMins = Math.floor(streamtime / (1000 * 60) % 60)
                 const streamSecs = Math.floor(streamtime / 1000 % 60)

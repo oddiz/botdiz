@@ -132,7 +132,7 @@ module.exports = async function(invokedMessage, ...args) {
         //link is passed
         videoUrl = new URL(arguments[1])
         searchMode = false
-        isYoutubePlaylist = (videoUrl.href.includes("list") || videoUrl.href.includes("playlist")) && !videoUrl.href.includes("&index")
+        isYoutubePlaylist = (videoUrl.href.includes("list") || videoUrl.href.includes("playlist")) && !videoUrl.href.includes("&index") && videoUrl.href.includes("youtube")
 
     } catch (error) {
         //no link passed
@@ -258,10 +258,10 @@ module.exports = async function(invokedMessage, ...args) {
         //if link is youtube
         if (videoUrl.host.includes("youtube.com")){
             getInfoFromYoutubeUrl(videoUrl.href, result => {
-                this.controller.MusicController.addToQueue(result, invokedMessage)
+                this.controller.MusicController.addToQueue(result)
                 this.controller.MusicController.queueLock = false
                 this.reply(`Added ${result.videoTitle}`)
-                this.controller.MusicController.processQueue(invokedMessage);
+                this.controller.MusicController.processQueue();
                 
                 return
             })
@@ -304,11 +304,11 @@ module.exports = async function(invokedMessage, ...args) {
                                         videoTitle: videoTitle,
                                         isSpotify: true
                                     }
-                                    this.controller.MusicController.addToQueue(package, invokedMessage)
+                                    self.controller.MusicController.addToQueue(package)
                                 }
                                 self.reply("Playlist added to queue 👍")
                                 self.controller.MusicController.queueLock = false
-                                self.controller.MusicController.processQueue(invokedMessage);
+                                self.controller.MusicController.processQueue();
                             }, function(err) {
                                 logger.log("error", 'Something went wrong!', err);
                             });
@@ -353,8 +353,9 @@ module.exports = async function(invokedMessage, ...args) {
                                 const isSpotify = true
                                 
                                 const package = {
+                                    videoName: songName,
                                     videoArtist: artistName,
-                                    videoTitle: songName,
+                                    videoTitle: artistName + " - " + songName,
                                     isSpotify: isSpotify
                                 }
                                 self.controller.MusicController.addToQueue(package)

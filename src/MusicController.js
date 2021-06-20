@@ -175,7 +175,7 @@ module.exports = class MusicController {
 
     async processQueue() {
 
-        console.log(this.audioPlayer.state.status)
+        
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
             
@@ -239,7 +239,7 @@ module.exports = class MusicController {
                     //only videoArtist, videoTitle, isSpotify present
                     const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
         
-                    const query = nextInQueue.videoTitle + " " +nextInQueue.videoArtist
+                    const query = nextInQueue.videoTitle
                     
                     searchYT(query, 1, (result) => {
                                                 

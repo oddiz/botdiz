@@ -25,22 +25,26 @@ module.exports = function (invokedMessage) {
         return
     }
 
-
-    
-    let response = "**Current queue:**" + " ```apache\n"
-    
-    response = response + "Playing: " + current.videoTitle + "\n\n";
-    let counter = 1;
-    for (const song of queue) {
-        let line = ""
+    try {
+        let response = "**Current queue:**" + " ```apache\n"
         
-        line = counter + "- " + song.videoTitle + "\n\n"
+        response = response + "Playing: " + current.videoTitle + "\n\n";
+        let counter = 1;
+        for (const song of queue) {
+            let line = ""
+            
+            line = counter + "- " + song.videoTitle + "\n\n"
+            
+            counter += 1;
+            response = response + line;
+        }
+        response = response + "```"
         
-        counter += 1;
-        response = response + line;
+        this.reply(response)
+        
+    } catch (error) {
+        this.reply("Queue is probably bugged atm. Contact my dad.")
     }
-    response = response + "```"
     
-    this.reply(response)
 
 }
