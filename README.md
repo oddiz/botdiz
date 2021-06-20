@@ -14,9 +14,9 @@
         - play random song, backing track
     - random game from steam
     - leave channel after everyone leaves + kill music player
+    - queue page with buttons
 ## BUGS
 
-    - status puts in wrong channel
     * After disabling channel leave:
 
         - youtube playlist didn't play

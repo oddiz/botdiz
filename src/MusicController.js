@@ -20,10 +20,10 @@ const ytdl = require("ytdl-core");
 const prism = require('prism-media')
 const UpdatePlayerInfo = require('./UpdatePlayerInfo')
 module.exports = class MusicController {
-    constructor(controller, Command, voiceConnection) {
+    constructor(controller) {
         this.controller = controller;
         this.volume = 1
-        this.command = Command
+        this.command;
         this.readyLock = false;
         this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
         this.UpdatePlayerInfo = new UpdatePlayerInfo(this)
@@ -36,14 +36,59 @@ module.exports = class MusicController {
                 maxMissedFrames: Math.round(5000 / 20)
             }
         })
-        this.voiceConnection = voiceConnection; 
-        
+        this.audioPlayerStatus;
+
+        this.voiceConnection; 
+        this.voiceConnectionState;
+
         this.currentSong;
         this.queue = [];
 
-        voiceConnection.subscribe(this.audioPlayer);
         
+        
+        
+        
+        // Configure audio player
+		this.audioPlayer.on('stateChange', (oldState, newState) => {
+            this.audioPlayerStatus = newState.status
+			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle && !this.skipping) {
+				// If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
+				// The queue is then processed to start playing the next track, if one is available.
+
+                
+                logger.log("info","Playing to idle state triggered.")
+
+                if(this.queue.length > 0) {
+                    logger.log("info", "Playing next in queue.")
+                    void this.playNext();
+                } else {
+                    logger.log("info","Nothing left in queue.")
+                    this.command.reply("Queue ended, stopping player 🛑", {new: true})
+                    this.stop()
+                    return
+                }
+
+
+                
+
+
+			} else if (newState.status === AudioPlayerStatus.Playing) {
+                // If the Playing state has been entered, then a new track has started playback.
+                console.log("Now playing!!!")
+			}
+		});
+
+		this.audioPlayer.on('error', (error) => logger.log("error", "Audio player error :", error));
+
+	
+    }
+
+    setVoiceConnection(VoiceConnection) {
+        this.voiceConnection = VoiceConnection
+        this.voiceConnection.subscribe(this.audioPlayer);
+
         this.voiceConnection.on('stateChange', async (_, newState) => {
+            this.voiceConnectionState = newState.status
 			if (newState.status === VoiceConnectionStatus.Disconnected) {
 				if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
 					/*
@@ -98,27 +143,6 @@ module.exports = class MusicController {
 				}
 			}
 		});
-        
-        // Configure audio player
-		this.audioPlayer.on('stateChange', (oldState, newState) => {
-			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle && !this.skipping) {
-				// If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
-				// The queue is then processed to start playing the next track, if one is available.
-
-                console.log("Playing to idle state change. Trying next in queue")
-                
-				void this.playNext();
-
-
-			} else if (newState.status === AudioPlayerStatus.Playing) {
-                // If the Playing state has been entered, then a new track has started playback.
-                console.log("Now playing!!!")
-			}
-		});
-
-		this.audioPlayer.on('error', (error) => logger.log("error", "Audio player error :", error));
-
-	
     }
 
     addToQueue(song) {
@@ -138,10 +162,10 @@ module.exports = class MusicController {
 
     async processQueue() {
 
-        if (this.queue.length)
+
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
-            this.command.reply("Added to queue")
+            
             this.queueLock = false
 			return;
 		} else if (this.audioPlayer.state.status == AudioPlayerStatus.Idle){
@@ -156,8 +180,12 @@ module.exports = class MusicController {
     
     getCurrentSong() {
      
-
-        return this.currentSong;
+        try {
+            return this.currentSong;
+        } catch (error) {
+            //if there is no current song
+            return false
+        }
             
       
     }
@@ -248,11 +276,13 @@ module.exports = class MusicController {
                 .setThumbnail(currentSong.videoThumbnailUrl)
         }
         
-        console.log(this.command)
         await this.command.reply( { content: "ヾ(⌒ー⌒)ノ" })
         botMessage = await this.command.reply( { embeds: [embedMessage]}, { new:true })
         
-        
+
+        if (this.UpdatePlayerInfo.quit) {
+            this.UpdatePlayerInfo.start()
+        }
         this.UpdatePlayerInfo.changeMessage(botMessage) 
         this.UpdatePlayerInfo.changeSong(currentSong) 
 
@@ -275,7 +305,6 @@ module.exports = class MusicController {
     }
 
     async playNext() {
-        console.log(this.queue)
         const nextInQueue = await this.processNextSong()
 
         if (!nextInQueue) {

@@ -3,9 +3,9 @@ require("dotenv").config()
 const searchYT = require("../scripts/searchYT")
 const getInfoFromYoutubeUrl = require("../scripts/getInfoFromYoutubeUrl")
 const axios = require('axios');
-const { logger } = require("../MessageHandler");
-const MusicController = require("../MusicController");
-const { joinVoiceChannel } = require("@discordjs/voice");
+const { logger } = require('../logger')
+
+const { joinVoiceChannel, AudioPlayerStatus } = require("@discordjs/voice");
 
 module.exports = async function(invokedMessage, ...args) {
 
@@ -16,24 +16,99 @@ module.exports = async function(invokedMessage, ...args) {
         return
     }
 
-    const voiceChannel = invokedMessage.member.voice.channel
+    const memberVoiceChannel = invokedMessage.member.voice.channel
     
-    if (!voiceChannel) {
+    if (!memberVoiceChannel) {
         this.reply("You are not in a voice channel.")
+        
         return
     }
     //if no music controller active
     if (!this.controller.MusicController) {
-        this.controller.MusicController = new MusicController(this.controller, this, joinVoiceChannel({ 
-            channelId: voiceChannel.id,
-            guildId: voiceChannel.guild.id,
-            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-            selfMute: false,
-            selfDeaf: false
-        }))
+        
+        this.controller.MusicController = new MusicController(this.controller, this)
 
         //this.controller.MusicController.on("error", console.warn)
     }
+    this.controller.MusicController.command = this
+
+    const botVoiceChannel = invokedMessage.guild.me.voice.channel
+    //discord.js/voice VoiceConnection object
+    //https://discordjs.github.io/voice/classes/voiceconnection.html
+    const botVoiceConnection = this.controller.MusicController.voiceConnection
+
+    // console.log({
+    //     memberVoiceChannel: memberVoiceChannel,
+    //     botVoiceChannel: botVoiceChannel,
+    //     botVoiceConnection: botVoiceConnection,
+    //     audioPlayerStatus: this.controller.MusicController.audioPlayerStatus
+    // })
+
+    /**
+     * if member vc = undefined  ✅
+     *      -> "you are not in vc", return
+     * 
+     * if bot vc = undefined ✅
+     *      -> join member vc
+     * 
+     * 
+     * if member vc = bot vc ✅
+     *      -> continue 
+     * 
+     * if member vc != bot vc: ✅
+     *      if bot is playing: ✅
+     *          -> bot is already playing, return
+     *      if bot is idle: ✅
+     *          -> join member voice channel
+     *          -> set musiccontroller voicechannel to new         
+     *          -> continue
+     */         
+    
+    if (!botVoiceChannel) {
+        logger.log("info", "Bot is not in a voice channel, joining now.")
+        
+        let voiceConnection = await joinVoiceChannel({ 
+            channelId: memberVoiceChannel.id,
+            guildId: memberVoiceChannel.guild.id,
+            adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
+            selfMute: false,
+            selfDeaf: false
+        })
+
+        this.controller.MusicController.setVoiceConnection(voiceConnection)
+
+    } else {
+        //bot is in a voice channel
+
+        if (memberVoiceChannel.id !== botVoiceChannel.id) {
+        logger.log("info", "Bot is in a voice channel but not in same member's")
+
+            if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Playing) {
+                logger.log("info", "Bot is already playing. Won't switch to new channel")
+
+                this.reply("Bot is already playing in another channel ❗")
+
+                return
+            } else if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Idle) {
+                logger.log("info", "Bot is not playing. Switching to new channel.")
+                
+                let voiceConnection = await joinVoiceChannel({ 
+                    channelId: memberVoiceChannel.id,
+                    guildId: memberVoiceChannel.guild.id,
+                    adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
+                    selfMute: false,
+                    selfDeaf: false
+                })
+        
+                this.controller.MusicController.setVoiceConnection(voiceConnection)
+            }
+        }
+    }
+
+        
+
+
+
 
     if(this.controller.MusicController.queueLock) {
         this.reply("Already processing queue try again in moment.")
@@ -41,6 +116,7 @@ module.exports = async function(invokedMessage, ...args) {
         return
     }
     this.controller.MusicController.queueLock = true
+    
     let videoUrl, searchMode
     const self = this;
     searchMode = true
@@ -67,6 +143,7 @@ module.exports = async function(invokedMessage, ...args) {
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
                     this.controller.MusicController.addToQueue(result2)
                     this.controller.MusicController.queueLock = false
+                    this.reply(`Added ${result2.videoTitle} 👍`)
                     this.controller.MusicController.processQueue();
                 })
 
@@ -74,6 +151,7 @@ module.exports = async function(invokedMessage, ...args) {
                 console.error("Error getting YT info from: "+ query)
                 console.error("Error from music COntroller play next()")
                 this.reply("Video not found.")
+                this.controller.MusicController.queueLock = false
             }
         })
 
@@ -96,8 +174,16 @@ module.exports = async function(invokedMessage, ...args) {
         async function getYtPlaylist(){
 
             let ytpl = require('ytpl');
-    
-            const playlist = await ytpl(playlistId, { limit: 25 });
+            let playlist;
+            try {
+                playlist = await ytpl(playlistId, { limit: 25 });
+            } catch (error) {
+                logger.log("error", "Error trying to get playlist info@play.js/ytpl()", "Error: ", error)
+                this.controller.MusicController.queueLock = false
+                
+                this.reply("Error while trying to add playlist... Contact goddiz 😟")
+                return
+            }
             /*Array of
             {
                 title: 'More Plastic x hayve - Feel Alive [NCS Release]',
@@ -147,8 +233,8 @@ module.exports = async function(invokedMessage, ...args) {
                 self.controller.MusicController.addToQueue(package)
                 
             }
-            
-            this.controller.MusicController.queueLock = false
+            this.reply("Playlist added 👍")
+            self.controller.MusicController.queueLock = false
             self.controller.MusicController.processQueue();
             return 
         }
@@ -166,6 +252,7 @@ module.exports = async function(invokedMessage, ...args) {
             getInfoFromYoutubeUrl(videoUrl.href, result => {
                 this.controller.MusicController.addToQueue(result, invokedMessage)
                 this.controller.MusicController.queueLock = false
+                this.reply(`Added ${result.videoTitle}`)
                 this.controller.MusicController.processQueue(invokedMessage);
                 
                 return
@@ -211,12 +298,20 @@ module.exports = async function(invokedMessage, ...args) {
                                     }
                                     this.controller.MusicController.addToQueue(package, invokedMessage)
                                 }
-                                self.reply("Playlist added to queue.")
+                                self.reply("Playlist added to queue 👍")
                                 self.controller.MusicController.queueLock = false
                                 self.controller.MusicController.processQueue(invokedMessage);
                             }, function(err) {
                                 logger.log("error", 'Something went wrong!', err);
                             });
+                    })
+                    .catch(err => {
+                        logger.log("error", "Error trying to get playlist info@play.js/spotifyApi()", "Error: ", error)
+                        self.controller.MusicController.queueLock = false
+                        
+                        self.reply("Error while trying to add playlist... Contact goddiz 😟")
+                        
+                        return
                     })
 
             } else if (parsed.type === "track"){
@@ -255,6 +350,7 @@ module.exports = async function(invokedMessage, ...args) {
                                     isSpotify: isSpotify
                                 }
                                 self.controller.MusicController.addToQueue(package)
+                                self.reply(`Added ${songName}`)
                                 self.controller.MusicController.queueLock = false
                                 self.controller.MusicController.processQueue();
                                 /*     
@@ -266,7 +362,11 @@ module.exports = async function(invokedMessage, ...args) {
                                 */
                                 
                             }).catch(error => {
-                                console.error("Error while using spotify AI. Error : " + error)
+                                logger.log("error", "Error while using spotify AI. Error : " + error)
+                                self.controller.MusicController.queueLock = false
+                                
+                                self.reply("Error while trying to add song... Contact goddiz 😟")
+                return
                             })
 
                         }, function(err) {

@@ -1,5 +1,4 @@
-const { clouderrorreporting_v1beta1 } = require("googleapis");
-
+const { logger } = require('../logger')
 module.exports = function (invokedMessage) {
 
     if (arguments.lenght > 2) {
@@ -14,8 +13,8 @@ module.exports = function (invokedMessage) {
      * If there is not Music Controller present or there are no songs in queue
      */
     try {
-        current = this.controller.MusicController.getCurrentSong()
-        queue = this.controller.MusicController.queue
+        current = this.controller.MusicController?.getCurrentSong()
+        queue = this.controller.MusicController?.queue
         if (queue.length === 0 && !current) {
             this.reply("No songs in queue.")
             return
@@ -28,7 +27,7 @@ module.exports = function (invokedMessage) {
 
 
     
-    let response = "**Current queue:** " + " ```"
+    let response = "**Current queue:** \n" + " ```apache"
     
     response = response + "Playing: " + current.videoTitle + "\n\n";
     let counter = 1;

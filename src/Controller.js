@@ -1,5 +1,6 @@
 const { logger } = require("./logger");
 const { MessageEmbed } = require('discord.js')
+const MusicController = require("./MusicController");
 module.exports = class Controller {
     
     
@@ -12,7 +13,7 @@ module.exports = class Controller {
         this.discord = discord
         this.client = client;
         this.MsgHandler = MsgHandler;
-        this.MusicController;
+        this.MusicController = new MusicController(this)
         this.commands = require('./botCommands')
 
         this.client.application.fetch().then((app) => {
