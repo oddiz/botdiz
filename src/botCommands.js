@@ -9,7 +9,7 @@ module.exports = function (Controller){
                 name: "deploy",
                 description: "Deploys slash commands. Must be server owner or goddiz.",
                 needArgs:false,
-                usage: "!deploy",
+                usage: "/deploy",
                 ignoreSlash:true
                 
             },
@@ -21,7 +21,7 @@ module.exports = function (Controller){
                 name: "debug",
                 description: "Toggles debug Mode",
                 needArgs:false,
-                usage: "!debug on/off or !debug"
+                usage: "/debug on/off or /debug"
             },
             require("./commands/debug")
         ),
@@ -31,7 +31,8 @@ module.exports = function (Controller){
                 name: "help",
                 description: "Shows available commands",
                 needArgs: false,
-                usage: "!help <command> or !help",
+                usage: "/help <command> or /help",
+                ephemeral: true,
                 options: [
                     {
                         type: "STRING",
@@ -49,7 +50,7 @@ module.exports = function (Controller){
                 name: "w2g",
                 description: "Creates a watch2gether room",
                 needArgs: true,
-                usage: "!w2g https://www.youtube.com/watch?v=<video id>\n\n!w2g badgers",
+                usage: "/w2g https://www.youtube.com/watch?v=<video id>\n\n/w2g badgers",
                 options: [
                     {
                         type: "STRING",
@@ -67,8 +68,9 @@ module.exports = function (Controller){
                 name: "play",
                 description: "Plays song from a link or finds from search.",
                 needArgs: true,
-                usage:"!play https://www.youtube.com/watch?v=<video id>\n\n!play https://open.spotify.com/track/<track id>\n\n!play best song in the world",
+                usage:"/play https://www.youtube.com/watch?v=<video id>\n\n/play https://open.spotify.com/track/<track id>\n\n/play best song in the world",
                 noBind: true,
+                ephemeral: false,
                 options: [
                     {
                         type: "STRING",
@@ -86,7 +88,8 @@ module.exports = function (Controller){
                 name: "clear",
                 description: "Clears channel. Use with caution!",
                 needArgs: true,
-                usage:"!clear <amount of message to delete>",
+                usage:"/clear <amount of message to delete>",
+                ephemeral: true,
                 options: [
                     {
                         type: "INTEGER",
@@ -104,7 +107,7 @@ module.exports = function (Controller){
                 name:"stop",
                 description: "Stops the music.",
                 needArgs: false,
-                usage: "!stop",
+                usage: "/stop",
                 noBind: true
             },
             require("./commands/stop")
@@ -115,7 +118,7 @@ module.exports = function (Controller){
                 name:"pause",
                 description: "Pauses the music.",
                 needArgs: false,
-                usage: "!pause",
+                usage: "/pause",
                 noBind: true
             },
             require("./commands/pause")
@@ -126,7 +129,7 @@ module.exports = function (Controller){
                 name:"resume",
                 description: "Stops the music.",
                 needArgs: false,
-                usage: "!resume",
+                usage: "/resume",
                 noBind: true
             },
             require("./commands/resume")
@@ -137,7 +140,7 @@ module.exports = function (Controller){
                 name:"queue",
                 description: "Shows current music queue",
                 needArgs: false,
-                usage: "!queue" 
+                usage: "/queue" 
             },
             require("./commands/queue")
         
@@ -148,8 +151,9 @@ module.exports = function (Controller){
                 name:"skip",
                 description: "Skips current song, or skips specified times",
                 needArgs: false,
-                usage:"!skip or !skip 4 (to skip 4 songs, including current one)",
+                usage:"/skip or /skip 4 (to skip to 4. song in queue)",
                 noBind:true,
+                ephemeral: true,
                 options: [
                     {
                         type: "INTEGER",
@@ -167,7 +171,8 @@ module.exports = function (Controller){
                 name: "status",
                 description: "Shows the status of current playing song",
                 needArgs: false,
-                usage: "!status",
+                usage: "/status",
+                ephemeral: true
         
             },
             require('./commands/status')
@@ -178,7 +183,7 @@ module.exports = function (Controller){
                 name:"epic",
                 description: "Shows current epic free deals.",
                 needArgs: false,
-                usage: "!epic",
+                usage: "/epic",
         
         
             },
@@ -190,7 +195,7 @@ module.exports = function (Controller){
                 name:"invite",
                 description: "Gets invite link for the bot to use in other servers.",
                 needArgs: false,
-                usage: "!invite"
+                usage: "/invite"
             },
             require("./commands/invite")
         )

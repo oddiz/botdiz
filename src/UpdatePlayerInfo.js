@@ -97,6 +97,12 @@ module.exports = class UpdatePlayerInfo {
      * @param {Message} message 
      */
     changeMessage(message) {
+        this.oldMessage = this.messageToEdit
+        try {
+            this.oldMessage.delete()
+        } catch (err) {
+            logger.log("error", "Error while trying to delete old embed message")
+        }
         this.messageToEdit = message
         this.quit = false;
     }

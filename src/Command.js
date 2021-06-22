@@ -25,6 +25,7 @@ module.exports = class Command {
         this.usage = config.usage;
         this.noBind = config.noBind || false;
         this.func = func;
+        this.ephemeral = config.ephemeral;
 
         this.options = false;
         if (config.options) {
@@ -45,7 +46,7 @@ module.exports = class Command {
         }
         
         if (isInteraction) {
-            await this.lastInvokedMessage.defer()
+            await this.lastInvokedMessage.defer({ ephemeral: this.ephemeral })
         }
 
         try {

@@ -24,9 +24,9 @@ module.exports = function (invokedMessage, skipAmount) {
         if (Number.isInteger(skipAmountInt)) {
             if (skipAmountInt >= 2) {
                 this.controller.MusicController.skip(skipAmountInt)
-                this.reply(`Skipping ${skipAmountInt} songs.`)
+                this.reply({ content: `Skipping ${skipAmountInt} songs.`, ephemeral: true })
             } else if(skipAmountInt == 1) {
-                this.reply(`Skipping ${currentSong.videoTitle}`)
+                this.reply( { content: `Skipping ${currentSong.videoTitle}`, ephemeral: true})
                 this.controller.MusicController.skip(1)
 
             } else if (skipAmountInt == 0) {
@@ -40,7 +40,7 @@ module.exports = function (invokedMessage, skipAmount) {
                 return
             }
         } else if (skipAmount === "" || arguments.length === 1){
-            this.reply(`Skipping ${currentSong.videoTitle}`)
+            this.reply({ content:`Skipping ${currentSong.videoTitle}`, ephemeral: true })
                 this.controller.MusicController.skip(1)
 
             return

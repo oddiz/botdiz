@@ -12,10 +12,14 @@
     - Play from youtube, spotify, soundcloud
         - play discover weekly
         - play random song, backing track
-    - random game from steam
-    - leave channel after everyone leaves + kill music player
-    - queue page with buttons
+
+    - random game from steam?
+
+    - song queue with buttons
+    - help command with buttons, categorize music commands together
     - oddiz Embed Class (set color to role color, add easy way to print messages in style - even only string)
+
+
     - bot maintainer: 
         - leave voice if no one is in it after x minutes
 

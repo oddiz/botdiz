@@ -74,7 +74,7 @@ module.exports = class Controller {
        message.channel.send({ embeds: [newEmbed]})
 
        return
-
+        /*
         if (this.debugMode) {
             const response = `Command: ${responseObj.command}, Args: ${responseObj.args}`
             message.channel.send(response)
@@ -88,8 +88,8 @@ module.exports = class Controller {
             }
             foundCommand.execute(message, responseObj.args)
         }
+        */
     }
-
     async handleInteraction(interaction) {
         if (interaction.user.bot) return;
 
