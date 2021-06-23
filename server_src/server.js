@@ -46,13 +46,14 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 wss.on('connection', function (ws, request, client) {
-    console.log(ws)
-    sendRandomNumbers(ws)
     
+    //sendRandomNumbers(ws)
+    
+    ws.send("Connected to Websocket")
     websocketClients.push(client)
     //console.log(`${client}, connected to web socket.`)
     ws.on('message', function message(msg){
-        //console.log(`Recieved message ${msg} from user ${client}`)
+        console.log(`Recieved message ${msg} from user ${client}`)
     })
 })
 
