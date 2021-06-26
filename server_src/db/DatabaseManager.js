@@ -10,12 +10,16 @@ module.exports = class DatabaseManager {
     }
 
     async connect() {
-
-        this.MongoClient.connect(this.dbUrl, {useNewUrlParser: true}, (err,client) => {
-            if (err) return console.log(err)
-
+        console.log(this.dbUrl)
+        this.MongoClient.connect(this.dbUrl, {useNewUrlParser: true, useUnifiedTopology: true}, (err,client) => {
+            if (err) {
+                //console.log(err)   
+                return false
+            }
             this.db = client.db("botdiz_db")
             console.log("Connected to mongo database: botdiz_db")
+
+            return this.db
         })
 
     }

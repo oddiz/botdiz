@@ -12,6 +12,7 @@ const Ctrl = require('./Controller.js');
 let GuildControllers = []
 
 
+
 client.on('ready', () => {
     client.user.setActivity(`/help`, {type: 'LISTENING'})
     for (const guild of client.guilds.cache) {
@@ -80,3 +81,8 @@ client.on("guildDelete", guild => {
 });
 
 client.login(process.env.DISCORD_TOKEN)
+
+module.exports = {
+    client: client,
+    GuildControllers: GuildControllers
+}

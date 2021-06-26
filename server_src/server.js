@@ -2,60 +2,59 @@ const express = require("express");
 const cors = require("cors")
 const app = express();
 const WebSocket = require('ws')
-
+const WsManager = require('./routes/Websocket')
+const DatabaseManager = require('./db/DatabaseManager')
+const RouteManager = require('./routes')
+const DiscordClient = require('../src/main').client
+const GuildControllers = require('../src/main').GuildControllers
+const session = require('cookie-session')
+require('dotenv').config()
 
 app.use(cors())
 
-app.use('/login', (req, res) => {
+const sessionParser = session({
+    saveUninitialized: false,
+    secret: process.env.SESSION_SECRET,
+    resave: false
+  });
 
-    //console.log(req)
+app.use(sessionParser)
 
-    res.send({
-        token: "test123"
-    });
-});
+async function init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers) {
+    //setup database
+    console.log("Setting up database.")
 
-app.use('/validate', (req, res) => {
-
-    //console.log(req)
-
-    let isValidated;
-    //check db and if token checks out
-    isValidated = true
-    //else send 
-    //isValidated = false
-    res.send({
-        isValidated: isValidated
-    });
-});
-
-const wss = new WebSocket.Server( {
-    noServer: true
-})
-
-const server = app.listen(8080, () => console.log("Api is running on port 8080"))
-
-let websocketClients = []
-
-server.on("upgrade", (request, socket, head) => {
-    console.log("server.on upgrade triggered..")
-
-    wss.handleUpgrade(request, socket, head, function(ws) {
-        wss.emit('connection', ws, request);
-    });
-});
-
-wss.on('connection', function (ws, request, client) {
+    const DbManager = new DatabaseManager
+    const db = await DbManager.connect();
+    if (!db) {
+        console.log("Unable to connect to db.")
+    }
     
-    //sendRandomNumbers(ws)
     
-    ws.send("Connected to Websocket")
-    websocketClients.push(client)
-    //console.log(`${client}, connected to web socket.`)
-    ws.on('message', function message(msg){
-        console.log(`Recieved message ${msg} from user ${client}`)
+    //serup routes
+    console.log("Initilizing Route Manager.")
+    const RouteMngr = new RouteManager (app, db)
+    RouteMngr.run()
+    console.log("Succesfull")
+
+    //setup wss
+    const wss = new WebSocket.Server( {
+        noServer: true
     })
-})
+
+    const server = app.listen(8080, () => console.log("Api is running on port 8080"))
+    
+    const websocketManager = new WsManager(server, wss, db, DiscordClient, GuildControllers, sessionParser)
+
+
+}
+
+init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers)
+
+
+
+
+
 
 const sendRandomNumbers = function(ws) {
     
