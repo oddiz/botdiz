@@ -29,7 +29,7 @@
     "ytsr": "^3.5.0"
   },
   "name": "botdiz",
-  "description": "- Voice recognition\r     - watch 2 gether implementation\r     - Play from youtube, spotify, soundcloud?\r         - Youtube playlists\r         - Spotify playlists + discover weekly",
+  "description": "A bot for discord by oddiz",
   "version": "0.1.0",
   "main": "src/main.js",
   "devDependencies": {
@@ -37,7 +37,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node .\\src\\main.js"
+    "start": "node .\\server_src\\server.js"
   },
   "author": "oddiz",
   "license": "MIT"

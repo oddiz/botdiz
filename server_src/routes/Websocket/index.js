@@ -1,10 +1,12 @@
-const Client = require('./Client')
-const uuid = require('uuid')
+const uuid = require('uuid');
+const MsgHandler = require('../../../src/MessageHandler');
+const ListenerManager = require('./ListenerManager')
 module.exports = class WebsocketManager {
     constructor(server, wss, db, DiscordClient, GuildControllers, sessionParser){
         this.server = server;
         this.WebsocketServer = wss;
         
+
         this.db = db
         this.connectedClients = new Map();
         this.client = DiscordClient
@@ -36,13 +38,19 @@ module.exports = class WebsocketManager {
         this.WebsocketServer.on('connection', (ws, request) => {
             const userId = request.session.userId;
             
-            this.connectedClients.set(userId, ws)
+            const clientListener = new ListenerManager(this, ws)
+
+            const client = {
+                websocket: ws,
+                clientListener: clientListener
+            }
+            this.connectedClients.set(userId, client)
             
             
             
             //console.log(`${client}, connected to web socket.`)
             ws.on('message', (msg) => {
-                this.handleWsMessage(ws, msg)
+                this.handleWsMessage(ws, msg, clientListener)
             })
 
             ws.on('close', ()=>{
@@ -54,47 +62,96 @@ module.exports = class WebsocketManager {
 
     }
 
-    async handleWsMessage(ws, msg) {
-        const commands= require('./remoteCommands')
-    
+    async handleWsMessage(ws, msg, clientListener) {
+        
+        
         const message = JSON.parse(msg)
         
         /**
          * msg structure:
+         *  type
+         *  userId
          *  token
          *  command
          *  params
          */
         
-        if(!(message.token && message.command)) {
+        if(!(message.token)) {
             console.log("Not a valid message")
             return
         }
 
-        
-
         //authenticate ...
+        
 
-        //find command
-        const result = await commands[message.command](...message.params)
+        if(message.type === "addListener") {
+            //console.log(message.listenerId, message.command, ...message.params)
+            /**
+             * msg structer:
+             *  type = addListener
+             *  listenerId 
+             *  token
+             *  command
+             *  params
+             */
 
-        //when a result comes back construct a reply
-        const reply = {
-            token: message.token,
-            command: message.command,
-            result: result
+            
+
+            clientListener.add(message.listenerId, message.command, message.params)
+
+            //console.log(JSON.stringify(clientListener))
+
+            return
         }
+
+        if(message.type === "clearListeners") {
+            clientListener.clearListeners()
+        }
+
+        if (message.type === "get"){
+            
+            const commands= require('./getCommands')
+
+            //find command
+            const result = await commands[message.command](...message.params)
+
+            //when a result comes back construct a reply
+            const reply = {
+                token: message.token,
+                command: message.command,
+                result: result
+            }
+            
+            const parsedReply = JSON.stringify(reply)
+            //console.log(parsedReply)
+            ws.send(parsedReply)
+
+            return
+        }
+
+        if (message.type === "exec") {
+            const commands = require('./execCommands')
         
-        const parsedReply = JSON.stringify(reply)
-        
-        ws.send(parsedReply)
+            let result
+            try {
+                result = await commands[message.command](...message.params)
+            } catch (error) {
+                console.log("Error while trying to execute command: ", message.command, "args: ", message.params)
+                return
+            }
+
+            if (result) {
+                const reply = JSON.stringify({
+                    status: "OK",
+                    message: "Command executed succesfully"
+                })
+
+                ws.send(reply)
+            }
+        }
     }
 
-    sendWsMessageAll(message) {
-        for (const client of this.connectedClients) {
-            client.ws.send(message)
-        }
-    }
+    
 
     
 

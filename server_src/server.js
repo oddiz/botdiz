@@ -54,15 +54,3 @@ init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers)
 
 
 
-
-
-const sendRandomNumbers = function(ws) {
-    
-    setTimeout(() => {
-        const randNum = Math.random() * 1000;
-        ws.send(randNum);
-        console.log(`Sending ${randNum}`);
-        sendRandomNumbers(ws)
-    }, 50)
-}
-
