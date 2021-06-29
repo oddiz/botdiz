@@ -61,7 +61,7 @@ const sessionParser = session({
         cert: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/fullchain.pem')
     }, app)
 
-    httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
+    const server = httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
     
     const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
 
