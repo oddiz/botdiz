@@ -1,12 +1,18 @@
 module.exports = function validate(app, db) {
 
-    app.use('/validate', (req, res) => {
+    app.use('/validate', async (req, res) => {
 
-        //console.log(req)
-    
-        let isValidated;
+        const reqToken = req.session.token
         //check db and if token checks out
-        isValidated = true
+        const session = await db.collection('sessions').findOne( { token: reqToken  } )
+        
+
+        
+        let isValidated = false;
+        if (session) {
+            isValidated = true
+        }
+
         //else send 
         //isValidated = false
         res.send({

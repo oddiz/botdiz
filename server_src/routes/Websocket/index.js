@@ -1,10 +1,12 @@
 const uuid = require('uuid');
-const MsgHandler = require('../../../src/MessageHandler');
+const WebSocket = require('ws')
 const ListenerManager = require('./ListenerManager')
+
+
 module.exports = class WebsocketManager {
-    constructor(server, wss, db, DiscordClient, GuildControllers, sessionParser){
+    constructor(server, app, db, DiscordClient, GuildControllers, sessionParser){
         this.server = server;
-        this.WebsocketServer = wss;
+        
         
 
         this.db = db
@@ -12,31 +14,51 @@ module.exports = class WebsocketManager {
         this.client = DiscordClient
         this.GuildControllers = GuildControllers
         this.sessionParser = sessionParser
+        
         this.handleWsMessage = this.handleWsMessage.bind(this)
+        this.init = this.init.bind(this)
+        this.init()
         
         
+        
+        
+    }
+
+    async init() {
+        this.WebsocketServer = await new WebSocket.Server( {
+            noServer: true
+        })
+
         this.server.on("upgrade", (request, socket, head) => {
             console.log("server.on upgrade triggered..")
+            //VALIDATE SESSION DISABLED FOR EASY ACCESS
             
             this.sessionParser(request, {}, () => {
-                if(!request.session.userId) {
-                    socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
-                    socket.destroy();
-                    return
-                }
+                //console.log(request.session," REQUEST SESSION@ websocket.index")
+                // if(!request.session.userId) {
+                //     console.log("session destroyed")
+                //     socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
+                //     socket.destroy();
+                //     return
+                // }
 
             })
+            
+            
             //check for token, if valid allow connection 
+            
+            
 
+            
             console.log("Session is parsed!");
 
-            wss.handleUpgrade(request, socket, head, function(ws) {
-                wss.emit('connection', ws, request);
+            this.WebsocketServer.handleUpgrade(request, socket, head, (ws) => {
+                this.WebsocketServer.emit('connection', ws, request);
             });
         });
         
         this.WebsocketServer.on('connection', (ws, request) => {
-            const userId = request.session.userId;
+            const userId = request.session?.userId;
             
             const clientListener = new ListenerManager(this, ws)
 
@@ -50,21 +72,31 @@ module.exports = class WebsocketManager {
             
             //console.log(`${client}, connected to web socket.`)
             ws.on('message', (msg) => {
-                this.handleWsMessage(ws, msg, clientListener)
+                const token = request.session.token
+                this.handleWsMessage(ws, msg, clientListener, token)
+                //console.log(token, "WEBSOCKET ON MESSAGE SESSION") 
             })
 
             ws.on('close', ()=>{
                 this.connectedClients.delete(userId)
             })
         })
-
-        
-
     }
 
-    async handleWsMessage(ws, msg, clientListener) {
+    async handleWsMessage(ws, msg, clientListener, token) {
         
         
+        const session = await this.db.collection('sessions').findOne( { token: token  } )
+        
+        
+        
+    
+        if (!session) {
+            console.log("Session not validated")
+            return
+            
+        }
+
         const message = JSON.parse(msg)
         
         /**
@@ -76,10 +108,6 @@ module.exports = class WebsocketManager {
          *  params
          */
         
-        if(!(message.token)) {
-            console.log("Not a valid message")
-            return
-        }
 
         //authenticate ...
         

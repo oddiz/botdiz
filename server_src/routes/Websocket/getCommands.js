@@ -82,7 +82,7 @@ module.exports={
             })
         })
         
-        console.log(parsedMessages[0])
+        
         return parsedMessages
     },
 
