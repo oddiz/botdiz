@@ -8,9 +8,11 @@ const RouteManager = require('./routes')
 const DiscordClient = require('../src/main').client
 const GuildControllers = require('../src/main').GuildControllers
 const session = require('express-session')
+const https = require('https')
+const fs = require('fs')
 require('dotenv').config()
 var corsOptions = {
-    origin: "http://localhost:3000",
+    origin: "https://botdiz.kaansarkaya.com",
     credentials: true,
   }
 app.use(cors(corsOptions))
@@ -54,9 +56,12 @@ const sessionParser = session({
     RouteMngr.run()
     console.log("Succesful")
 
-    
+    const httpsServer = https.createServer({
+        key: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/privkey.pem'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/fullchain.pem')
+    }, app)
 
-    const server = app.listen(8080, () => console.log("Api is running on port 8080"))
+    httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
     
     const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
 
