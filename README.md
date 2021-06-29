@@ -24,18 +24,7 @@
         - leave voice if no one is in it after x minutes
 
 ## TODO SERVER
-    - websocket status, reconnect button
-    - footer
-        - websocket ping
-        - logout button
-    - music player page
-        - playlist
-        - add music?
-        - player interface
-    - stats page
-        - total messages listened
-        - total interactions replied
-        - uptime
+    
         - 
 
 ## BUGS
