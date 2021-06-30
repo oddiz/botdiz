@@ -34,6 +34,7 @@ module.exports = class WebsocketManager {
             //VALIDATE SESSION DISABLED FOR EASY ACCESS
             
             this.sessionParser(request, {}, () => {
+                console.log(request.session)
                 //console.log(request.session," REQUEST SESSION@ websocket.index")
                 // if(!request.session.userId) {
                 //     console.log("session destroyed")
@@ -44,7 +45,7 @@ module.exports = class WebsocketManager {
 
             })
             
-            console.log(request.session)
+            
             //check for token, if valid allow connection 
             
             
