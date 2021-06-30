@@ -35,7 +35,7 @@ module.exports = class WebsocketManager {
             
             this.sessionParser(request, {}, async () => {
 
-                const session = await self.db.collection('sessions').findOne( { token: request.session.token  } )
+                const session = await this.db.collection('sessions').findOne( { token: request.session.token  } )
 
                 
                 
