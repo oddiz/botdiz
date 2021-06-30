@@ -20,7 +20,7 @@ module.exports = class WebsocketManager {
         this.init()
         
         
-        
+        console.log("created websocket manager")
         
     }
 
