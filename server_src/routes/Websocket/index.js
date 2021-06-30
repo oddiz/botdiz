@@ -44,7 +44,7 @@ module.exports = class WebsocketManager {
 
             })
             
-            
+            console.log(request.session)
             //check for token, if valid allow connection 
             
             
@@ -61,7 +61,7 @@ module.exports = class WebsocketManager {
             const userId = request.session?.userId;
 
             if(this.connectedClients.has(userId)) {
-                console.log(this.connectedClients)
+                //console.log(this.connectedClients)
                 return
             }
             
