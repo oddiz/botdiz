@@ -22,7 +22,7 @@ module.exports = class ListenerManager {
         for (const [id,listener] of this.listeners) {
             listener(this.websocket, message)
         }
-        console.log("Listener list: " , this.listeners)
+        //console.log("Listener list: " , this.listeners)
 
     }
 
@@ -37,7 +37,7 @@ module.exports = class ListenerManager {
         const constructedFunc = listenerCommands[command](id, ...params)
         this.listeners.set(id, constructedFunc)
 
-        console.log("Adding listener new list: ", this.listeners)
+        //console.log("Adding listener new list: ", this.listeners)
     }
 
     remove(id) {
@@ -48,7 +48,7 @@ module.exports = class ListenerManager {
         for (const [id,listener] of this.listeners) {
             this.listeners.delete(id)
         }
-        console.log("Cleared listeners, listener list: ", this.listeners)
+        //console.log("Cleared listeners, listener list: ", this.listeners)
     }
 
 
