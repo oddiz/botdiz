@@ -34,7 +34,7 @@ module.exports = class WebsocketManager {
             //VALIDATE SESSION DISABLED FOR EASY ACCESS
             
             this.sessionParser(request, {}, () => {
-                console.log(request.session)
+                //console.log(request.session)
                 //console.log(request.session," REQUEST SESSION@ websocket.index")
                 // if(!request.session.userId) {
                 //     console.log("session destroyed")
@@ -59,12 +59,23 @@ module.exports = class WebsocketManager {
         });
         
         this.WebsocketServer.on('connection', (ws, request) => {
-            const userId = request.session?.userId;
+            this.sessionParser(request, {}, () => {
+                console.log(request.session)
+                const userId = request.session?.userId;
+                if(this.connectedClients.has(userId)) {
+                    //console.log(this.connectedClients)
+                    return
+                }
+                //console.log(request.session," REQUEST SESSION@ websocket.index")
+                // if(!request.session.userId) {
+                //     console.log("session destroyed")
+                //     socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
+                //     socket.destroy();
+                //     return
+                // }
 
-            if(this.connectedClients.has(userId)) {
-                //console.log(this.connectedClients)
-                return
-            }
+            })
+
             
             const clientListener = new ListenerManager(this, ws)
 
