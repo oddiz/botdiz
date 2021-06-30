@@ -92,6 +92,8 @@ module.exports = class WebsocketManager {
                 websocket: ws,
                 clientListener: clientListener
             }
+            console.log("asdasda", userId)
+            console.log(this.connectedClients)
             this.connectedClients.set(userId, client)
             
             //console.log(`${client}, connected to web socket.`)
