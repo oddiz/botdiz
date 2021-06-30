@@ -59,13 +59,17 @@ module.exports = class WebsocketManager {
         });
         
         this.WebsocketServer.on('connection', (ws, request) => {
+            const self = this
             this.sessionParser(request, {}, () => {
-                console.log(request.session)
+                
                 const userId = request.session?.userId;
-                if(this.connectedClients.has(userId)) {
+                if(self.connectedClients.has(userId)) {
                     //console.log(this.connectedClients)
                     return
                 }
+                const session = await self.db.collection('sessions').findOne( { token: reqToken  } )
+
+                console.log(session)
                 //console.log(request.session," REQUEST SESSION@ websocket.index")
                 // if(!request.session.userId) {
                 //     console.log("session destroyed")
@@ -73,17 +77,17 @@ module.exports = class WebsocketManager {
                 //     socket.destroy();
                 //     return
                 // }
+                const clientListener = new ListenerManager(this, ws)
+    
+                const client = {
+                    websocket: ws,
+                    clientListener: clientListener
+                }
+                self.connectedClients.set(userId, client)
 
             })
 
             
-            const clientListener = new ListenerManager(this, ws)
-
-            const client = {
-                websocket: ws,
-                clientListener: clientListener
-            }
-            this.connectedClients.set(userId, client)
             
             
             

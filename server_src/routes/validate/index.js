@@ -6,7 +6,6 @@ module.exports = function validate(app, db) {
         //check db and if token checks out
         const session = await db.collection('sessions').findOne( { token: reqToken  } )
         
-        console.log(req.session)
         
         let isValidated = false;
         if (session) {
