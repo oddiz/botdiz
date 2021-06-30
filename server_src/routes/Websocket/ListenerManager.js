@@ -16,7 +16,7 @@ module.exports = class ListenerManager {
     }
 
     processMessage(message) {
-
+        console.log(this.listeners)
         for (const [id,listener] of this.listeners) {
             listener(this.websocket, message)
         }
