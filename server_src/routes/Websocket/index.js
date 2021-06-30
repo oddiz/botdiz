@@ -97,6 +97,8 @@ module.exports = class WebsocketManager {
                 })
     
                 ws.on('close', ()=>{
+                    self.connectedClients.get(userId).clientListener.terminate()
+                    self.connectedClients.get(userId).websocket = null
                     self.connectedClients.delete(userId)
                 })
             })

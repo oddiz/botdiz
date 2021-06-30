@@ -10,9 +10,7 @@ module.exports = class ListenerManager {
         
         
 
-        this.client.on("message", message => {
-            this.processMessage(message)
-        }) 
+        this.client.on("message", this.processMessage) 
 
         
     }
@@ -51,5 +49,9 @@ module.exports = class ListenerManager {
         //console.log("Cleared listeners, listener list: ", this.listeners)
     }
 
-
+    terminate(){
+        this.clearListeners()
+        this.client.removeListener("message", this.processMessage)
+        this.websocket = null
+    }
 }
