@@ -93,7 +93,11 @@ module.exports = async function login(app, db) {
             req.session.userId = id;
             req.session.token = token
             req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 7 //7 days
-            res.header('Access-Control-Allow-Origin', 'https://botdiz.kaansarkaya.com')
+            if (process.env.NODE_ENV == "development") {
+                res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
+            } else {
+                res.header('Access-Control-Allow-Origin', 'https://botdiz.kaansarkaya.com')
+            }
             res.header('Access-Control-Allow-Credentials','true')
             //console.log(req)
 

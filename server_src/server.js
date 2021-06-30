@@ -11,23 +11,48 @@ const session = require('express-session')
 const https = require('https')
 const fs = require('fs')
 require('dotenv').config()
-var corsOptions = {
-    origin: "https://botdiz.kaansarkaya.com",
-    credentials: true,
-  }
+
+let corsOptions;
+if (process.env.NODE_ENV === "development") {
+    corsOptions = {
+        origin: "http://localhost:3000",
+        credentials: true,
+      }
+
+} else {
+    corsOptions = {
+        origin: "https://botdiz.kaansarkaya.com",
+        credentials: true,
+      }
+}
 app.use(cors(corsOptions))
 app.use(express.json())
-const sessionParser = session({
-    saveUninitialized: false,
-    secret: process.env.SESSION_SECRET,
-    resave: true,
-    cookie: {
-        sameSite: "lax",
-        maxAge: 1000 * 60 * 60 * 24 * 7, //7 days,
-        httpOnly: false,
-        secure: true
-    }
-  });
+
+let sessionParser;
+if(process.env.NODE_ENV === "development") {
+    sessionParser = session({
+        saveUninitialized: false, 
+        secret: process.env.SESSION_SECRET,
+        resave: true,
+        cookie: {
+            sameSite: true,
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+            httpOnly: false
+        }
+    })
+} else {
+    sessionParser = session({
+        saveUninitialized: false,
+        secret: process.env.SESSION_SECRET,
+        resave: true,
+        cookie: {
+            sameSite: "lax",
+            maxAge: 1000 * 60 * 60 * 24 * 7, //7 days,
+            httpOnly: false,
+            secure: true
+        }
+      });
+}
 
   
   async function init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers) {
@@ -55,15 +80,22 @@ const sessionParser = session({
     const RouteMngr = new RouteManager (app, db)
     RouteMngr.run()
     console.log("Succesful")
+    let server;
+    if (process.env.NODE_ENV === "development") {
+        server = app.listen(8080, () => console.log("Api is running on port 8080"))
+        
+        const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
 
-    const httpsServer = https.createServer({
-        key: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/privkey.pem'),
-        cert: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/fullchain.pem')
-    }, app)
-
-    const server = httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
+    } else {
+        const httpsServer = https.createServer({
+            key: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/privkey.pem'),
+            cert: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/fullchain.pem')
+        }, app)
     
-    const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
+        server = httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
+        
+        const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
+    }
 
 
 }

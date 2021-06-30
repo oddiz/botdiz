@@ -270,33 +270,34 @@ module.exports = async function(invokedMessage, ...args) {
         if (videoUrl.host.includes("spotify.com")){
             let spotifyAccessToken = "";
             
-            
+            console.log("ding")
             const spotifyUri = require('spotify-uri');
             const parsed = spotifyUri.parse(videoUrl.href)
             const SpotifyWebApi = require('spotify-web-api-node');
-
+            console.log(parsed)
             // credentials are optional
             const spotifyApi = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENTID,
             clientSecret: process.env.SPOTIFY_CLIENTSECRET
             });
 
-            if (parsed.type === "playlist"){
-                //parseplaylist
-                const playlistId = parsed.id;
-
+            
+            if (parsed.type === "playlist" || parsed.type === "album"){
+                
                 spotifyApi.clientCredentialsGrant()
                     .then(function(result) {
                         logger.log("info", 'Spotify Api Auth worked! Your access token is: ' + result.body.access_token);
                         spotifyAccessToken = result.body.access_token
 
                         spotifyApi.setAccessToken(spotifyAccessToken)
-                        spotifyApi.getPlaylist(playlistId, { limit: 25} )
-                            .then(function(data) {
 
-                                for (const item of data.body.tracks.items){
-                                    const videoName = item.track.name;
-                                    const videoArtist = item.track.artists[0].name
+                        if (parsed.type === "album") {
+                            spotifyApi.getAlbumTracks(parsed.id).then((data)=>{
+
+                                for (const item of data.body.items) {
+                                    console.log(item)
+                                    const videoName = item.name
+                                    const videoArtist = item.artists[0].name
                                     const videoTitle = videoArtist + " - " + videoName
                                     const package = {
                                         videoArtist: videoArtist,
@@ -309,12 +310,39 @@ module.exports = async function(invokedMessage, ...args) {
                                 self.reply("Playlist added to queue 👍")
                                 self.controller.MusicController.queueLock = false
                                 self.controller.MusicController.processQueue();
-                            }, function(err) {
-                                logger.log("error", 'Something went wrong!', err);
-                            });
+                            })
+                            .catch(err => {
+                                logger.log("error", "Error while trying to parse spotify album: ", err)
+                                self.controller.MusicController.queueLock = false
+                            })
+                        } else if (parsed.type === "playlist") {
+                            spotifyApi.getPlaylist(parsed.id, { limit: 25} )
+                                .then(function(data) {
+    
+                                    for (const item of data.body.tracks.items){
+                                        const videoName = item.track.name;
+                                        const videoArtist = item.track.artists[0].name
+                                        const videoTitle = videoArtist + " - " + videoName
+                                        const package = {
+                                            videoArtist: videoArtist,
+                                            videoName: videoName,
+                                            videoTitle: videoTitle,
+                                            isSpotify: true
+                                        }
+                                        self.controller.MusicController.addToQueue(package)
+                                    }
+                                    self.reply("Playlist added to queue 👍")
+                                    self.controller.MusicController.queueLock = false
+                                    self.controller.MusicController.processQueue();
+                                }, function(err) {
+                                    logger.log("error", 'Something went wrong when trying to play spotify playlist!', err);
+                                    self.controller.MusicController.queueLock = false
+                                });
+                        } 
+
                     })
                     .catch(err => {
-                        logger.log("error", "Error trying to get playlist info@play.js/spotifyApi()", "Error: ", error)
+                        logger.log("error", "Error trying to get info from spotify api@play.js/spotifyApi()", "Error: ", error)
                         self.controller.MusicController.queueLock = false
                         
                         self.reply("Error while trying to add playlist... Contact goddiz 😟")
