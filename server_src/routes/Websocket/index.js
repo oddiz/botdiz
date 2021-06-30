@@ -75,7 +75,9 @@ module.exports = class WebsocketManager {
             this.sessionParser(request, {}, async () => {
                 
                 userId = request.session?.userId;
-                if(!userId || self.connectedClients.has(userId)) {
+                console.log(userId)
+                console.log(this.connectedClients.has(userId))
+                if(!userId || this.connectedClients.has(userId)) {
                     console.log("client already is connected")
                     return
                 }
