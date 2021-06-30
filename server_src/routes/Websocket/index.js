@@ -89,7 +89,7 @@ module.exports = class WebsocketManager {
                 }
                 
                 self.connectedClients.set(userId, client)
-                console.log(self.connectedClients)
+                //console.log(self.connectedClients)
                 
                 ws.on('message', (msg) => {
                     const token = request.session.token
