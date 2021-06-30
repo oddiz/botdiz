@@ -17,7 +17,6 @@ var corsOptions = {
   }
 app.use(cors(corsOptions))
 app.use(express.json())
-app.set('trust proxy', 1) 
 const sessionParser = session({
     saveUninitialized: false,
     secret: process.env.SESSION_SECRET,
