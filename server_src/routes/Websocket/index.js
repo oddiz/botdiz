@@ -71,41 +71,39 @@ module.exports = class WebsocketManager {
         
         this.WebsocketServer.on('connection', async (ws, request) => {
             const self = this
-            let userId;
             this.sessionParser(request, {}, async () => {
                 
-                userId = request.session?.userId;
+                const userId = request.session?.userId;
                 console.log(userId)
                 console.log(this.connectedClients.has(userId))
                 if(!userId || this.connectedClients.has(userId)) {
                     console.log("client already is connected")
                     return
                 }
+                
+                const clientListener = new ListenerManager(this, ws)
+    
+                const client = {
+                    websocket: ws,
+                    clientListener: clientListener
+                }
+                console.log("asdasda", userId)
+                console.log(this.connectedClients)
+                this.connectedClients.set(userId, client)
+                
+                ws.on('message', (msg) => {
+                    const token = request.session.token
+                    this.handleWsMessage(ws, msg, clientListener, token)
+                })
+    
+                ws.on('close', ()=>{
+                    this.connectedClients.delete(userId)
+                })
             })
             
             
             
             
-            const clientListener = new ListenerManager(this, ws)
-
-            const client = {
-                websocket: ws,
-                clientListener: clientListener
-            }
-            console.log("asdasda", userId)
-            console.log(this.connectedClients)
-            this.connectedClients.set(userId, client)
-            
-            //console.log(`${client}, connected to web socket.`)
-            ws.on('message', (msg) => {
-                const token = request.session.token
-                this.handleWsMessage(ws, msg, clientListener, token)
-                //console.log(token, "WEBSOCKET ON MESSAGE SESSION") 
-            })
-
-            ws.on('close', ()=>{
-                this.connectedClients.delete(userId)
-            })
         })
     }
 
