@@ -59,7 +59,11 @@ module.exports = class WebsocketManager {
         
         this.WebsocketServer.on('connection', (ws, request) => {
             const userId = request.session?.userId;
-            console.log(this.connectedClients.has(userId))
+
+            if(this.connectedClients.has(userId)) {
+                console.log(this.connectedClients)
+                return
+            }
             
             const clientListener = new ListenerManager(this, ws)
 
