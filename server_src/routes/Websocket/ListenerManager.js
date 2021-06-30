@@ -35,7 +35,7 @@ module.exports = class ListenerManager {
         const constructedFunc = listenerCommands[command](id, ...params)
         this.listeners.set(id, constructedFunc)
 
-        //console.log("Adding listener new list: ", this.listeners)
+        console.log("Adding listener new list: ", this.listeners)
     }
 
     remove(id) {
