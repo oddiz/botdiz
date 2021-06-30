@@ -22,6 +22,7 @@ module.exports = class ListenerManager {
         for (const [id,listener] of this.listeners) {
             listener(this.websocket, message)
         }
+        console.log("Listener list: " , this.listeners)
 
     }
 
@@ -45,6 +46,7 @@ module.exports = class ListenerManager {
         for (const [id,listener] of this.listeners) {
             this.listeners.delete(id)
         }
+        console.log("Cleared listeners, listener list: ", this.)
     }
 
 

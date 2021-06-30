@@ -123,7 +123,7 @@ module.exports = class WebsocketManager {
              *  params
              */
 
-            
+            console.log("Listener added")
 
             clientListener.add(message.listenerId, message.command, message.params)
 
@@ -134,6 +134,7 @@ module.exports = class WebsocketManager {
 
         if(message.type === "clearListeners") {
             clientListener.clearListeners()
+            console.log("Clearing listeners")
         }
 
         if (message.type === "get"){
