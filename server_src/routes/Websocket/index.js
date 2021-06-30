@@ -79,13 +79,6 @@ module.exports = class WebsocketManager {
                     console.log("client already is connected")
                     return
                 }
-                
-                //console.log(request.session," REQUEST SESSION@ websocket.index")
-                // if(!request.session.userId) {
-                //     console.log("session destroyed")
-                //     
-                // }
-                
             })
             
             
@@ -97,7 +90,7 @@ module.exports = class WebsocketManager {
                 websocket: ws,
                 clientListener: clientListener
             }
-            self.connectedClients.set(userId, client)
+            this.connectedClients.set(userId, client)
             
             //console.log(`${client}, connected to web socket.`)
             ws.on('message', (msg) => {
