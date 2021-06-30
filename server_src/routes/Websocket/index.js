@@ -29,13 +29,24 @@ module.exports = class WebsocketManager {
             noServer: true
         })
 
-        this.server.on("upgrade", (request, socket, head) => {
-            console.log("server.on upgrade triggered..")
-            //VALIDATE SESSION DISABLED FOR EASY ACCESS
+        this.server.on("upgrade", async (request, socket, head) => {
+            //console.log("server.on upgrade triggered..")
             
-            this.sessionParser(request, {}, () => {
-                //console.log(request.session)
-                //console.log(request.session," REQUEST SESSION@ websocket.index")
+            
+            this.sessionParser(request, {}, async () => {
+
+                const session = await self.db.collection('sessions').findOne( { token: request.session.token  } )
+
+                
+                
+                if(!session) {
+                    console.log("Unauthorized websocket request")
+                    socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
+                    socket.destroy();
+                    return
+                }
+                //from example ws
+                //https://github.com/websockets/ws/blob/master/examples/express-session-parse/index.js 
                 // if(!request.session.userId) {
                 //     console.log("session destroyed")
                 //     socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
@@ -58,38 +69,35 @@ module.exports = class WebsocketManager {
             });
         });
         
-        this.WebsocketServer.on('connection', (ws, request) => {
+        this.WebsocketServer.on('connection', async (ws, request) => {
             const self = this
-            this.sessionParser(request, {}, () => {
+            let userId;
+            this.sessionParser(request, {}, async () => {
                 
-                const userId = request.session?.userId;
-                if(self.connectedClients.has(userId)) {
-                    //console.log(this.connectedClients)
+                userId = request.session?.userId;
+                if(!userId || self.connectedClients.has(userId)) {
+                    console.log("client already is connected")
                     return
                 }
-                const session = await self.db.collection('sessions').findOne( { token: reqToken  } )
-
-                console.log(session)
+                
                 //console.log(request.session," REQUEST SESSION@ websocket.index")
                 // if(!request.session.userId) {
                 //     console.log("session destroyed")
-                //     socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
-                //     socket.destroy();
-                //     return
+                //     
                 // }
-                const clientListener = new ListenerManager(this, ws)
-    
-                const client = {
-                    websocket: ws,
-                    clientListener: clientListener
-                }
-                self.connectedClients.set(userId, client)
-
+                
             })
+            
+            
+            
+            
+            const clientListener = new ListenerManager(this, ws)
 
-            
-            
-            
+            const client = {
+                websocket: ws,
+                clientListener: clientListener
+            }
+            self.connectedClients.set(userId, client)
             
             //console.log(`${client}, connected to web socket.`)
             ws.on('message', (msg) => {
@@ -108,10 +116,7 @@ module.exports = class WebsocketManager {
         
         
         const session = await this.db.collection('sessions').findOne( { token: token  } )
-        
-        
-        
-    
+
         if (!session) {
             console.log("Session not validated")
             return
