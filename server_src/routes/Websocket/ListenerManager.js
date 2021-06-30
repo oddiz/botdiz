@@ -10,6 +10,7 @@ module.exports = class ListenerManager {
         
         
 
+        this.processMessage = this.processMessage.bind(this)
         this.client.on("message", this.processMessage) 
 
         
