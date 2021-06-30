@@ -21,11 +21,12 @@ app.set('trust proxy', 1)
 const sessionParser = session({
     saveUninitialized: false,
     secret: process.env.SESSION_SECRET,
-    resave: false,
+    resave: true,
     cookie: {
-        sameSite: 'strict',
+        sameSite: "lax",
         maxAge: 1000 * 60 * 60 * 24 * 7, //7 days,
-        httpOnly: false
+        httpOnly: false,
+        secure: true
     }
   });
 
