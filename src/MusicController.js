@@ -37,13 +37,6 @@ module.exports = class MusicController {
 
         this.currentSong;
         this.queue = [];
-
-        
-        
-        
-        
-        
-
 	
     }
 
@@ -347,7 +340,7 @@ module.exports = class MusicController {
         }
 
         //wait a few moments so player doesn't skuff
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         /**
          * Creates a message that shows song info then assigns an updater.
@@ -429,6 +422,7 @@ module.exports = class MusicController {
             this.UpdatePlayerInfo.stop()
             logger.log("info", "Player updater stopped")
             
+            this.currentSong = null;
             //this.voiceConnection.destroy();
             //logger.log("info", "Voice connection destroyed.")
 

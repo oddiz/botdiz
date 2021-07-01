@@ -1,7 +1,9 @@
-module.exports={
-    RPC_ListenChannel: function(id, guildId, channelId){
+const Botdiz = require('../../../src/main')
 
-        return function(websocket, message) {
+module.exports={
+    RPC_ListenChannel: function(id, websocket, guildId, channelId){
+
+        return function(message) {
             const listenerID = id
             const guildID = guildId
             const channelID = channelId
@@ -26,5 +28,6 @@ module.exports={
             }
                 
         }
-    }
+    },
+    
 }

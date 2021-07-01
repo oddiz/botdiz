@@ -133,7 +133,9 @@ module.exports = class WebsocketManager {
         
 
         //authenticate ...
-        
+        if(message.type === "listenMusicPlayer") {
+            clientListener.startMusicPlayerListener(...message.params)
+        }
 
         if(message.type === "addListener") {
             //console.log(message.listenerId, message.command, ...message.params)

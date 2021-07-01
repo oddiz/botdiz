@@ -286,7 +286,7 @@ module.exports = async function(invokedMessage, ...args) {
                 
                 spotifyApi.clientCredentialsGrant()
                     .then(function(result) {
-                        logger.log("info", 'Spotify Api Auth worked! Your access token is: ' + result.body.access_token);
+                        logger.log("info", 'Spotify Api Auth worked!');
                         spotifyAccessToken = result.body.access_token
 
                         spotifyApi.setAccessToken(spotifyAccessToken)
@@ -295,7 +295,6 @@ module.exports = async function(invokedMessage, ...args) {
                             spotifyApi.getAlbumTracks(parsed.id).then((data)=>{
 
                                 for (const item of data.body.items) {
-                                    console.log(item)
                                     const videoName = item.name
                                     const videoArtist = item.artists[0].name
                                     const videoTitle = videoArtist + " - " + videoName
@@ -307,7 +306,7 @@ module.exports = async function(invokedMessage, ...args) {
                                     }
                                     self.controller.MusicController.addToQueue(package)
                                 }
-                                self.reply("Playlist added to queue 👍")
+                                self.reply("Album added to queue 👍")
                                 self.controller.MusicController.queueLock = false
                                 self.controller.MusicController.processQueue();
                             })

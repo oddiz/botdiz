@@ -80,7 +80,11 @@ client.on("guildDelete", guild => {
 
 });
 
-client.login(process.env.DISCORD_TOKEN)
+if (process.env.NODE_ENV == "development") {
+    client.login(process.env.DISCORD_TESTBOT_TOKEN)
+} else {
+    client.login(process.env.DISCORD_TOKEN)
+}
 
 module.exports = {
     client: client,
