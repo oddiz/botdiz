@@ -1,6 +1,6 @@
 const { logger } = require("./logger")
 const searchYT = require("./scripts/searchYT")
-const updatePlayer = require("./scripts/updatePlayer")
+
 const { MessageEmbed } = require("discord.js")
 
 const {
@@ -132,7 +132,7 @@ module.exports = class MusicController {
                     void this.playNext();
                 } else {
                     logger.log("info","Nothing left in queue.")
-                    this.command.reply("Queue ended, stopping player 🛑", {new: true})
+                    this.command.reply("Stopping player 🛑", {new: true})
                     this.stop()
                     return
                 }
@@ -219,7 +219,7 @@ module.exports = class MusicController {
             try {
                 //console.log(self)
                 if (this.queue.length === 0) {
-                    this.command.reply("Queue ended, stopping player 🛑", {new: true})
+                    this.command.reply("Stopping player 🛑", {new: true})
     
                     this.stop()
                     
@@ -336,6 +336,7 @@ module.exports = class MusicController {
         
         if (!nextInQueue) {
             //no song is next
+            
             return
         }
 
@@ -383,7 +384,7 @@ module.exports = class MusicController {
 
         await this.playNext()
         this.skipping = false
-
+        this.queueLock = false
         return
 
 
@@ -423,6 +424,7 @@ module.exports = class MusicController {
             logger.log("info", "Player updater stopped")
             
             this.currentSong = null;
+            this.queueLock = false;
             //this.voiceConnection.destroy();
             //logger.log("info", "Voice connection destroyed.")
 

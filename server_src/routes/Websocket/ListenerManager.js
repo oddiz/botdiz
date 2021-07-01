@@ -18,7 +18,7 @@ module.exports = class ListenerManager {
     }
 
     processMessage(message) {
-        console.log(this.listeners)
+        
         for (const [id,listener] of this.listeners) {
             listener(message)
         }
@@ -64,15 +64,16 @@ module.exports = class ListenerManager {
                     console.log("Terminating Musicplayer listener.")
                     return
                 }
-
                 try {
                     const currentSong = MusicController.currentSong || {}
+                    
     
                     const queue = MusicController.queue
                     const currentTitle = currentSong?.videoTitle;
                     const streamTime = MusicController.audioPlayer?._state.playbackDuration / 1000 || 0;
                     const videoLenght= currentSong?.videoDuration;
                     const audioPlayerStatus = MusicController.audioPlayerStatus
+                    const videoThumbnailUrl = currentSong.videoThumbnailUrl;
                     //console.log(queue, currentTitle, streamTime, videoLength)
                     const message = {
                         guild: guildId,
@@ -80,7 +81,8 @@ module.exports = class ListenerManager {
                         currentTitle: currentTitle,
                         streamTime: streamTime,
                         videoLength: videoLenght,
-                        
+                        audioPlayerStatus: audioPlayerStatus,
+                        videoThumbnailUrl: videoThumbnailUrl
                     }
     
                     const replyMessage = JSON.stringify({
@@ -95,7 +97,7 @@ module.exports = class ListenerManager {
                     console.log(error)
                 }
                 runLoop(websocket, MusicController)
-            }, 200)
+            }, 1200)
         }    
 
     }
