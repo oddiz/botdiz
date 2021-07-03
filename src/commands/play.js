@@ -175,80 +175,87 @@ module.exports = async function(invokedMessage, ...args) {
         */
     
     } else if (isYoutubePlaylist) {
-        const regex = /^.*youtu.be\/|list=([^#\&\?]*).*/;
-        const playlistId = videoUrl.href.match(regex)[1];
-        const self = this
-
-        async function getYtPlaylist(){
-
-            let ytpl = require('ytpl');
-            let playlist;
-            try {
-                playlist = await ytpl(playlistId, { limit: 25 });
-            } catch (error) {
-                logger.log("error", "Error trying to get playlist info@play.js/ytpl()", "Error: ", error)
-                this.controller.MusicController.queueLock = false
-                
-                this.reply("Error while trying to add playlist... Contact goddiz 😟")
-                return
-            }
-            /*Array of
-            {
-                title: 'More Plastic x hayve - Feel Alive [NCS Release]',
-                index: 17,
-                id: 'VVEssTuPj6g',
-                shortUrl: 'https://www.youtube.com/watch?v=VVEssTuPj6g',
-                url: 'https://www.youtube.com/watch?v=VVEssTuPj6g&list=UU_aEa8K-EOJ3D6gOs7HcyNg&index=17',
-                author: {
-                url: 'https://www.youtube.com/c/NoCopyrightSounds',
-                channelID: 'UC_aEa8K-EOJ3D6gOs7HcyNg',
-                name: 'NoCopyrightSounds'
-                },
-                thumbnails: [ [Object], [Object], [Object], [Object] ],
-                bestThumbnail: {
-                url: 'https://i.ytimg.com/vi/VVEssTuPj6g/hqdefault.jpg?sqp=-oaymwEjCNACELwBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBG3R79uYwsecyf3PlBE_jT4FrqEg',
-                width: 336,
-                height: 188
-                },
-                isLive: false,
-                duration: '3:02',
-                durationSec: 182,
-                isPlayable: true
-            }
-            */
-            for (const item of playlist.items) {
-                const videoTitle = item.title
-                const videoId = item.id
-                const videoThumbnailUrl = item.bestThumbnail.url
-                const videoDuration = item.durationSec
-                let videoUrl = item.url
+        try {
+            const regex = /^.*youtu.be\/|list=([^#\&\?]*).*/;
+            const playlistId = videoUrl.href.match(regex)[1];
+            const self = this
+    
+            async function getYtPlaylist(){
+    
+                let ytpl = require('ytpl');
+                let playlist;
                 try {
-                    const i = videoUrl.search("&list")
-                    videoUrl = videoUrl.slice(0, i)
+                    playlist = await ytpl(playlistId, { limit: 25 });
                 } catch (error) {
-                    logger.log("error", "couldn't slice videoURL. (play.js)", videoUrl, i)
+                    logger.log("error", "Error trying to get playlist info@play.js/ytpl()", "Error: ", error)
+                    this.controller.MusicController.queueLock = false
+                    
+                    this.reply("Error while trying to add playlist... Contact goddiz 😟")
+                    return
                 }
-
-                const package = {
-                    videoUrl: videoUrl,
-                    videoId: videoId,
-                    videoTitle: videoTitle,
-                    videoThumbnailUrl:videoThumbnailUrl,
-                    videoDuration: videoDuration
+                /*Array of
+                {
+                    title: 'More Plastic x hayve - Feel Alive [NCS Release]',
+                    index: 17,
+                    id: 'VVEssTuPj6g',
+                    shortUrl: 'https://www.youtube.com/watch?v=VVEssTuPj6g',
+                    url: 'https://www.youtube.com/watch?v=VVEssTuPj6g&list=UU_aEa8K-EOJ3D6gOs7HcyNg&index=17',
+                    author: {
+                    url: 'https://www.youtube.com/c/NoCopyrightSounds',
+                    channelID: 'UC_aEa8K-EOJ3D6gOs7HcyNg',
+                    name: 'NoCopyrightSounds'
+                    },
+                    thumbnails: [ [Object], [Object], [Object], [Object] ],
+                    bestThumbnail: {
+                    url: 'https://i.ytimg.com/vi/VVEssTuPj6g/hqdefault.jpg?sqp=-oaymwEjCNACELwBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBG3R79uYwsecyf3PlBE_jT4FrqEg',
+                    width: 336,
+                    height: 188
+                    },
+                    isLive: false,
+                    duration: '3:02',
+                    durationSec: 182,
+                    isPlayable: true
                 }
-                
-
-                self.controller.MusicController.addToQueue(package)
-                
+                */
+                for (const item of playlist.items) {
+                    const videoTitle = item.title
+                    const videoId = item.id
+                    const videoThumbnailUrl = item.bestThumbnail.url
+                    const videoDuration = item.durationSec
+                    let videoUrl = item.url
+                    try {
+                        const i = videoUrl.search("&list")
+                        videoUrl = videoUrl.slice(0, i)
+                    } catch (error) {
+                        logger.log("error", "couldn't slice videoURL. (play.js)", videoUrl, i)
+                    }
+    
+                    const package = {
+                        videoUrl: videoUrl,
+                        videoId: videoId,
+                        videoTitle: videoTitle,
+                        videoThumbnailUrl:videoThumbnailUrl,
+                        videoDuration: videoDuration
+                    }
+                    
+    
+                    self.controller.MusicController.addToQueue(package)
+                    
+                }
+                self.reply("Playlist added 👍")
+                self.controller.MusicController.processQueue();
+                return 
             }
-            self.reply("Playlist added 👍")
-            self.controller.MusicController.processQueue();
+            await getYtPlaylist()
+            
+            this.controller.MusicController.queueLock = false
             return 
+            
+        } catch (error) {
+            logger.log("error","Error while trying to add youtube playlist :", error)
+            this.controller.MusicController.queueLock = false
+            return
         }
-        await getYtPlaylist()
-        
-        self.controller.MusicController.queueLock = false
-        return 
         
            
     } else {
