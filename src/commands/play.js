@@ -243,12 +243,13 @@ module.exports = async function(invokedMessage, ...args) {
                     
                 }
                 self.reply("Playlist added 👍")
+                this.controller.MusicController.queueLock = false
                 self.controller.MusicController.processQueue();
                 return 
             }
             await getYtPlaylist()
             
-            this.controller.MusicController.queueLock = false
+            
             return 
             
         } catch (error) {
