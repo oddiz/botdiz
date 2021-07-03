@@ -150,8 +150,8 @@ module.exports = async function(invokedMessage, ...args) {
                 //invokedMessage.channel.send("Video found: " + result.videoUrl)
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
                     this.controller.MusicController.addToQueue(result2)
-                    this.controller.MusicController.queueLock = false
                     this.reply(`Added ${result2.videoTitle} 👍`)
+                    this.controller.MusicController.queueLock = false
                     this.controller.MusicController.processQueue();
                 })
 
@@ -242,12 +242,12 @@ module.exports = async function(invokedMessage, ...args) {
                 
             }
             self.reply("Playlist added 👍")
-            self.controller.MusicController.queueLock = false
             self.controller.MusicController.processQueue();
             return 
         }
         await getYtPlaylist()
-
+        
+        self.controller.MusicController.queueLock = false
         return 
         
            
@@ -259,8 +259,8 @@ module.exports = async function(invokedMessage, ...args) {
         if (videoUrl.host.includes("youtube.com")){
             getInfoFromYoutubeUrl(videoUrl.href, result => {
                 this.controller.MusicController.addToQueue(result)
-                this.controller.MusicController.queueLock = false
                 this.reply(`Added ${result.videoTitle}`)
+                this.controller.MusicController.queueLock = false
                 this.controller.MusicController.processQueue();
                 
                 return
@@ -342,9 +342,9 @@ module.exports = async function(invokedMessage, ...args) {
                     })
                     .catch(err => {
                         logger.log("error", "Error trying to get info from spotify api@play.js/spotifyApi()", "Error: ", error)
-                        self.controller.MusicController.queueLock = false
                         
-                        self.reply("Error while trying to add playlist... Contact goddiz 😟")
+                        self.reply("Error while trying to add playlist... Contact oddiz 😟")
+                        self.controller.MusicController.queueLock = false
                         
                         return
                     })
@@ -399,14 +399,15 @@ module.exports = async function(invokedMessage, ...args) {
                                 
                             }).catch(error => {
                                 logger.log("error", "Error while using spotify AI. Error : " + error)
-                                self.controller.MusicController.queueLock = false
                                 
-                                self.reply("Error while trying to add song... Contact goddiz 😟")
-                return
+                                self.reply("Error while trying to add song... Contact oddiz 😟")
+                                self.controller.MusicController.queueLock = false
+                                return
                             })
 
                         }, function(err) {
                             logger.log("error", err);
+                            self.controller.MusicController.queueLock = false
                             return
                         });
                     }).catch(function(err) {
@@ -414,6 +415,7 @@ module.exports = async function(invokedMessage, ...args) {
                         'clientId and clientSecret values. Please check!');
                         logger.log("error", 'Hint: ');
                         logger.log("error", err);
+                        self.controller.MusicController.queueLock = false
                     });
             }
                 /* 

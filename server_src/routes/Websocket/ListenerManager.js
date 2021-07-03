@@ -97,7 +97,7 @@ module.exports = class ListenerManager {
                     console.log(error)
                 }
                 runLoop(websocket, MusicController)
-            }, 1200)
+            }, 400)
         }    
 
     }
