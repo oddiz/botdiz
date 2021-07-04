@@ -107,6 +107,12 @@ module.exports = async function login(app, db) {
             });
 
             
+        } else {
+            res.status(404).send(
+                {message: "Failed to login with given credentials"}
+            );
+
+            return
         }
     });
     

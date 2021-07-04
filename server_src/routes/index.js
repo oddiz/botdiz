@@ -1,5 +1,6 @@
 const login = require('./login')
 const validate = require('./validate')
+const logout = require('./logout')
 require('dotenv').config()
 
 
@@ -16,6 +17,7 @@ require('dotenv').config()
     run() {
         login(this.app, this.db)
         validate(this.app, this.db)
+        logout(this.app, this.db)
     }
 
 }

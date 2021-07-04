@@ -7,16 +7,28 @@ module.exports = function validate(app, db) {
         const session = await db.collection('sessions').findOne( { token: reqToken  } )
         
         
-        let isValidated = false;
         if (session) {
-            isValidated = true
+            const user = await db.collection('users').findOne( { username: session.username } )
+            const accountInfo = {
+                username: user.username,
+                avatarURL: user.avatarURL
+            }
+            
+            res.send({
+                isValidated: true,
+                accountInfo: accountInfo,
+                token: reqToken
+            });
+        } else {
+            res.status(404).send({
+                isValidated:false
+            })
         }
+        
+
 
         //else send 
         //isValidated = false
-        res.send({
-            isValidated: isValidated
-        });
     });
 
 }
