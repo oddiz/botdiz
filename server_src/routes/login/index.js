@@ -106,6 +106,7 @@ module.exports = async function login(app, db) {
                 message: "Login successfull",
             });
 
+            console.log(reqUsername + " logged in.")
             
         } else {
             res.status(404).send(
