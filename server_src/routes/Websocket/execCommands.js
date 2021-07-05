@@ -92,6 +92,14 @@ module.exports={
             console.log("Error while trying to execute RPC_deleteQueueSong :", error)
         }
 
+    },
+    RPC_playCommand: async function(guildId, queryArg) {
+        const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
+
+        const playCommand = guildController.commands.find( ( { name } ) => name === "play" )
+
+        
+        playCommand.execute(false, [queryArg], false)
     }
 
 

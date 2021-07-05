@@ -168,7 +168,12 @@ module.exports = class MusicController {
 
     async processQueue() {
 
-        
+        if(!this.audioPlayer) {
+            console.log("no audio player available")
+            this.queue = []
+            this.queueLock = false
+            return
+        }
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
             
@@ -413,16 +418,20 @@ module.exports = class MusicController {
     
     stop() {
         try {
+            if(this.audioPlayer) {
+                this.audioPlayer.stop(true)
+                logger.log("info", "Audio Player stopped.")
+            }
+            
             this.clearQueue()
+            this.currentSong = null;
             logger.log("info", "Queue cleared")
 
-            this.audioPlayer.stop(true)
-            logger.log("info", "Audio Player stopped.")
+            
             
             this.UpdatePlayerInfo.stop()
             logger.log("info", "Player updater stopped")
             
-            this.currentSong = null;
             this.queueLock = false;
             //this.voiceConnection.destroy();
             //logger.log("info", "Voice connection destroyed.")

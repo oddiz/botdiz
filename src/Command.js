@@ -82,7 +82,10 @@ module.exports = class Command {
 
         
         //check if invoked message is still there
-        const lastInvokedChannel = await this.lastInvokedMessage.channel.fetch(true)
+        const lastInvokedChannel = await this.lastInvokedMessage?.channel?.fetch(true)
+        if(!lastInvokedChannel) {
+            return
+        }
         const foundMap = await lastInvokedChannel.messages.fetch(this.lastInvokedMessage)
 
         //if not there send normal message and return

@@ -9,98 +9,61 @@ const { joinVoiceChannel, AudioPlayerStatus } = require("@discordjs/voice");
 
 module.exports = async function(invokedMessage, ...args) {
 
-    // if no arguments passed
-    if (arguments[1] === "") {
-        this.wrongUsage(invokedMessage, this.name, "")
-        
-        return
-    }
+    if(invokedMessage){
 
-    const memberVoiceChannel = invokedMessage.member.voice.channel
+        // if no arguments passed
+        if (arguments[1] === "") {
+            this.wrongUsage(invokedMessage, this.name, "")
+            
+            return
+        }
     
-    if (!memberVoiceChannel) {
-        this.reply("You are not in a voice channel.")
+        const memberVoiceChannel = invokedMessage?.member.voice.channel
         
-        return
-    }
-
-
-    this.controller.MusicController.command = this
-
-    const botVoiceChannel = invokedMessage.guild.me.voice.channel
-    //discord.js/voice VoiceConnection object
-    //https://discordjs.github.io/voice/classes/voiceconnection.html
-    const botVoiceConnection = this.controller.MusicController.voiceConnection
-
-    // console.log({
-    //     memberVoiceChannel: memberVoiceChannel,
-    //     botVoiceChannel: botVoiceChannel,
-    //     botVoiceConnection: botVoiceConnection,
-    //     audioPlayerStatus: this.controller.MusicController.audioPlayerStatus
-    // })
-
-    /**
-     * if member vc = undefined  ✅
-     *      -> "you are not in vc", return
-     * 
-     * if bot vc = undefined ✅
-     *      -> join member vc
-     * 
-     * 
-     * if member vc = bot vc ✅
-     *      -> continue 
-     * 
-     * if member vc != bot vc: ✅
-     *      if bot is playing: ✅
-     *          -> bot is already playing, return
-     *      if bot is idle: ✅
-     *          -> join member voice channel
-     *          -> set musiccontroller voicechannel to new         
-     *          -> continue
-     */         
+        if (!memberVoiceChannel) {
+            this.reply("You are not in a voice channel.")
+            
+            return
+        }
     
-    if (!botVoiceChannel) {
-        logger.log("info", "Bot is not in a voice channel, joining now.")
+    
+        this.controller.MusicController.command = this
+    
+        const botVoiceChannel = invokedMessage?.guild.me.voice.channel
+        //discord.js/voice VoiceConnection object
+        //https://discordjs.github.io/voice/classes/voiceconnection.html
+        const botVoiceConnection = this.controller.MusicController.voiceConnection
+    
+        // console.log({
+        //     memberVoiceChannel: memberVoiceChannel,
+        //     botVoiceChannel: botVoiceChannel,
+        //     botVoiceConnection: botVoiceConnection,
+        //     audioPlayerStatus: this.controller.MusicController.audioPlayerStatus
+        // })
+    
+        /**
+         * if member vc = undefined  ✅
+         *      -> "you are not in vc", return
+         * 
+         * if bot vc = undefined ✅
+         *      -> join member vc
+         * 
+         * 
+         * if member vc = bot vc ✅
+         *      -> continue 
+         * 
+         * if member vc != bot vc: ✅
+         *      if bot is playing: ✅
+         *          -> bot is already playing, return
+         *      if bot is idle: ✅
+         *          -> join member voice channel
+         *          -> set musiccontroller voicechannel to new         
+         *          -> continue
+         */         
         
-        let voiceConnection = await joinVoiceChannel({ 
-            channelId: memberVoiceChannel.id,
-            guildId: memberVoiceChannel.guild.id,
-            adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
-            selfMute: false,
-            selfDeaf: false
-        })
-
-        this.controller.MusicController.setVoiceConnection(voiceConnection)
-
-    } else {
-        //bot is in a voice channel
-
-        if (memberVoiceChannel.id !== botVoiceChannel.id) {
-        logger.log("info", "Bot is in a voice channel but not in same member's")
-
-            if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Playing) {
-                logger.log("info", "Bot is already playing. Won't switch to new channel")
-
-                this.reply("Bot is already playing in another channel ❗")
-
-                return
-            } else if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Idle) {
-                logger.log("info", "Bot is not playing. Switching to new channel.")
-                
-                let voiceConnection = await joinVoiceChannel({ 
-                    channelId: memberVoiceChannel.id,
-                    guildId: memberVoiceChannel.guild.id,
-                    adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
-                    selfMute: false,
-                    selfDeaf: false
-                })
-        
-                this.controller.MusicController.setVoiceConnection(voiceConnection)
-            }
-
-        } else if (!this.controller.MusicController.voiceConnection) {
-            //bot is in same voice channel but it doesn't have a voice connection
-
+        if (!botVoiceChannel) {
+            logger.log("info", "Bot is not in a voice channel, joining now.")
+            
             let voiceConnection = await joinVoiceChannel({ 
                 channelId: memberVoiceChannel.id,
                 guildId: memberVoiceChannel.guild.id,
@@ -108,8 +71,48 @@ module.exports = async function(invokedMessage, ...args) {
                 selfMute: false,
                 selfDeaf: false
             })
-
+    
             this.controller.MusicController.setVoiceConnection(voiceConnection)
+    
+        } else {
+            //bot is in a voice channel
+    
+            if (memberVoiceChannel.id !== botVoiceChannel.id) {
+            logger.log("info", "Bot is in a voice channel but not in same member's")
+    
+                if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Playing) {
+                    logger.log("info", "Bot is already playing. Won't switch to new channel")
+    
+                    this.reply("Bot is already playing in another channel ❗")
+    
+                    return
+                } else if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Idle) {
+                    logger.log("info", "Bot is not playing. Switching to new channel.")
+                    
+                    let voiceConnection = await joinVoiceChannel({ 
+                        channelId: memberVoiceChannel.id,
+                        guildId: memberVoiceChannel.guild.id,
+                        adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
+                        selfMute: false,
+                        selfDeaf: false
+                    })
+            
+                    this.controller.MusicController.setVoiceConnection(voiceConnection)
+                }
+    
+            } else if (!this.controller.MusicController.voiceConnection) {
+                //bot is in same voice channel but it doesn't have a voice connection
+    
+                let voiceConnection = await joinVoiceChannel({ 
+                    channelId: memberVoiceChannel.id,
+                    guildId: memberVoiceChannel.guild.id,
+                    adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
+                    selfMute: false,
+                    selfDeaf: false
+                })
+    
+                this.controller.MusicController.setVoiceConnection(voiceConnection)
+            }
         }
     }
 
