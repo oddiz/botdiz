@@ -278,11 +278,9 @@ module.exports = async function(invokedMessage, ...args) {
         if (videoUrl.host.includes("spotify.com")){
             let spotifyAccessToken = "";
             
-            console.log("ding")
             const spotifyUri = require('spotify-uri');
             const parsed = spotifyUri.parse(videoUrl.href)
             const SpotifyWebApi = require('spotify-web-api-node');
-            console.log(parsed)
             // credentials are optional
             const spotifyApi = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENTID,

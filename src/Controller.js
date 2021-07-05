@@ -21,7 +21,6 @@ module.exports = class Controller {
         })
 
         this.roleColor = guild.me.roles?.color?.color || "#e9b463"
-        console.log(this.roleColor)
     }
 
     init() {

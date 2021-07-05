@@ -332,7 +332,6 @@ module.exports = class MusicController {
     async playNext() {
         const nextInQueue = await this.processNextSong()
 
-        console.log(nextInQueue, "2")
         
         if (!nextInQueue) {
             //no song is next

@@ -35,9 +35,9 @@ module.exports = async function login(app, db) {
 
         const recaptchaReply = await fetch(reCapURI).then(data=> data.json())
         if(!recaptchaReply.success) {
-            console.log("Recaptcha failed.")
+            console.log("Recaptcha failed")
             res.status(404).send({
-                message: "Recaptcha unsuccesfull."
+                message: "Recaptcha unsuccesful"
             })
             return
         }

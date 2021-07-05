@@ -62,7 +62,6 @@ module.exports = class WebsocketManager {
             
 
             
-            console.log("Session is parsed!");
 
             this.WebsocketServer.handleUpgrade(request, socket, head, (ws) => {
                 this.WebsocketServer.emit('connection', ws, request);
@@ -75,7 +74,6 @@ module.exports = class WebsocketManager {
                 
                 const userId = request.session?.userId;
                 
-                console.log(self.connectedClients.has(userId))
                 if(!userId || self.connectedClients.has(userId)) {
                     console.log("client already is connected")
                     return
@@ -147,7 +145,6 @@ module.exports = class WebsocketManager {
              *  params
              */
 
-            console.log("Listener added")
 
             clientListener.add(message.listenerId, message.command, message.params)
 

@@ -33,7 +33,6 @@ module.exports = class ListenerManager {
             return
         }
         const listenerCommands = require('./listenerCommands')
-        console.log(arguments)
         const constructedFunc = listenerCommands[command](id, this.websocket, ...params)
         this.listeners.set(id, constructedFunc)
 
@@ -59,7 +58,6 @@ module.exports = class ListenerManager {
         runLoop(this.websocket, MusicController, guildId)
 
         function runLoop(websocket, MusicController, loopGuildId) {
-            console.log(loopGuildId, self.musicListenerGuildId)
             setTimeout(function() {
                 if (!self.listenMusicPlayer || (self.musicListenerGuildId !== loopGuildId)) {
                     console.log("Terminating Musicplayer listener.")
