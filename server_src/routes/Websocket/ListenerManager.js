@@ -8,7 +8,7 @@ module.exports = class ListenerManager {
         this.listeners = new Map();
         
         
-        
+        this.musicListenerGuildId = null;        
 
         this.processMessage = this.processMessage.bind(this)
         this.client.on("message", this.processMessage) 
@@ -42,6 +42,7 @@ module.exports = class ListenerManager {
 
     startMusicPlayerListener(guildId) {
         const self = this
+        this.musicListenerGuildId = guildId
         const guildController = Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
 
         
@@ -55,12 +56,12 @@ module.exports = class ListenerManager {
         const MusicController = guildController?.MusicController
 
         this.listenMusicPlayer = true;
-        runLoop(this.websocket, MusicController)
+        runLoop(this.websocket, MusicController, guildId)
 
-        function runLoop(websocket, MusicController) {
-            //console.log(MusicController)
+        function runLoop(websocket, MusicController, loopGuildId) {
+            console.log(loopGuildId, self.musicListenerGuildId)
             setTimeout(function() {
-                if (!self.listenMusicPlayer) {
+                if (!self.listenMusicPlayer || (self.musicListenerGuildId !== loopGuildId)) {
                     console.log("Terminating Musicplayer listener.")
                     return
                 }
@@ -87,7 +88,7 @@ module.exports = class ListenerManager {
     
                     const replyMessage = JSON.stringify({
                         event: "musicplayer_update",
-                        guild: guildId,
+                        guild: loopGuildId,
                         message: message,
                         audioPlayerStatus: audioPlayerStatus
                     })
@@ -96,7 +97,7 @@ module.exports = class ListenerManager {
                 } catch (error) {
                     console.log(error)
                 }
-                runLoop(websocket, MusicController)
+                runLoop(websocket, MusicController, loopGuildId)
             }, 400)
         }    
 
