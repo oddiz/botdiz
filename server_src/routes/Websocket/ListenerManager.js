@@ -32,7 +32,7 @@ module.exports = class ListenerManager {
 
             return
         }
-        const listenerCommands = require('./listenerCommands')
+        const listenerCommands = require('./RPC_Commands/listenerCommands')
         const constructedFunc = listenerCommands[command](id, this.websocket, ...params)
         this.listeners.set(id, constructedFunc)
 
@@ -68,11 +68,11 @@ module.exports = class ListenerManager {
                     
     
                     const queue = MusicController.queue
-                    const currentTitle = currentSong?.videoTitle;
+                    const currentTitle = currentSong?.videoTitle || "";
                     const streamTime = MusicController.audioPlayer?._state.playbackDuration / 1000 || 0;
-                    const videoLenght= currentSong?.videoDuration;
-                    const audioPlayerStatus = MusicController.audioPlayerStatus
-                    const videoThumbnailUrl = currentSong.videoThumbnailUrl;
+                    const videoLenght= currentSong?.videoDuration || 0;
+                    const audioPlayerStatus = MusicController.audioPlayerStatus || "none"
+                    const videoThumbnailUrl = currentSong.videoThumbnailUrl || "";
                     //console.log(queue, currentTitle, streamTime, videoLength)
                     const message = {
                         guild: guildId,
@@ -88,7 +88,7 @@ module.exports = class ListenerManager {
                         event: "musicplayer_update",
                         guild: loopGuildId,
                         message: message,
-                        audioPlayerStatus: audioPlayerStatus
+                        
                     })
     
                     websocket.send(replyMessage)

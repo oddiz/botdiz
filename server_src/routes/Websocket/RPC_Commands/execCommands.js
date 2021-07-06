@@ -1,4 +1,5 @@
-const Botdiz = require('../../../src/main')
+const Botdiz = require('../../../../src/main')
+
 const { AudioPlayerStatus } = require('@discordjs/voice')
 
 module.exports={
@@ -100,6 +101,48 @@ module.exports={
 
         
         playCommand.execute(false, [queryArg], false)
+    },
+
+    /**
+     * 
+     * @param {string} guildId 
+     * @param {Array} playlistArray Playlist array from module spotifyApi  
+     */
+    RPC_addSpotifyPlaylist: async function(guildId, playlistArray) {
+        try {
+            console.log("ding: ", arguments)
+            const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
+            guildController.MusicController.queueLock = true
+    
+            for (const item of playlistArray){
+                const videoName = item.track.name;
+                const videoArtist = item.track.artists[0].name
+                const videoTitle = videoArtist + " - " + videoName
+                const package = {
+                    videoArtist: videoArtist,
+                    videoName: videoName,
+                    videoTitle: videoTitle,
+                    isSpotify: true
+                }
+                guildController.MusicController.addToQueue(package)
+            }
+    
+            guildController.MusicController.queueLock = false
+            guildController.MusicController.processQueue();
+
+            return {
+                status: "success"
+            }
+        } catch (error) {
+            console.log("Error while trying to add spotify playlist")
+            try {
+                guildController.MusicController.queueLock = true
+            } catch (error) {
+                //fail silently
+            }
+        }
+
+        
     }
 
 

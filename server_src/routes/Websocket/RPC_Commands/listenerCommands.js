@@ -1,4 +1,5 @@
-const Botdiz = require('../../../src/main')
+const Botdiz = require('../../../../src/main')
+
 
 module.exports={
     RPC_ListenChannel: function(id, websocket, guildId, channelId){

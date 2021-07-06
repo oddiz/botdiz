@@ -160,7 +160,7 @@ module.exports = class WebsocketManager {
 
         if (message.type === "get"){
             
-            const commands= require('./getCommands')
+            const commands= require('./RPC_Commands/getCommands')
 
             //find command
             const result = await commands[message.command](...message.params)
@@ -180,7 +180,7 @@ module.exports = class WebsocketManager {
         }
 
         if (message.type === "exec") {
-            const commands = require('./execCommands')
+            const commands = require('./RPC_Commands/execCommands')
         
             let result
             try {
@@ -190,14 +190,18 @@ module.exports = class WebsocketManager {
                 return
             }
 
-            if (result) {
-                const reply = JSON.stringify({
-                    status: "OK",
+            let reply;
+            if (result?.status === "success") {
+                reply = JSON.stringify({
+                    status: "success",
                     message: "Command executed succesfully"
                 })
-
-                ws.send(reply)
+            } else {
+                reply = JSON.stringify({
+                    status: "failed"
+                })
             }
+            ws.send(reply)
         }
     }
 

@@ -1,4 +1,4 @@
-const Botdiz = require('../../../src/main')
+const Botdiz = require('../../../../src/main')
 
 /**
  * Botdiz.client
@@ -84,7 +84,7 @@ module.exports={
         
         
         return parsedMessages
-    },
+    }
 
     
 }

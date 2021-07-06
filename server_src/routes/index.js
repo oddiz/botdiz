@@ -1,6 +1,7 @@
 const login = require('./login')
 const validate = require('./validate')
 const logout = require('./logout')
+const playlists = require('./playlists')
 require('dotenv').config()
 
 
@@ -18,6 +19,7 @@ require('dotenv').config()
         login(this.app, this.db)
         validate(this.app, this.db)
         logout(this.app, this.db)
+        playlists(this.app, this.db)
     }
 
 }
