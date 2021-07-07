@@ -22,7 +22,6 @@ const UpdatePlayerInfo = require('./UpdatePlayerInfo')
 
 const commands = require('./botCommands')
 let playCommand;
-console.log(commands)
 for (const command of commands()) {
     if(command.name === 'play') {
         playCommand = command
@@ -259,7 +258,6 @@ module.exports = class MusicController {
                                 this.queueLock = false
                                 this.queue.shift()
     
-                                console.log(nextInQueue, "1")
                                 resolve(nextInQueue)
                             })
         

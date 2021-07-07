@@ -20,7 +20,7 @@ module.exports = class WebsocketManager {
         this.init()
         
         
-        console.log("created websocket manager")
+        console.log("Created websocket manager")
         
     }
 
@@ -163,7 +163,6 @@ module.exports = class WebsocketManager {
         }
 
         if(message.type === "addVoiceChannelListener") {
-            console.log("ding", message.listenerId, message.command, message.params)
             clientListener.addVoiceChannelListener(message.listenerId, message.command, message.params)
 
             //console.log(JSON.stringify(clientListener))

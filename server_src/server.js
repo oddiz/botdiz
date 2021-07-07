@@ -79,7 +79,6 @@ if(process.env.NODE_ENV === "development") {
     console.log("Initilizing Route Manager.")
     const RouteMngr = new RouteManager (app, db)
     RouteMngr.run()
-    console.log("Succesful")
     let server;
     if (process.env.NODE_ENV === "development") {
         server = app.listen(8080, () => console.log("Api is running on port 8080"))

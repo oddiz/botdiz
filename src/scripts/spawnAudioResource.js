@@ -23,17 +23,16 @@ module.exports = function spawnAudioResource(nextInQueue) {
         const stream = process.stdout;
         
         const onError = (error) => {
-            console.log("error" , error)
+            console.log("Error while trying to spawn Audio Resource" , error)
             if (!process.killed) process.kill();
 
             stream.resume();
             reject(error);
         };
         
-        
-                demuxProbe(stream)
-                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
-                    .catch(onError);
+            demuxProbe(stream)
+            .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+            .catch(onError);
             
     });
 }

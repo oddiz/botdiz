@@ -113,7 +113,7 @@ module.exports = class Command {
             }
 
             return await this.lastInvokedMessage.editReply(content).catch(err=> {
-                console.log(err + "Error happened so just send the message i guess....")
+                console.log(err + "Can't edit Last Invoked Message")
 
                 return this.lastInvokedMessage.channel.send(content)
             })

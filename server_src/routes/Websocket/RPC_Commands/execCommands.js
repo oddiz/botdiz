@@ -110,7 +110,6 @@ module.exports={
      */
     RPC_addSpotifyPlaylist: async function(guildId, playlistArray) {
         try {
-            console.log("ding: ", arguments)
             const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
             guildController.MusicController.queueLock = true
     

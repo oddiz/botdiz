@@ -159,7 +159,6 @@ module.exports = async function playlists(app,db) {
 
         try {
             const playlistId = req.params.playlistId
-            console.log("playlist id: "+ playlistId)
             if(!playlistId) {
                 console.log("No playlist Id specified")
                 
@@ -204,10 +203,7 @@ module.exports = async function playlists(app,db) {
             if (user.data.spotify.expires < new Date().getTime()) {
                 await spotifyApi.refreshAccessToken().then(
                     function(data) {
-                        console.log('The access token has been refreshed!');
                         
-                        console.log(data.body['access_token'])
-                        console.log(data.body['expires_in'])
                         // Save the access token so that it's used in future calls
                         spotifyApi.setAccessToken(data.body['access_token']);
                         const expiryTime = parseInt(data.body['expires_in']) * 1000 + new Date().getTime()

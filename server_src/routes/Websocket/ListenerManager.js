@@ -37,7 +37,6 @@ module.exports = class ListenerManager {
     }
 
     processVoiceChannelUpdate(message) {
-        console.log(this.voiceChannelListeners)
         try {
             for (const [id,listener] of this.voiceChannelListeners) {
                 listener(message)
@@ -79,7 +78,6 @@ module.exports = class ListenerManager {
 
         
         if(guildController) {
-            //console.log(guildController)
         } else {
             console.log("Guild not found?? ID: ", guildId)
             return
