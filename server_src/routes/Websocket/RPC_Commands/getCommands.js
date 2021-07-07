@@ -84,6 +84,29 @@ module.exports={
         
         
         return parsedMessages
+    },
+    RPC_getVoiceChannels: async function (guildId) {
+        const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
+        
+        if(guild) {
+            //console.log("found guild")
+        } else {
+            console.log("Guild not found?? ID: ", activeGuildId)
+            return
+        }
+        
+        const channels = await guild.channels.fetch()
+
+        const voiceChannels = channels.filter(channel => channel.type === "voice").map(channel => {
+            return {
+                name: channel.name, 
+                id: channel.id,
+                members: channel.members
+            }
+        })
+
+
+        return voiceChannels
     }
 
     

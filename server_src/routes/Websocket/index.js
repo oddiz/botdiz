@@ -129,7 +129,15 @@ module.exports = class WebsocketManager {
          *  params
          */
         
+        if(message.type === "ping") {
+            ws.send(JSON.stringify({
+                event:"pong",
+                token: token,
+                result:"success"
+            }))
 
+            return
+        }
         if(message.type === "listenMusicPlayer") {
             clientListener.startMusicPlayerListener(...message.params)
         }
@@ -137,6 +145,7 @@ module.exports = class WebsocketManager {
         if(message.type === "addListener") {
             //console.log(message.listenerId, message.command, ...message.params)
             /**
+             * 
              * msg structer:
              *  type = addListener
              *  listenerId 
