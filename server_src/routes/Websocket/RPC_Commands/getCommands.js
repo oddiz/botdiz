@@ -85,7 +85,7 @@ module.exports={
         
         return parsedMessages
     },
-    RPC_getVoiceChannels: async function (guildId) {
+    RPC_getVoiceChannels: async function (activeGuildId) {
         const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
         
         if(guild) {

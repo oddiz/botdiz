@@ -95,10 +95,7 @@ module.exports = class Controller {
         const commandName = interaction.commandName
         const args = interaction.options.map(option => option.value)
 
-        
-        if (this.debugMode) {
-            
-        }
+
 
         const foundCommand = this.commands.find( ( { name } ) => name === commandName )
         if (foundCommand) {

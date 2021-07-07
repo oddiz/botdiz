@@ -5,38 +5,71 @@ module.exports = class ListenerManager {
         this.client = Botdiz.client
         this.websocket = websocket
 
-        this.listeners = new Map();
-        
+        this.textListeners = new Map();
+        this.voiceChannelListeners = new Map();
         
         this.musicListenerGuildId = null;        
 
-        this.processMessage = this.processMessage.bind(this)
-        this.client.on("message", this.processMessage) 
+        this.listenerCommands = require('./RPC_Commands/listenerCommands')
 
-        this.add = this.add.bind(this)
+        
+        this.addVoiceChannelListener = this.addVoiceChannelListener.bind(this)
+        this.addTextListener = this.addTextListener.bind(this)
+        this.processTextMessage = this.processTextMessage.bind(this)
+        this.processVoiceChannelUpdate = this.processVoiceChannelUpdate.bind(this)
         this.startMusicPlayerListener = this.startMusicPlayerListener.bind(this)
+        
+        
+        this.client.on("message", this.processTextMessage) 
+        this.client.on("voiceStateUpdate", this.processVoiceChannelUpdate)
     }
 
-    processMessage(message) {
-        
-        for (const [id,listener] of this.listeners) {
-            listener(message)
+    processTextMessage(message) {
+        try {
+            for (const [id,listener] of this.textListeners) {
+                listener(message)
+            }
+        } catch (error) {
+            console.log("ERROR while trying to process text message: ", error)
         }
         //console.log("Listener list: " , this.listeners)
 
     }
 
-    add(id, command, params) {
-        if (this.listeners.has(id)) {
-            console.log("Channel already has a listener")
+    processVoiceChannelUpdate(message) {
+        console.log(this.voiceChannelListeners)
+        try {
+            for (const [id,listener] of this.voiceChannelListeners) {
+                listener(message)
+            }
+        } catch (error) {
+            console.log("ERROR while trying to process voice channel update: ", error)
+        }
+
+    }
+
+    addTextListener(id, command, params) {
+        if (this.textListeners.has(id)) {
+            console.log("Text channel already has a listener")
 
             return
         }
-        const listenerCommands = require('./RPC_Commands/listenerCommands')
-        const constructedFunc = listenerCommands[command](id, this.websocket, ...params)
-        this.listeners.set(id, constructedFunc)
+        const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
+        this.textListeners.set(id, constructedFunc)
 
-        console.log("Adding listener new list: ", this.listeners)
+        console.log("Adding text listener new list: ", this.textListeners)
+    }
+
+    addVoiceChannelListener(id, command, params) {
+        if (this.voiceChannelListeners.has(id)) {
+            console.log("Voice channel already has a listener")
+
+            return
+        }
+        const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
+        this.voiceChannelListeners.set(id, constructedFunc)
+
+        console.log("Adding voice channel listener new list: ", this.voiceChannelListeners)
     }
 
     startMusicPlayerListener(guildId) {
@@ -102,12 +135,15 @@ module.exports = class ListenerManager {
     }
 
     remove(id) {
-        this.listeners.delete(id)
+        this.textListeners.delete(id)
     }
     
     clearListeners() {
-        for (const [id,listener] of this.listeners) {
-            this.listeners.delete(id)
+        for (const [id,listener] of this.textListeners) {
+            this.textListeners.delete(id)
+        }
+        for (const [id,listener] of this.voiceChannelListeners) {
+            this.voiceChannelListeners.delete(id)
         }
         this.listenMusicPlayer = false
         //console.log("Cleared listeners, listener list: ", this.listeners)
@@ -115,7 +151,8 @@ module.exports = class ListenerManager {
 
     terminate(){
         this.clearListeners()
-        this.client.removeListener("message", this.processMessage)
+        this.client.removeListener("message", this.processTextMessage)
+        this.client.removeListener("voiceStateUpdate", this.processVoiceChannelUpdate)
         this.websocket = null
     }
 }

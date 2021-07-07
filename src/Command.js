@@ -80,6 +80,11 @@ module.exports = class Command {
             return map && map.size === 0
         }
 
+        if(!this.lastInvokedMessage) {
+            console.log("No message to reply")
+            return
+        }
+
         
         //check if invoked message is still there
         const lastInvokedChannel = await this.lastInvokedMessage?.channel?.fetch(true)

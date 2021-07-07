@@ -2,7 +2,7 @@ const Botdiz = require('../../../../src/main')
 
 
 module.exports={
-    RPC_ListenChannel: function(id, websocket, guildId, channelId){
+    RPC_listenTextChannel: function(id, websocket, guildId, channelId){
 
         return function(message) {
             const listenerID = id
@@ -30,5 +30,21 @@ module.exports={
                 
         }
     },
+    RPC_listenVoiceChannels: function (id, websocket, guildId) {
+        return function(message) {
+            const listenerID = id
+            //console.log(id, guildId, channelId)
+            if(guildId === message.guild.id) {
+                const replyMessage = JSON.stringify({
+                    event: "voicechannel_update",
+                    listenerId: listenerID,
+                    guildId: guildId
+                })
+                
+                websocket.send(replyMessage)
+            }
+                
+        }
+    }
     
 }

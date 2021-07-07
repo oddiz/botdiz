@@ -19,11 +19,20 @@ const {
 const ytdl = require("ytdl-core");
 const prism = require('prism-media')
 const UpdatePlayerInfo = require('./UpdatePlayerInfo')
+
+const commands = require('./botCommands')
+let playCommand;
+console.log(commands)
+for (const command of commands()) {
+    if(command.name === 'play') {
+        playCommand = command
+    }
+}
 module.exports = class MusicController {
     constructor(controller) {
         this.controller = controller;
         this.volume = 1
-        this.command;
+        this.command = playCommand;
         this.readyLock = false;
         this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
         this.UpdatePlayerInfo = new UpdatePlayerInfo(this)
@@ -53,7 +62,7 @@ module.exports = class MusicController {
         this.voiceConnection.subscribe(this.audioPlayer);
         
 
-        this.voiceConnection.on('stateChange', async (_, newState) => {
+        this.voiceConnection.once('stateChange', async (_, newState) => {
             this.voiceConnectionState = newState.status
             
 			if (newState.status === VoiceConnectionStatus.Disconnected) {

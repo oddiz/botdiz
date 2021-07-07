@@ -83,10 +83,7 @@ module.exports = async function playlists(app,db) {
             .catch(err => {
                 console.log("Error while accessing spotify api: ")
 
-                res.status(401).send({
-                    status: "error",
-                    message: "Invalid code. Try again later, contact Oddiz if issue persists."
-                })
+                
 
                 return
             })
@@ -96,27 +93,39 @@ module.exports = async function playlists(app,db) {
             spotifyApi.setRefreshToken(spotifyAuthData.body['refresh_token']);
             // Set auth data on database
             
+
+            async function fetchSpotifyPlaylists(offset) {
+                const response = await fetch("https://api.spotify.com/v1/me/playlists?limit=50&offset="+offset, {
+                    method:"GET",
+                    headers: {
+                        "Content-Encoding": "null",
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer "+spotifyAuthData.body['access_token'],
+                    }
+                })
+                
+                return response.json()
+            } 
+
+            let offset = 0
+            const playlistsResponse = await fetchSpotifyPlaylists(offset)
+    
             
-            const playlistsResponse = await fetch("https://api.spotify.com/v1/me/playlists?limit=50", {
-                method:"GET",
-                headers: {
-                    "Content-Encoding": "null",
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer "+spotifyAuthData.body['access_token'],
+            while (parseInt(playlistsResponse.total) > offset + 50) {
+                offset += 50
+                const nextPlaylistsResponse = await fetchSpotifyPlaylists(offset)
+                for (const playlist of nextPlaylistsResponse.items) {
+                    playlistsResponse.items.push(playlist)
                 }
-            })
-    
-            const playlistParsedResponse = await playlistsResponse.json()
-    
-            
+            }
             
             const expiryTime = parseInt(spotifyAuthData.body['expires_in']) * 1000 + new Date().getTime()
             const spotifyData = {
                 auth_token: spotifyAuthData.body['access_token'],
                 refresh_token: spotifyAuthData.body['refresh_token'],
                 expires: expiryTime,
-                playlists: playlistParsedResponse
+                playlists: playlistsResponse
             }
     
             await db.collection('users').updateOne(
@@ -133,9 +142,10 @@ module.exports = async function playlists(app,db) {
 
             res.send({
                 status: "success",
-                message:"Playlists added successfuly. You can now close this window."
+                message:"Playlists added successfuly"
             })
         } catch (error) {
+            console.log(error)
             res.status(401).send({
                 status: "error",
                 message:"Failed to fetch spotify playlists. Try again later, contact Oddiz if issue persists."

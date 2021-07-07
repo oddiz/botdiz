@@ -142,7 +142,7 @@ module.exports = class WebsocketManager {
             clientListener.startMusicPlayerListener(...message.params)
         }
 
-        if(message.type === "addListener") {
+        if(message.type === "addTextChannelListener") {
             //console.log(message.listenerId, message.command, ...message.params)
             /**
              * 
@@ -155,7 +155,16 @@ module.exports = class WebsocketManager {
              */
 
 
-            clientListener.add(message.listenerId, message.command, message.params)
+            clientListener.addTextListener(message.listenerId, message.command, message.params)
+
+            //console.log(JSON.stringify(clientListener))
+
+            return
+        }
+
+        if(message.type === "addVoiceChannelListener") {
+            console.log("ding", message.listenerId, message.command, message.params)
+            clientListener.addVoiceChannelListener(message.listenerId, message.command, message.params)
 
             //console.log(JSON.stringify(clientListener))
 

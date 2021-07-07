@@ -1,6 +1,6 @@
 const Botdiz = require('../../../../src/main')
 
-const { AudioPlayerStatus } = require('@discordjs/voice')
+const { AudioPlayerStatus, joinVoiceChannel } = require('@discordjs/voice')
 
 module.exports={
 
@@ -145,7 +145,35 @@ module.exports={
         
     },
 
-    
+    RPC_joinVoiceChannel: async function(guildId, channelId) {
+        try {
+            const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId)
+            
+            const voiceConnection = await joinVoiceChannel({
+                channelId: channelId,
+                guildId: guildId,
+                adapterCreator: guildController.guildObj.voiceAdapterCreator,
+                selfMute:false,
+                selfDeaf:false,
+            })
+
+            guildController.controller.MusicController.setVoiceConnection(voiceConnection)
+
+            return {
+                status: "success",
+                command: "RPC_joinVoiceChannel"
+            }
+
+        } catch (error) {
+            console.log(error, "<-- Error while trying to execute RPC_joinVoiceChannel command")
+            return {
+                status: "error",
+                command: "RPC_joinVoiceChannel"
+            }
+        }
+
+
+    }
 
 
 
