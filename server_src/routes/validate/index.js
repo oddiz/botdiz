@@ -11,7 +11,8 @@ module.exports = function validate(app, db) {
             const user = await db.collection('users').findOne( { username: session.username } )
             const accountInfo = {
                 username: user.username,
-                avatarURL: user.avatarURL
+                avatarURL: user.avatarURL,
+                is_admin: user.is_admin
             }
             
             res.send({

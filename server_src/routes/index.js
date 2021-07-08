@@ -2,6 +2,7 @@ const login = require('./login')
 const validate = require('./validate')
 const logout = require('./logout')
 const playlists = require('./playlists')
+const addsuperuser = require('./addsuperuser')
 require('dotenv').config()
 
 
@@ -20,6 +21,7 @@ require('dotenv').config()
         validate(this.app, this.db)
         logout(this.app, this.db)
         playlists(this.app, this.db)
+        addsuperuser(this.app, this.db)
     }
 
 }
