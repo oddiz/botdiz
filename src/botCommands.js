@@ -168,6 +168,18 @@ module.exports = function (Controller){
         new Command(
             Controller,
             {
+                name:"next",
+                description: "Skips the current song.",
+                needArgs:false,
+                usage: "/next",
+                noBind: true,
+                ephemeral: true,
+            },
+            require("./commands/next")
+        ),
+        new Command(
+            Controller,
+            {
                 name: "status",
                 description: "Shows the status of current playing song",
                 needArgs: false,

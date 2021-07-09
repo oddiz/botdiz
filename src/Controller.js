@@ -24,9 +24,9 @@ module.exports = class Controller {
     }
 
     init() {
-        
         const populateCommands = require('./botCommands')
         this.commands = populateCommands(this)
+        
         this.guild.commands.fetch().then( commands => {
             if (commands.size > 0) {
                 //

@@ -134,7 +134,9 @@ module.exports = class MusicController {
 
                 
                 logger.log("info","Playing to idle state triggered.")
-
+                if(this.stopping) {
+                    this.queue = [];
+                }
                 if(this.queue.length > 0) {
                     logger.log("info", "Playing next in queue.")
                     void this.playNext();
@@ -142,6 +144,7 @@ module.exports = class MusicController {
                     logger.log("info","Nothing left in queue.")
                     this.command.reply("Stopping player 🛑", {new: true})
                     this.stop()
+                    this.stopping = false;
                     return
                 }
 
@@ -425,6 +428,7 @@ module.exports = class MusicController {
     
     stop() {
         try {
+            this.stopping = true;
             if(this.audioPlayer) {
                 this.audioPlayer.stop(true)
                 logger.log("info", "Audio Player stopped.")
