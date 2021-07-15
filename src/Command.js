@@ -74,7 +74,7 @@ module.exports = class Command {
 
     }
 
-    async reply(content, options = { followup: false, new:false }) {
+    async reply(content, options = { followup: false, new:false, required: true }) {
         
         function isEmpty(map) {
             return map && map.size === 0
@@ -91,38 +91,57 @@ module.exports = class Command {
         if(!lastInvokedChannel) {
             return
         }
-        const foundMap = await lastInvokedChannel.messages.fetch(this.lastInvokedMessage)
+        const foundMessage = await lastInvokedChannel.messages.fetch(this.lastInvokedMessage)
 
         //if not there send normal message and return
-        if(isEmpty(foundMap)) {
-            lastInvokedChannel.send(content)
+        if(isEmpty(foundMessage)) {
+            if(options.required) {
+                return await lastInvokedChannel.send(content)
+            }
             return
         }
         
 
         if(this.lastIsInterraction) {
             //if we have interaction
+
+            if (foundMessage.deffered && !foundMessage.replied) {
+                return this.lastInvokedMessage.reply(content)
+            }
             
-            if (options.followup){
+            //if followup option is passed or found message is deffered but not replied yet
+            if (options.followup) {
                 return this.lastInvokedMessage.followUp(content)
                 
             } 
             
             if (options.new) {
-                return this.lastInvokedMessage.channel.send(content)
+                this.lastInvokedMessage = await this.lastInvokedMessage.channel.send(content)
+                this.lastIsInterraction = false
+
+                return this.lastInvokedMessage
             }
 
-            return await this.lastInvokedMessage.editReply(content).catch(err=> {
-                console.log(err + "Can't edit Last Invoked Message")
+            return await this.lastInvokedMessage.editReply(content).catch(async err=> {
+                console.log(err + " -> Can't edit Last Invoked Message")
 
-                return this.lastInvokedMessage.channel.send(content)
+                if(options.new && options.required) {
+                    this.lastInvokedMessage = await this.lastInvokedMessage.channel.send(content)
+                    this.lastIsInterraction = false
+
+                    return this.lastInvokedMessage
+                }
             })
         
 
         } else {
             //if normal command
+            if (options.required) {
+                this.lastInvokedMessage = await this.lastInvokedMessage.channel.send(content)
+                this.lastIsInterraction = false
 
-            return this.lastInvokedMessage.channel.send(content)
+                return this.lastInvokedMessage
+            }
         }
     }
 

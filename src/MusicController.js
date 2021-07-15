@@ -316,8 +316,8 @@ module.exports = class MusicController {
                 .setThumbnail(currentSong.videoThumbnailUrl)
         }
         
-        await this.command.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true })
-        botMessage = await this.command.reply( { embeds: [embedMessage]}, { new:true })
+        await this.command.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
+        botMessage = await this.command.reply( { embeds: [embedMessage]}, { new:true, required: true })
         
 
         if (this.UpdatePlayerInfo.quit) {

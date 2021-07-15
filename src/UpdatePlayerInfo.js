@@ -33,7 +33,6 @@ module.exports = class UpdatePlayerInfo {
             try {
                 
                 this.looping = true;
-
                 let newEmbed = new MessageEmbed()
                     newEmbed = newEmbed
                     .setColor(this.MusicController.controller.roleColor)
@@ -101,7 +100,7 @@ module.exports = class UpdatePlayerInfo {
         try {
             this.oldMessage.delete()
         } catch (err) {
-            logger.log("error", "Error while trying to delete old embed message")
+            logger.log("error", "Error while trying to delete old embed message: ", err)
         }
         this.messageToEdit = message
         this.quit = false;
