@@ -81,7 +81,7 @@ module.exports = class Command {
         }
 
         if(!this.lastInvokedMessage) {
-            console.log("No message to reply")
+            // no message to reply
             return
         }
 

@@ -210,11 +210,13 @@ module.exports = class WebsocketManager {
             let reply;
             if (result?.status === "success") {
                 reply = JSON.stringify({
+                    command: message.command,
                     status: "success",
                     message: "Command executed succesfully"
                 })
             } else {
                 reply = JSON.stringify({
+                    command: message.command,
                     status: "failed"
                 })
             }

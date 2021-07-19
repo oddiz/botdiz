@@ -16,11 +16,16 @@ module.exports={
 
             const channel = await guild.channels.fetch(channelId)
 
-            channel.send({content: message})
+            await channel.send({content: message})
 
-            return true
+            return {
+                status: "success"
+            }
         } catch (error) {
             console.log("Error while trying to execute RPC_sendMessage :", error)
+            return {
+                status: "failed"
+            }
         }
     },
 
@@ -36,10 +41,16 @@ module.exports={
             } else {
                 await guildMusicController.pause()
                 
+                return {
+                    status: "success"
+                }
                 
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_pausePlayer :", error)
+            return {
+                status: "failed"
+            }
         }
     },
 
@@ -51,10 +62,17 @@ module.exports={
             if (guildMusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
                 
                 await guildMusicController.resume()
+
+                return {
+                    status: "success"
+                }
                 
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_resumePlayer :", error)
+            return {
+                status: "failed"
+            }
         }
 
         
@@ -69,7 +87,11 @@ module.exports={
                 guildMusicController.stop()
                 return
             }
-            guildMusicController.skip(skipAmount)
+            const result = await guildMusicController.skip(skipAmount)
+            
+            return {
+                status: result
+            }
         } catch (error) {
             console.log("Error while trying to execute RPC_skipSong :", error)
         }
@@ -80,8 +102,15 @@ module.exports={
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
             
             guildMusicController.stop()
+
+            return {
+                status: "success"
+            }
         } catch (error) {
             console.log("Error while trying to execute RPC_stopPlayer :", error)
+            return {
+                status: "failed"
+            }
         }
     },
     RPC_deleteQueueSong: async function (guildId, songIndex) {
@@ -89,8 +118,15 @@ module.exports={
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
             
             guildMusicController.queue.splice(songIndex, 1)
+
+            return {
+                status: "success"
+            }
         } catch (error) {
             console.log("Error while trying to execute RPC_deleteQueueSong :", error)
+            return {
+                status: "failed"
+            }
         }
 
     },
@@ -127,10 +163,10 @@ module.exports={
             }
     
             guildController.MusicController.queueLock = false
-            guildController.MusicController.processQueue();
+            const result = await guildController.MusicController.processQueue();
 
             return {
-                status: "success"
+                status: result
             }
         } catch (error) {
             console.log("Error while trying to add spotify playlist")
@@ -160,20 +196,13 @@ module.exports={
 
             return {
                 status: "success",
-                command: "RPC_joinVoiceChannel"
             }
 
         } catch (error) {
             console.log(error, "<-- Error while trying to execute RPC_joinVoiceChannel command")
             return {
-                status: "error",
-                command: "RPC_joinVoiceChannel"
+                status: "failed",
             }
         }
-
-
     }
-
-
-
 }

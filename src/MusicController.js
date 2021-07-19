@@ -183,18 +183,18 @@ module.exports = class MusicController {
             console.log("no audio player available")
             this.queue = []
             this.queueLock = false
-            return
+            return "failed"
         }
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
             
             this.queueLock = false
-			return;
+			return "success";
 		} else if (this.audioPlayer.state.status == AudioPlayerStatus.Idle){
             this.queueLock = false
-            this.playNext();
+            const result = await this.playNext();
 
-            return
+            return result
         }
         
     }
@@ -375,13 +375,14 @@ module.exports = class MusicController {
             console.log("Got resources")
             await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
             
-            return
+            return "success"
             
         } catch (error) {
             logger.log("error", "Error occured while trying to create Audio Resource.", error )  
             //console.log("trying next")
             //this.playNext()
-            return
+            throw new Error("Error while trying to create Audio Resource")
+            return 
             
         }
 
@@ -396,10 +397,10 @@ module.exports = class MusicController {
             this.queue.shift()
         }
 
-        await this.playNext()
+        const result = await this.playNext()
         this.skipping = false
         this.queueLock = false
-        return
+        return result
 
 
 
