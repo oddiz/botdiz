@@ -35,6 +35,41 @@ module.exports = class Controller {
                 this.deploySlashCommands()
             }
         })
+
+        this.controllerMaintainer()
+
+    }
+
+    controllerMaintainer = async () => {
+        let aloneInVoice = false
+        const tenMinutes = 1000 * 60 * 10
+        while (true) {
+            try {
+                await new Promise(resolve => setTimeout(resolve, tenMinutes))
+    
+                const connectedVoiceChannelMembers = this.guild.me.voice.channel?.members
+                let members = []
+                connectedVoiceChannelMembers.each((member) => {
+                    members.push(member.user)
+                })
+
+                // if bot is the only member of the voice channel first let the maintainer know bot is alone so it will kill the voice connection next pass 
+                if (members.length === 1 && aloneInVoice) {
+                    this.MusicController.stop()
+                    this.MusicController.voiceConnection.destroy()
+                    aloneInVoice = false
+                } else if (members.length === 1) {
+                    aloneInVoice = true
+                } else {
+                    aloneInVoice = false
+                }
+                
+            } catch (error) {
+                //fail silently
+                aloneInVoice = false
+            }
+        }
+
     }
 
     deploySlashCommands() {
