@@ -98,51 +98,51 @@ module.exports = class ListenerManager {
             this.listenMusicPlayer = true;
             runLoop(this.websocket, MusicController, guildId)
             
+            function runLoop(websocket, MusicController, loopGuildId) {
+                setTimeout(function() {
+                    if (!self.listenMusicPlayer || (self.musicListenerGuildId !== loopGuildId)) {
+                        console.log("Terminating Musicplayer listener.")
+                        return
+                    }
+                    try {
+                        const currentSong = MusicController.currentSong || {}
+                        
+        
+                        const queue = MusicController.queue
+                        const currentTitle = currentSong?.videoTitle || "";
+                        const streamTime = MusicController.audioPlayer?._state.playbackDuration / 1000 || 0;
+                        const videoLenght= currentSong?.videoDuration || 0;
+                        const audioPlayerStatus = MusicController.audioPlayerStatus || "none"
+                        const videoThumbnailUrl = currentSong.videoThumbnailUrl || "";
+                        //console.log(queue, currentTitle, streamTime, videoLength)
+                        const message = {
+                            guild: guildId,
+                            queue: queue,
+                            currentTitle: currentTitle,
+                            streamTime: streamTime,
+                            videoLength: videoLenght,
+                            audioPlayerStatus: audioPlayerStatus,
+                            videoThumbnailUrl: videoThumbnailUrl
+                        }
+        
+                        const replyMessage = JSON.stringify({
+                            event: "musicplayer_update",
+                            guild: loopGuildId,
+                            message: message,
+                            
+                        })
+        
+                        websocket.send(replyMessage)
+                    } catch (error) {
+                        console.log("Exception in music player listener loop: ", error)
+                    }
+                    runLoop(websocket, MusicController, loopGuildId)
+                }, 400)
+            }    
         } catch (error) {
             console.log("Error while trying to start music player listener:", error)
         }
 
-        function runLoop(websocket, MusicController, loopGuildId) {
-            setTimeout(function() {
-                if (!self.listenMusicPlayer || (self.musicListenerGuildId !== loopGuildId)) {
-                    console.log("Terminating Musicplayer listener.")
-                    return
-                }
-                try {
-                    const currentSong = MusicController.currentSong || {}
-                    
-    
-                    const queue = MusicController.queue
-                    const currentTitle = currentSong?.videoTitle || "";
-                    const streamTime = MusicController.audioPlayer?._state.playbackDuration / 1000 || 0;
-                    const videoLenght= currentSong?.videoDuration || 0;
-                    const audioPlayerStatus = MusicController.audioPlayerStatus || "none"
-                    const videoThumbnailUrl = currentSong.videoThumbnailUrl || "";
-                    //console.log(queue, currentTitle, streamTime, videoLength)
-                    const message = {
-                        guild: guildId,
-                        queue: queue,
-                        currentTitle: currentTitle,
-                        streamTime: streamTime,
-                        videoLength: videoLenght,
-                        audioPlayerStatus: audioPlayerStatus,
-                        videoThumbnailUrl: videoThumbnailUrl
-                    }
-    
-                    const replyMessage = JSON.stringify({
-                        event: "musicplayer_update",
-                        guild: loopGuildId,
-                        message: message,
-                        
-                    })
-    
-                    websocket.send(replyMessage)
-                } catch (error) {
-                    console.log("Exception in music player listener loop: ", error)
-                }
-                runLoop(websocket, MusicController, loopGuildId)
-            }, 400)
-        }    
 
     }
 
