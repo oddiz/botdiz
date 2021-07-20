@@ -53,10 +53,14 @@ module.exports = class ListenerManager {
 
             return
         }
-        const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
-        this.textListeners.set(id, constructedFunc)
-
-        console.log("Adding text listener new list: ", this.textListeners)
+        try {
+            const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
+            this.textListeners.set(id, constructedFunc)
+    
+            console.log("Adding text listener new list: ", this.textListeners)
+        } catch (error) {
+            console.log("Error while trying to add text channel listener: ", error)
+        }
     }
 
     addVoiceChannelListener(id, command, params) {
@@ -65,28 +69,38 @@ module.exports = class ListenerManager {
 
             return
         }
-        const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
-        this.voiceChannelListeners.set(id, constructedFunc)
-
-        console.log("Adding voice channel listener new list: ", this.voiceChannelListeners)
+        try {
+            const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
+            this.voiceChannelListeners.set(id, constructedFunc)
+    
+            console.log("Adding voice channel listener new list: ", this.voiceChannelListeners)
+            
+        } catch (error) {
+            console.log("Error while trying to add voice channel listener: ", error)
+        }
     }
 
     startMusicPlayerListener(guildId) {
-        const self = this
-        this.musicListenerGuildId = guildId
-        const guildController = Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
-
-        
-        if(guildController) {
-        } else {
-            console.log("Guild not found?? ID: ", guildId)
-            return
-        } 
-
-        const MusicController = guildController?.MusicController
-
-        this.listenMusicPlayer = true;
-        runLoop(this.websocket, MusicController, guildId)
+        try {
+            const self = this
+            this.musicListenerGuildId = guildId
+            const guildController = Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
+    
+            
+            if(guildController) {
+            } else {
+                console.log("Guild not found?? ID: ", guildId)
+                return
+            } 
+    
+            const MusicController = guildController?.MusicController
+    
+            this.listenMusicPlayer = true;
+            runLoop(this.websocket, MusicController, guildId)
+            
+        } catch (error) {
+            console.log("Error while trying to start music player listener:", error)
+        }
 
         function runLoop(websocket, MusicController, loopGuildId) {
             setTimeout(function() {
@@ -124,7 +138,7 @@ module.exports = class ListenerManager {
     
                     websocket.send(replyMessage)
                 } catch (error) {
-                    console.log(error)
+                    console.log("Exception in music player listener loop: ", error)
                 }
                 runLoop(websocket, MusicController, loopGuildId)
             }, 400)
@@ -133,24 +147,38 @@ module.exports = class ListenerManager {
     }
 
     remove(id) {
-        this.textListeners.delete(id)
+        try {
+            this.textListeners.delete(id)
+        } catch (error) {
+            console.log("Error while trying to delete listener id: ", id)
+        }
     }
     
     clearListeners() {
-        for (const [id,listener] of this.textListeners) {
-            this.textListeners.delete(id)
+        try {
+            for (const [id,listener] of this.textListeners) {
+                this.textListeners.delete(id)
+            }
+            for (const [id,listener] of this.voiceChannelListeners) {
+                this.voiceChannelListeners.delete(id)
+            }
+            this.listenMusicPlayer = false
+            
+        } catch (error) {
+            console.log("Error while trying to clear listeners: ", error)
         }
-        for (const [id,listener] of this.voiceChannelListeners) {
-            this.voiceChannelListeners.delete(id)
-        }
-        this.listenMusicPlayer = false
         //console.log("Cleared listeners, listener list: ", this.listeners)
     }
 
     terminate(){
-        this.clearListeners()
-        this.client.removeListener("message", this.processTextMessage)
-        this.client.removeListener("voiceStateUpdate", this.processVoiceChannelUpdate)
-        this.websocket = null
+        try {
+            this.clearListeners()
+            this.client.removeListener("message", this.processTextMessage)
+            this.client.removeListener("voiceStateUpdate", this.processVoiceChannelUpdate)
+            this.websocket = null
+            
+        } catch (error) {
+            console.log("Error while trying to terminate listener manager: ", error)
+        }
     }
 }

@@ -21,7 +21,7 @@ module.exports = function validate(app, db) {
                 token: reqToken
             });
         } else {
-            res.status(404).send({
+            res.status(401).send({
                 isValidated:false
             })
         }

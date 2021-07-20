@@ -1,5 +1,7 @@
 const Botdiz = require('../../../../src/main')
-
+const failed = {
+    status: "failed"
+}
 /**
  * Botdiz.client
  * Botdiz.GuildControllers
@@ -12,101 +14,125 @@ const Botdiz = require('../../../../src/main')
 
 module.exports={
     RPC_getGuilds: async function() {
-        const guilds = await Botdiz.client.guilds.cache
-        
-        
-
-        const parsedGuilds = guilds.map(guild => {
-            return {
-                id:guild.id,
-                icon:guild.icon
-            }
-        })
-        //console.log(parsedGuilds)
-        
-
-        return parsedGuilds
+        try {
+            const guilds = await Botdiz.client.guilds.cache
+            
+            
+    
+            const parsedGuilds = guilds.map(guild => {
+                return {
+                    id:guild.id,
+                    icon:guild.icon
+                }
+            })
+            //console.log(parsedGuilds)
+            
+    
+            return parsedGuilds
+            
+        } catch (error) {
+            console.log("Exception in RPC_getGuilds: ", error)
+            return failed
+        }
     },
 
     RPC_getTextChannels: async function(activeGuildId) {
-        const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
-        
-        if(guild) {
-            //console.log("found guild")
-        } else {
-            console.log("Guild not found?? ID: ", activeGuildId)
-            return
+        try {
+            const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
+            
+            if(guild) {
+                //console.log("found guild")
+            } else {
+                console.log("Guild not found?? ID: ", activeGuildId)
+                return
+            }
+            
+            const channels = await guild.channels.fetch()
+    
+            const textChannels = channels.filter(channel => channel.type === "text").map(channel => {return {name: channel.name, id: channel.id}})
+    
+    
+            return textChannels
+            
+        } catch (error) {
+            console.log("Exception in RPC_getTextChannels: ", error)
+            return failed
         }
-        
-        const channels = await guild.channels.fetch()
-
-        const textChannels = channels.filter(channel => channel.type === "text").map(channel => {return {name: channel.name, id: channel.id}})
-
-
-        return textChannels
     },
 
     RPC_getTextChannelContent: async function(activeGuildId, channelId) {
-        const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
-
-        
-        if(guild) {
-            //console.log("found guild")
-        } else {
-            console.log("Guild not found?? ID: ", activeGuildId)
-            return
-        }
-        //const guildmembers = await guild.members.fetch("241939345290952704")
-
-        //console.log(guildmembers.displayHexColor)
-        //console.log(guild.members.cache.get("241939345290952704").displayHexColor)
-
-        const channel = await guild.channels.fetch(channelId)
-
-        const messages = await channel.messages.fetch({ limit: 25})
-
-        
-        const parsedMessages = messages.map(message => {
-
-            let color = guild.members.cache.get(message.author.id)?.displayHexColor
-
-            if (color === "#000000"){
-                color = "#cdcecf"
-            }
+        try {
+            const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
+    
             
-            return({
-                type: message.type,
-                author: message.author.username,
-                authorColor: color || null,
-                content: message.content    
+            if(guild) {
+                //console.log("found guild")
+            } else {
+                console.log("Guild not found?? ID: ", activeGuildId)
+                return
+            }
+            //const guildmembers = await guild.members.fetch("241939345290952704")
+    
+            //console.log(guildmembers.displayHexColor)
+            //console.log(guild.members.cache.get("241939345290952704").displayHexColor)
+    
+            const channel = await guild.channels.fetch(channelId)
+    
+            const messages = await channel.messages.fetch({ limit: 25})
+    
+            
+            const parsedMessages = messages.map(message => {
+    
+                let color = guild.members.cache.get(message.author.id)?.displayHexColor
+    
+                if (color === "#000000"){
+                    color = "#cdcecf"
+                }
+                
+                return({
+                    type: message.type,
+                    author: message.author.username,
+                    authorColor: color || null,
+                    content: message.content    
+                })
             })
-        })
-        
-        
-        return parsedMessages
+            
+            
+            return parsedMessages
+            
+        } catch (error) {
+            console.log("Exception in RPC_getTextChannelContent", error)
+            return failed
+        }
     },
     RPC_getVoiceChannels: async function (activeGuildId) {
-        const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
-        
-        if(guild) {
-            //console.log("found guild")
-        } else {
-            console.log("Guild not found?? ID: ", activeGuildId)
-            return
-        }
-        
-        const channels = await guild.channels.fetch()
-
-        const voiceChannels = channels.filter(channel => channel.type === "voice").map(channel => {
-            return {
-                name: channel.name, 
-                id: channel.id,
-                members: channel.members
+        try {
+            const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
+            
+            if(guild) {
+                //console.log("found guild")
+            } else {
+                console.log("Guild not found?? ID: ", activeGuildId)
+                return failed
             }
-        })
-
-
-        return voiceChannels
+            
+            const channels = await guild.channels.fetch()
+    
+            const voiceChannels = channels.filter(channel => channel.type === "voice").map(channel => {
+                return {
+                    name: channel.name, 
+                    id: channel.id,
+                    members: channel.members
+                }
+            })
+    
+    
+            return voiceChannels
+            
+        } catch (error) {
+            console.log("Exception in RPC_getVoiceChannels: ", error)
+            return failed
+        }
     }
 
     
