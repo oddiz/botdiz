@@ -87,7 +87,7 @@ module.exports = async function playlists(app,db) {
                     verified: true
                 }
                 */
-                
+                console.log(userResult)
                 const userGuilds = await fetch('https://discord.com/api/users/@me/guilds', {
                     headers: {
                         authorization: `${tokenType} ${accessToken}`,
