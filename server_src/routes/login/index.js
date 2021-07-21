@@ -81,9 +81,10 @@ module.exports = async function login(app, db) {
                 },
                 { $set: {
                     "createdAt": new Date(),
-                    "userid": id,
+                    "user_id": id,
                     "username": reqUsername,
-                    "token": token
+                    "token": token,
+                    "moderator_session": true
                     }
                 },
                 {
@@ -109,7 +110,7 @@ module.exports = async function login(app, db) {
             console.log(reqUsername + " logged in.")
             
         } else {
-            res.status(404).send(
+            res.status(401).send(
                 {message: "Failed to login with given credentials"}
             );
 

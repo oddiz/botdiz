@@ -19,10 +19,20 @@ module.exports = async function playlists(app,db) {
                 console.log("Session not found")
                 return
             }
-            const reqUsername = session.username 
+
+            let user, dbUserCollectionName
+            
+            if (session.discord_session) {
+                dbUserCollectionName = "discord_users"
+                user = await db.collection(dbUserCollectionName).findOne( { discord_id: session.discord_id } )
+                
+            } else {
+                dbUserCollectionName = "users"
+                user = await db.collection(dbUserCollectionName).findOne( { username: session.username } )
+                
+            }
             
             //find user from username
-            const user = await db.collection('users').findOne( { username: reqUsername } )
             
             
             res.send({
@@ -57,8 +67,17 @@ module.exports = async function playlists(app,db) {
 
             const reqUsername = session.username 
             //find playlists from username
-            const user = await db.collection('users').findOne( { username: reqUsername } )
-    
+            let user, dbUserCollectionName
+            
+            if (session.discord_session) {
+                dbUserCollectionName = "discord_users"
+                user = await db.collection(dbUserCollectionName).findOne( { discord_id: session.discord_id } )
+                
+            } else {
+                dbUserCollectionName = "users"
+                user = await db.collection(dbUserCollectionName).findOne( { username: session.username } )
+                
+            }
             //spotify auth
             
             const reqCode = req.body?.code
@@ -127,18 +146,33 @@ module.exports = async function playlists(app,db) {
                 expires: expiryTime,
                 playlists: playlistsResponse
             }
-    
-            await db.collection('users').updateOne(
-                {
-                    username: user.username
-                },
-                {
-                    $set: {
-                        "data.spotify": spotifyData
-                    }
-                },
-                {upsert: true}
-            )
+            if (session.discord_session) {
+                await db.collection(dbUserCollectionName).updateOne(
+                    {
+                        discord_id: user.discord_id
+                    },
+                    {
+                        $set: {
+                            "data.spotify": spotifyData
+                        }
+                    },
+                    {upsert: true}
+                )
+                
+            } else {
+                
+                await db.collection(dbUserCollectionName).updateOne(
+                    {
+                        username: user.username
+                    },
+                    {
+                        $set: {
+                            "data.spotify": spotifyData
+                        }
+                    },
+                    {upsert: true}
+                )
+            }
 
             res.send({
                 status: "success",
@@ -179,9 +213,14 @@ module.exports = async function playlists(app,db) {
                 return
             }
 
-            const reqUsername = session.username 
             //find playlists from username
-            const user = await db.collection('users').findOne( { username: reqUsername } )
+            let user;
+            if (session.discord_session) {
+                user = await db.collection('discord_users').findOne( { discord_id: session.discord_id })
+            } else {
+                user = await db.collection('users').findOne( { username: session.username } ) 
+            }
+
             
             if (!user.data?.spotify?.auth_token) {
                 console.log("No spotify data about user")

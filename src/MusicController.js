@@ -370,9 +370,9 @@ module.exports = class MusicController {
         const spawnAudioResource = require("./scripts/spawnAudioResource")
         
         try {
-            logger.log("info", "Trying to create Audio Resource." )    
+            //logger.log("info", "Trying to create Audio Resource." )    
             const resource = await spawnAudioResource(nextInQueue);
-            console.log("Got resources")
+            //console.log("Got resources")
             await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
             
             return "success"
@@ -430,15 +430,15 @@ module.exports = class MusicController {
     stop() {
         try {
             this.stopping = true;
-            if(this.audioPlayer) {
-                this.audioPlayer.stop(true)
-                logger.log("info", "Audio Player stopped.")
-            }
             
             this.clearQueue()
             this.currentSong = null;
             logger.log("info", "Queue cleared")
-
+            
+            if(this.audioPlayer) {
+                this.audioPlayer.stop(true)
+                logger.log("info", "Audio Player stopped.")
+            }
             
             
             this.UpdatePlayerInfo.stop()

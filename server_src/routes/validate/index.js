@@ -6,9 +6,18 @@ module.exports = function validate(app, db) {
         //check db and if token checks out
         const session = await db.collection('sessions').findOne( { token: reqToken  } )
         
-        
+        console.log(session)
         if (session) {
-            const user = await db.collection('users').findOne( { username: session.username } )
+            let user
+            
+            if (session.discord_session) {
+                user = await db.collection('discord_users').findOne( { discord_id: session.discord_id } )
+                
+            } else {
+                user = await db.collection('users').findOne( { username: session.username } )
+                
+            }
+            console.log(user)
             const accountInfo = {
                 username: user.username,
                 avatarURL: user.avatarURL,

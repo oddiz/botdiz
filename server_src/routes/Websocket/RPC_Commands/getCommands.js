@@ -13,8 +13,9 @@ const failed = {
  */
 
 module.exports={
-    RPC_getGuilds: async function() {
+    RPC_getGuilds: async function(allowedGuilds) {
         try {
+            
             const guilds = await Botdiz.client.guilds.cache
             
             
@@ -27,8 +28,19 @@ module.exports={
             })
             //console.log(parsedGuilds)
             
-    
-            return parsedGuilds
+            if (allowedGuilds === "ALL") {
+                return parsedGuilds
+            } else {
+
+                const allowedGuildIds = allowedGuilds.map(guild => {
+                    return guild.id
+                })
+                
+                const filteredGuilds = parsedGuilds.filter(guild => {
+                    return allowedGuildIds.includes(guild.id)
+                })
+                return filteredGuilds
+            }
             
         } catch (error) {
             console.log("Exception in RPC_getGuilds: ", error)
@@ -36,8 +48,21 @@ module.exports={
         }
     },
 
-    RPC_getTextChannels: async function(activeGuildId) {
+    RPC_getTextChannels: async function(allowedGuilds, activeGuildId) {
         try {
+            if (allowedGuilds !== "ALL") {
+                let commandAllowed = false 
+                for(const guild of allowedGuilds) {
+                    if (activeGuildId === guild.id) {
+                        commandAllowed = true
+                    }
+                }
+                if(!commandAllowed) {
+                    console.log("Command not allowed!")
+    
+                    return failed
+                }
+            }
             const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
             
             if(guild) {
@@ -48,9 +73,8 @@ module.exports={
             }
             
             const channels = await guild.channels.fetch()
-    
-            const textChannels = channels.filter(channel => channel.type === "text").map(channel => {return {name: channel.name, id: channel.id}})
-    
+            
+            const textChannels = channels.filter(channel => channel.type === "text" && channel.viewable).map(channel => {return {name: channel.name, id: channel.id}})
     
             return textChannels
             
@@ -60,8 +84,23 @@ module.exports={
         }
     },
 
-    RPC_getTextChannelContent: async function(activeGuildId, channelId) {
+    RPC_getTextChannelContent: async function(allowedGuilds, activeGuildId, channelId) {
         try {
+            if (allowedGuilds !== "ALL") {
+                let commandAllowed = false 
+                for(const guild of allowedGuilds) {
+                    if (activeGuildId === guild.id) {
+                        commandAllowed = true
+                    }
+                }
+                if(!commandAllowed) {
+                    console.log("Command not allowed!")
+    
+                    return failed
+                }
+            }
+
+            
             const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
     
             
@@ -101,12 +140,31 @@ module.exports={
             return parsedMessages
             
         } catch (error) {
+            if (error.message.includes("Missing Access")) {
+                console.log("Not enough permission to see channel messages")
+                return {
+                    status: "unauthorized"
+                }
+            }
             console.log("Exception in RPC_getTextChannelContent", error)
             return failed
         }
     },
-    RPC_getVoiceChannels: async function (activeGuildId) {
+    RPC_getVoiceChannels: async function (allowedGuilds, activeGuildId) {
         try {
+            if (allowedGuilds !== "ALL") {
+                let commandAllowed = false 
+                for(const guild of allowedGuilds) {
+                    if (activeGuildId === guild.id) {
+                        commandAllowed = true
+                    }
+                }
+                if(!commandAllowed) {
+                    console.log("Command not allowed!")
+    
+                    return failed
+                }
+            }
             const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
             
             if(guild) {

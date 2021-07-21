@@ -3,6 +3,7 @@ const validate = require('./validate')
 const logout = require('./logout')
 const playlists = require('./playlists')
 const addsuperuser = require('./addsuperuser')
+const discordlogin = require('./discordlogin')
 require('dotenv').config()
 
 
@@ -22,6 +23,7 @@ require('dotenv').config()
         logout(this.app, this.db)
         playlists(this.app, this.db)
         addsuperuser(this.app, this.db)
+        discordlogin(this.app, this.db)
     }
 
 }

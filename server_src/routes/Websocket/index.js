@@ -118,6 +118,21 @@ module.exports = class WebsocketManager {
             
         }
 
+        let allowedGuilds
+        if (session.discord_session) {
+            const user = await this.db.collection('discord_users').findOne( { discord_id: session.discord_id } )
+            allowedGuilds = user.allowed_guilds
+        } else if (session.moderator_session) {
+            allowedGuilds = "ALL"
+        } else {
+            console.log("Couldn't parse allowed guilds")
+            return
+        }
+
+        if (session.moderator_session) {
+            allowedGuilds = "ALL"
+        }
+
         const message = JSON.parse(msg)
         
         /**
@@ -139,7 +154,7 @@ module.exports = class WebsocketManager {
             return
         }
         if(message.type === "listenMusicPlayer") {
-            clientListener.startMusicPlayerListener(...message.params)
+            clientListener.startMusicPlayerListener(allowedGuilds, ...message.params)
         }
 
         if(message.type === "addTextChannelListener") {
@@ -155,7 +170,7 @@ module.exports = class WebsocketManager {
              */
 
 
-            clientListener.addTextListener(message.listenerId, message.command, message.params)
+            clientListener.addTextListener(allowedGuilds, message.listenerId, message.command, message.params)
 
             //console.log(JSON.stringify(clientListener))
 
@@ -163,7 +178,7 @@ module.exports = class WebsocketManager {
         }
 
         if(message.type === "addVoiceChannelListener") {
-            clientListener.addVoiceChannelListener(message.listenerId, message.command, message.params)
+            clientListener.addVoiceChannelListener(allowedGuilds, message.listenerId, message.command, message.params)
 
             //console.log(JSON.stringify(clientListener))
 
@@ -172,7 +187,6 @@ module.exports = class WebsocketManager {
 
         if(message.type === "clearListeners") {
             clientListener.clearListeners()
-            console.log("Clearing listeners")
         }
 
         if (message.type === "get"){
@@ -180,7 +194,7 @@ module.exports = class WebsocketManager {
             const commands= require('./RPC_Commands/getCommands')
 
             //find command
-            const result = await commands[message.command](...message.params)
+            const result = await commands[message.command](allowedGuilds, ...message.params)
 
             //when a result comes back construct a reply
             const reply = {
@@ -201,7 +215,20 @@ module.exports = class WebsocketManager {
         
             let result
             try {
-                result = await commands[message.command](...message.params)
+                //first param is always guildID so make the check here
+                const execGuildId = message.params[0]
+                let commandAllowed = false
+                for (const allowedGuild of allowedGuilds) {
+                    if (allowedGuild.id === execGuildId) {
+                        commandAllowed = true
+                    }
+                }
+                if (commandAllowed) {
+                    result = await commands[message.command](...message.params)
+                } else {
+                    console.log(`Unauthorized command execution for guildId: ${execGuildId}\nAllowed guilds: ${allowedGuilds}\nSession: ${session}`)
+                    return
+                }
             } catch (error) {
                 console.log("Error while trying to execute command: ", message.command, "args: ", message.params)
                 return

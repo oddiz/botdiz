@@ -47,7 +47,20 @@ module.exports = class ListenerManager {
 
     }
 
-    addTextListener(id, command, params) {
+    addTextListener(allowedGuilds, id, command, params) {
+        let commandAllowed = false 
+        //first param is always guild id
+        const execGuildId = params[0]
+        for (const allowedGuild of allowedGuilds) {
+            if (execGuildId === allowedGuild.id) {
+                commandAllowed = true
+            }
+        }
+
+        if(!commandAllowed) {
+            console.log("addTextListener command is not allowed for user")
+            return
+        }
         if (this.textListeners.has(id)) {
             console.log("Text channel already has a listener")
 
@@ -57,13 +70,26 @@ module.exports = class ListenerManager {
             const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
             this.textListeners.set(id, constructedFunc)
     
-            console.log("Adding text listener new list: ", this.textListeners)
+            //console.log("Adding text listener new list: ", this.textListeners)
         } catch (error) {
             console.log("Error while trying to add text channel listener: ", error)
         }
     }
 
-    addVoiceChannelListener(id, command, params) {
+    addVoiceChannelListener(allowedGuilds, id, command, params) {
+        let commandAllowed = false 
+        //first param is always guild id
+        const execGuildId = params[0]
+        for (const allowedGuild of allowedGuilds) {
+            if (execGuildId === allowedGuild.id) {
+                commandAllowed = true
+            }
+        }
+
+        if(!commandAllowed) {
+            console.log("addTextListener command is not allowed for user")
+            return
+        }
         if (this.voiceChannelListeners.has(id)) {
             console.log("Voice channel already has a listener")
 
@@ -73,15 +99,27 @@ module.exports = class ListenerManager {
             const constructedFunc = this.listenerCommands[command](id, this.websocket, ...params)
             this.voiceChannelListeners.set(id, constructedFunc)
     
-            console.log("Adding voice channel listener new list: ", this.voiceChannelListeners)
+            //console.log("Adding voice channel listener new list: ", this.voiceChannelListeners)
             
         } catch (error) {
             console.log("Error while trying to add voice channel listener: ", error)
         }
     }
 
-    startMusicPlayerListener(guildId) {
+    startMusicPlayerListener(allowedGuilds, guildId) {
         try {
+            let commandAllowed = false 
+            //first param is always guild id
+            for (const allowedGuild of allowedGuilds) {
+                if (guildId === allowedGuild.id) {
+                    commandAllowed = true
+                }
+            }
+
+            if(!commandAllowed) {
+                console.log("addTextListener command is not allowed for user")
+                return
+            }
             const self = this
             this.musicListenerGuildId = guildId
             const guildController = Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
