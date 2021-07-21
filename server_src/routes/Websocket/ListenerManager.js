@@ -48,19 +48,23 @@ module.exports = class ListenerManager {
     }
 
     addTextListener(allowedGuilds, id, command, params) {
-        let commandAllowed = false 
-        //first param is always guild id
-        const execGuildId = params[0]
-        for (const allowedGuild of allowedGuilds) {
-            if (execGuildId === allowedGuild.id) {
-                commandAllowed = true
+        
+        if (allowedGuilds !== "ALL") {
+            let commandAllowed = false 
+            //first param is always guild id
+            const execGuildId = params[0]
+            for (const allowedGuild of allowedGuilds) {
+                if (execGuildId === allowedGuild.id) {
+                    commandAllowed = true
+                }
+            }
+            
+            if(!commandAllowed) {
+                console.log("addTextListener command is not allowed for user")
+                return
             }
         }
 
-        if(!commandAllowed) {
-            console.log("addTextListener command is not allowed for user")
-            return
-        }
         if (this.textListeners.has(id)) {
             console.log("Text channel already has a listener")
 
@@ -77,18 +81,20 @@ module.exports = class ListenerManager {
     }
 
     addVoiceChannelListener(allowedGuilds, id, command, params) {
-        let commandAllowed = false 
-        //first param is always guild id
-        const execGuildId = params[0]
-        for (const allowedGuild of allowedGuilds) {
-            if (execGuildId === allowedGuild.id) {
-                commandAllowed = true
+        if (allowedGuilds !== "ALL") {
+            let commandAllowed = false 
+            //first param is always guild id
+            const execGuildId = params[0]
+            for (const allowedGuild of allowedGuilds) {
+                if (execGuildId === allowedGuild.id) {
+                    commandAllowed = true
+                }
             }
-        }
-
-        if(!commandAllowed) {
-            console.log("addTextListener command is not allowed for user")
-            return
+    
+            if(!commandAllowed) {
+                console.log("addTextListener command is not allowed for user")
+                return
+            }
         }
         if (this.voiceChannelListeners.has(id)) {
             console.log("Voice channel already has a listener")
@@ -108,17 +114,19 @@ module.exports = class ListenerManager {
 
     startMusicPlayerListener(allowedGuilds, guildId) {
         try {
-            let commandAllowed = false 
-            //first param is always guild id
-            for (const allowedGuild of allowedGuilds) {
-                if (guildId === allowedGuild.id) {
-                    commandAllowed = true
+            if (allowedGuilds !== "ALL") {
+                let commandAllowed = false 
+                //first param is always guild id
+                for (const allowedGuild of allowedGuilds) {
+                    if (guildId === allowedGuild.id) {
+                        commandAllowed = true
+                    }
                 }
-            }
 
-            if(!commandAllowed) {
-                console.log("addTextListener command is not allowed for user")
-                return
+                if(!commandAllowed) {
+                    console.log("addTextListener command is not allowed for user")
+                    return
+                }
             }
             const self = this
             this.musicListenerGuildId = guildId

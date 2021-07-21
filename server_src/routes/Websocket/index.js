@@ -218,15 +218,20 @@ module.exports = class WebsocketManager {
                 //first param is always guildID so make the check here
                 const execGuildId = message.params[0]
                 let commandAllowed = false
-                for (const allowedGuild of allowedGuilds) {
-                    if (allowedGuild.id === execGuildId) {
-                        commandAllowed = true
+
+                if (allowedGuilds === "ALL") {
+                    commandAllowed = true
+                } else {
+                    for (const allowedGuild of allowedGuilds) {
+                        if (allowedGuild.id === execGuildId) {
+                            commandAllowed = true
+                        }
                     }
                 }
                 if (commandAllowed) {
                     result = await commands[message.command](...message.params)
                 } else {
-                    console.log(`Unauthorized command execution for guildId: ${execGuildId}\nAllowed guilds: ${allowedGuilds}\nSession: ${session}`)
+                    console.log(`Unauthorized command execution for guildId: ${execGuildId}\nAllowed guilds: ${allowedGuilds}\nSession: ${JSON.stringify(session)}`)
                     return
                 }
             } catch (error) {

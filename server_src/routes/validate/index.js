@@ -6,7 +6,6 @@ module.exports = function validate(app, db) {
         //check db and if token checks out
         const session = await db.collection('sessions').findOne( { token: reqToken  } )
         
-        console.log(session)
         if (session) {
             let user
             
@@ -17,7 +16,6 @@ module.exports = function validate(app, db) {
                 user = await db.collection('users').findOne( { username: session.username } )
                 
             }
-            console.log(user)
             const accountInfo = {
                 username: user.username,
                 avatarURL: user.avatarURL,
