@@ -57,7 +57,7 @@ module.exports = async function playlists(app,db) {
 
                     return
                 }
-
+                console.log(oauthResult)
                 const accessToken = oauthResult.access_token
                 const refreshToken = oauthResult.refresh_token
                 const tokenType = oauthResult.token_type
