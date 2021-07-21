@@ -113,6 +113,7 @@ module.exports = async function playlists(app,db) {
                     0x10,   //MANAGE_CHANNELS
                     0x20,   //MANAGE_GUILD
                 ]
+                console.log(userGuilds)
                 let allowedGuilds = []
                 
                 for (const guild of userGuilds) {
