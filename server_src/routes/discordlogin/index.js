@@ -57,7 +57,6 @@ module.exports = async function playlists(app,db) {
 
                     return
                 }
-                console.log(oauthResult)
                 const accessToken = oauthResult.access_token
                 const refreshToken = oauthResult.refresh_token
                 const tokenType = oauthResult.token_type
@@ -87,7 +86,6 @@ module.exports = async function playlists(app,db) {
                     verified: true
                 }
                 */
-                console.log(userResult)
                 const userGuilds = await fetch('https://discord.com/api/users/@me/guilds', {
                     headers: {
                         authorization: `${tokenType} ${accessToken}`,
@@ -113,7 +111,6 @@ module.exports = async function playlists(app,db) {
                     0x10,   //MANAGE_CHANNELS
                     0x20,   //MANAGE_GUILD
                 ]
-                console.log(userGuilds)
                 let allowedGuilds = []
                 
                 for (const guild of userGuilds) {

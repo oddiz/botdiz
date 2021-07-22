@@ -246,17 +246,32 @@ module.exports = async function playlists(app,db) {
                         // Save the access token so that it's used in future calls
                         spotifyApi.setAccessToken(data.body['access_token']);
                         const expiryTime = parseInt(data.body['expires_in']) * 1000 + new Date().getTime()
-                        db.collection('users').updateOne(
-                            { 
-                                username: reqUsername 
-                            },
-                            {
-                                $set: {
-                                    "data.spotify.auth_token": data.body['access_token'],
-                                    "data.spotify.expires": expiryTime
+                        if (session.discord_session) {
+                            db.collection('discord_users').updateOne(
+                                { 
+                                    discord_id: session.discord_id 
+                                },
+                                {
+                                    $set: {
+                                        "data.spotify.auth_token": data.body['access_token'],
+                                        "data.spotify.expires": expiryTime
+                                    }
                                 }
-                            }
-                        )
+                            )
+
+                        } else {
+                            db.collection('users').updateOne(
+                                { 
+                                    username: session.username 
+                                },
+                                {
+                                    $set: {
+                                        "data.spotify.auth_token": data.body['access_token'],
+                                        "data.spotify.expires": expiryTime
+                                    }
+                                }
+                            )
+                        }
                     },
                     function(err) {
                       console.log('Could not refresh access token', err);

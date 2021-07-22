@@ -147,7 +147,6 @@ module.exports = class ListenerManager {
             function runLoop(websocket, MusicController, loopGuildId) {
                 setTimeout(function() {
                     if (!self.listenMusicPlayer || (self.musicListenerGuildId !== loopGuildId)) {
-                        console.log("Terminating Musicplayer listener.")
                         return
                     }
                     try {
