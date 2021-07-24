@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors")
 const app = express();
 
-const WsManager = require('./routes/Websocket')
+const WsManager = require('./Websocket')
 const DatabaseManager = require('./db/DatabaseManager')
 const RouteManager = require('./routes')
 const DiscordClient = require('../src/main').client

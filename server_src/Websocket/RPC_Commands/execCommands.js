@@ -1,4 +1,4 @@
-const Botdiz = require('../../../../src/main')
+const Botdiz = require('../../../src/main')
 
 const { AudioPlayerStatus, joinVoiceChannel } = require('@discordjs/voice')
 

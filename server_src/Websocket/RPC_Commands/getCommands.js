@@ -1,4 +1,4 @@
-const Botdiz = require('../../../../src/main')
+const Botdiz = require('../../../src/main')
 const failed = {
     status: "failed"
 }
@@ -13,7 +13,12 @@ const failed = {
  */
 
 module.exports={
-    RPC_getGuilds: async function(allowedGuilds) {
+    RPC_getGuilds: async function(allowedGuilds, options={adminOnly: false}) {
+        /* 
+        options = {
+            adminOnly: true|false
+        }
+        */
         try {
             
             const guilds = await Botdiz.client.guilds.cache
@@ -23,7 +28,7 @@ module.exports={
             const parsedGuilds = guilds.map(guild => {
                 return {
                     id:guild.id,
-                    icon:guild.icon
+                    icon:guild.icon,
                 }
             })
             //console.log(parsedGuilds)
@@ -36,9 +41,22 @@ module.exports={
                     return guild.id
                 })
                 
-                const filteredGuilds = parsedGuilds.filter(guild => {
+                let filteredGuilds = parsedGuilds.filter(guild => {
                     return allowedGuildIds.includes(guild.id)
                 })
+
+                if (options.adminOnly) {
+                    filteredGuilds = filteredGuilds.filter(guild => {
+                        let adminCheck = false
+                        for (const allowedGuild of allowedGuilds) {
+                            if (guild.id === allowedGuild.id && allowedGuild.administrator) {
+                                adminCheck = true
+                                break
+                            }
+                        }
+                        return adminCheck
+                    })
+                }
                 return filteredGuilds
             }
             

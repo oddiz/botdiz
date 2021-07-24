@@ -4,6 +4,7 @@ const logout = require('./logout')
 const playlists = require('./playlists')
 const addsuperuser = require('./addsuperuser')
 const discordlogin = require('./discordlogin')
+const discordguild = require('./discordguild')
 require('dotenv').config()
 
 
@@ -24,6 +25,7 @@ require('dotenv').config()
         playlists(this.app, this.db)
         addsuperuser(this.app, this.db)
         discordlogin(this.app, this.db)
+        discordguild(this.app, this.db)
     }
 
 }

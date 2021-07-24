@@ -1,6 +1,7 @@
 const fetch = require('node-fetch')
 const crypto = require('crypto')
 const uuid = require('uuid')
+const Botdiz = require('../../../src/main')
 
 require('dotenv').config()
 module.exports = async function playlists(app,db) {
@@ -59,6 +60,7 @@ module.exports = async function playlists(app,db) {
                 }
                 const accessToken = oauthResult.access_token
                 const refreshToken = oauthResult.refresh_token
+                const expiresIn = oauthResult.expires_in
                 const tokenType = oauthResult.token_type
 
                 const userResult = await fetch('https://discord.com/api/users/@me', {
@@ -112,75 +114,150 @@ module.exports = async function playlists(app,db) {
                     0x20,   //MANAGE_GUILD
                 ]
                 let allowedGuilds = []
+
+                const botdizGuilds = await Botdiz.client.guilds.cache
                 
+                const botdizGuildIds = botdizGuilds.map(guild => guild.id)
+
                 for (const guild of userGuilds) {
-                    //if user has administrator permissions to guild they can access 
-                    if((guild.permissions & 0x8) === 0x8 ) {
-                        allowedGuilds.push(guild)
+                    if (botdizGuildIds.includes(guild.id)) {
+                        //if guild exists in botdiz guilds user has administrator permissions to guild they can 
+                        if (guild.owner) {
+                            guild.owner = true
+                            guild.administrator = true
+                            allowedGuilds.push(guild)
+                        } else if ((guild.permissions & 0x8) === 0x8) {
+                            guild.administrator = true
+                            allowedGuilds.push(guild)
+
+                        } else {
+                            const botdizGuildOptions = await db.collection('guilds').findOne(
+                                {
+                                    guild_id: guild.id
+                                }
+                            )
+
+                            if (botdizGuildOptions) {
+                                /*
+                                allowedDjRoles = [
+                                    {
+                                        role_id: "555555555",
+                                        role_name: "test role"
+                                    },
+                                    {
+                                        ...
+                                    }
+                                ]
+                                
+                                */
+                                const allowedDjRoles = botdizGuildOptions.dj_roles
+
+                                if ((allowedDjRoles.length > 0)) {
+                                    /* 
+                                    discordGuildMemberRoles = Collection [Map] {
+                                        '854409105431330836'(role id) => Role {
+                                            guild: Guild object,
+                                            id: '854409105431330836
+                                            name: '@everyone',
+                                            color: 0,
+                                            hoist: false,
+                                            rawPosition: 0,
+                                            permissions: Permissions { bitfield: 247064940097n },
+                                            managed: false,
+                                            mentionable: false,
+                                            deleted: false,
+                                            tags: null
+                                        },
+                                        ....
+                                    }
+                                        
+                                    
+                                    */
+                                    const discordGuildMemberRoles = await Botdiz.client.guilds.fetch({guild: guild.id})
+                                    .then(guild => guild.members.fetch(userResult.id))
+                                    .then(guildMember => guildMember.roles)
+                                    .then(guildMemberRoles => guildMemberRoles.cache)
+                                    
+                                    for (const allowedDjRole of allowedDjRoles){
+                                        if(discordGuildMemberRoles.has(allowedDjRole.role_id)) {
+                                            guild.dj_access = true
+                                            guild.administrator = false
+                                            guild.owner = false
+                                            allowedGuilds.push(guild)
+
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                     }
+                    
 
                 }
 
                 const avatarURL = `https://cdn.discordapp.com/avatars/${userResult.id}/${userResult.avatar}`
 
-                if (allowedGuilds.length > 0) {
-                    db.collection('discord_users').updateOne(
-                        {
-                            "discord_id": userResult.id
-                        },
-                        { $set: {
-                            "discord_id": userResult.id,
-                            "username": userResult.username+"#"+userResult.discriminator,
-                            "avatarURL": avatarURL,
-                            "email": userResult.email,
-                            "avatar": userResult.avatar,
-                            "auth_token": accessToken,
-                            "refresh_token": refreshToken,
-                            "allowed_guilds": allowedGuilds 
-                            }
-                        },
-                        { upsert: true }
-                    )
-
-
-                    const id = uuid.v4()
-                    const token = await crypto.randomBytes(64).toString('hex')
-
-                    db.collection('sessions').updateOne(
-                        {
-                            "discord_id": userResult.id
-                        },
-                        { $set: {
-                            "createdAt": new Date(),
-                            "discord_session": true,
-                            "discord_id": userResult.id,
-                            "user_id": id,
-                            "username": userResult.username+"#"+userResult.discriminator,
-                            "token": token
-                            }
-                        },
-                        {
-                            upsert: true
+                db.collection('discord_users').updateOne(
+                    {
+                        "discord_id": userResult.id
+                    },
+                    { $set: {
+                        "discord_id": userResult.id,
+                        "username": userResult.username+"#"+userResult.discriminator,
+                        "avatarURL": avatarURL,
+                        "email": userResult.email,
+                        "avatar": userResult.avatar,
+                        "allowed_guilds": allowedGuilds || [],
+                        "all_guilds": userGuilds
                         }
-                    )
-                    req.session.userId = id;
-                    req.session.token = token
-                    req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 7 //7 days
-                    if (process.env.NODE_ENV == "development") {
-                        res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
-                    } else {
-                        res.header('Access-Control-Allow-Origin', 'https://botdiz.kaansarkaya.com')
-                    }
-                    res.header('Access-Control-Allow-Credentials','true')
-                    //console.log(req)
-                    
-                    res.status(200).send({
-                        result: "OK",
-                        message: "Login successfull",
-                    });
+                    },
+                    { upsert: true }
+                )
 
-                    console.log(userResult.username+"#"+userResult.discriminator + " logged in.")
+
+                const id = uuid.v4()
+                const token = await crypto.randomBytes(64).toString('hex')
+
+                db.collection('sessions').updateOne(
+                    {
+                        "discord_id": userResult.id
+                    },
+                    { $set: {
+                        "createdAt": new Date(),
+                        "discord_session": true,
+                        "discord_id": userResult.id,
+                        "user_id": id,
+                        "username": userResult.username+"#"+userResult.discriminator,
+                        "token": token,
+                        "discord_auth_token": accessToken,
+                        "discord_refresh_token": refreshToken,
+                        "discord_token_expiration": new Date().getTime + (expiresIn * 1000)
+
+                        }
+                    },
+                    {
+                        upsert: true
+                    }
+                )
+                req.session.userId = id;
+                req.session.token = token
+                req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 7 //7 days
+                if (process.env.NODE_ENV == "development") {
+                    res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
+                } else {
+                    res.header('Access-Control-Allow-Origin', 'https://botdiz.kaansarkaya.com')
                 }
+                res.header('Access-Control-Allow-Credentials','true')
+                //console.log(req)
+                
+                res.status(200).send({
+                    result: "OK",
+                    message: "Login successfull",
+                });
+
+                console.log(userResult.username+"#"+userResult.discriminator + " logged in.")
 
 
             } catch (error) {
