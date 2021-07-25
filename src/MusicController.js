@@ -16,8 +16,8 @@ const {
     demuxProbe,
     NoSubscriberBehavior
 } = require('@discordjs/voice');
-const ytdl = require("ytdl-core");
-const prism = require('prism-media')
+//const ytdl = require("ytdl-core");
+//const prism = require('prism-media')
 const UpdatePlayerInfo = require('./UpdatePlayerInfo')
 
 const commands = require('./botCommands')
@@ -33,7 +33,7 @@ module.exports = class MusicController {
         this.volume = 1
         this.command = playCommand;
         this.readyLock = false;
-        this.UPDATE_INTERVAL = 2000 // player stats update interval in ms
+        this.UPDATE_INTERVAL = 5000 // player stats update interval in ms
         this.UpdatePlayerInfo = new UpdatePlayerInfo(this)
         this.UpdatePlayerInfo.start()
         this.lastInvokedMessage;

@@ -9,7 +9,7 @@ module.exports = class UpdatePlayerInfo {
         this.messageToEdit;
         this.currentSong;
 
-        this.quit = false
+        this.quit = true
         this.loopCount = 1
     }
 
@@ -103,11 +103,11 @@ module.exports = class UpdatePlayerInfo {
         this.oldMessage = this.messageToEdit
         try {
 
-            if(!this.oldMessage) {
+            if(this.oldMessage) {
                 //no message to delete so just return
-                return
+                this.oldMessage.delete()
+                
             }
-            this.oldMessage.delete()
         } catch (err) {
             logger.log("error", "Error while trying to delete old embed message: ", err)
         }

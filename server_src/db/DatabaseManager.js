@@ -18,6 +18,11 @@ module.exports = class DatabaseManager {
                 if (err) {
                     console.log(err)   
                     reject(err)
+                    return
+                }
+                if(!client) {
+                    reject()
+                    return
                 }
                 this.db = client.db("botdiz_db")
                 console.log("Connected to mongo database: botdiz_db")

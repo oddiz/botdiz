@@ -71,7 +71,8 @@ if(process.env.NODE_ENV === "development") {
     // });
     
     if (!db) {
-        console.log("Unable to connect to db.")
+        console.error("Unable to connect to db. Botdiz server cannot run!")
+        return
     }
     
     

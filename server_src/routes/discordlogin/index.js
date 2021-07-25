@@ -121,6 +121,12 @@ module.exports = async function playlists(app,db) {
 
                 for (const guild of userGuilds) {
                     if (botdizGuildIds.includes(guild.id)) {
+                        function makeImageUrl(guildID, hash, { format = 'webp', size } = {size:128}) {
+                            const root = "https://cdn.discordapp.com"
+                            return `${root}/icons/${guildID}/${hash}.${format}${size ? `?size=${size}` : ''}`;
+                        }
+
+                        guild.iconUrl = makeImageUrl(guild.id, guild.icon)
                         //if guild exists in botdiz guilds user has administrator permissions to guild they can 
                         if (guild.owner) {
                             guild.owner = true
@@ -233,7 +239,7 @@ module.exports = async function playlists(app,db) {
                         "token": token,
                         "discord_auth_token": accessToken,
                         "discord_refresh_token": refreshToken,
-                        "discord_token_expiration": new Date().getTime + (expiresIn * 1000)
+                        "discord_token_expiration": new Date().getTime() + (expiresIn * 1000)
 
                         }
                     },

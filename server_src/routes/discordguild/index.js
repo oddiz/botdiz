@@ -17,6 +17,7 @@ module.exports = async function discordguild(app,db) {
             const botdizGuildIds = botdizGuilds.map(guild => guild.id)
             let responseUserGuilds = []
 
+
             if (authToken === "NOT_DISCORD_SESSION") {
                 botdizGuilds.each(guild => {
                     responseUserGuilds.push({
@@ -53,7 +54,14 @@ module.exports = async function discordguild(app,db) {
 
 
                     for (const guild of userGuilds) {
+                        function makeImageUrl(guildID, hash, { format = 'webp', size } = {size:128}) {
+                            const root = "https://cdn.discordapp.com"
+                            return `${root}/icons/${guildID}/${hash}.${format}${size ? `?size=${size}` : ''}`;
+                        }
+
+                        guild.iconUrl = makeImageUrl(guild.id, guild.icon)
                         if (botdizGuildIds.includes(guild.id)) {
+
                             guild.botdiz_guild = true
                             //if guild exists in botdiz guilds user has administrator permissions to guild they can 
                             if (guild.owner) {
@@ -130,34 +138,76 @@ module.exports = async function discordguild(app,db) {
             }
             const token = req.session.token
 
-            const discordToken = await getUserDiscordAuth(token)
+            const session = await db.collection('sessions').findOne(
+                {
+                    token: token
+                }
+            )
 
-            let guild
-            if (discordToken === "NOT_DISCORD_SESSION") {
-                guild = await Botdiz.client.guilds.fetch(reqGuildId)
+            if(!session) {
+                console.log("Session not found")
 
-            } else {
-                guild = await fetch(`https://discord.com/api/guilds/${reqGuildId}`, {
-                    method: "GET",
-                    headers: {
-                        authorization: `Bearer ${discordToken}`,
-                    },
+                res.status(401).send({
+                    status: "failed",
+                    message: "401 Unauthorized"
                 })
-                .then(response => response.json())
-                .catch(err => {console.log("Error while trying to get guild: ", err); return false})
 
-                if (guild) {
-                    res.send({
-                        status:"success",
-                        result: guild
-                    })
+                return
+            }
 
-                } else {
+            if(session.discord_session) {
+                const user = await db.collection('discord_users').findOne({discord_id: session.discord_id})
+
+                const allowedGuilds = user.allowed_guilds
+
+                let allowed = false
+                for (const guild of allowedGuilds) {
+                    if (guild.id === reqGuildId) {
+                        allowed = true
+
+                        break
+                    }
+                }
+
+                if (!allowed) {
                     res.status(401).send({
                         status: "failed",
+                        message: "401 Unauthorized"
                     })
+
+                    return
                 }
             }
+
+            const guild = await Botdiz.client.guilds.fetch(reqGuildId)
+            const guildRoles = await Botdiz.client.guilds.fetch(reqGuildId).then(guild => guild.roles.fetch())
+
+            const guildRolesArray = []
+            for (const [key, role] of guildRoles.entries()) {
+                if(!(role.deleted || role.managed)) {
+                    const roleObject = {
+                        id: role.id,
+                        name: role.name,
+                        color: role.color.toString(16),
+                    }
+                    guildRolesArray.push(roleObject)
+                } 
+            }
+            if (guild) {
+                res.send({
+                    status:"success",
+                    result: {
+                        guild: guild,
+                        roles: guildRolesArray
+                    }
+                })
+
+            } else {
+                res.status(401).send({
+                    status: "failed",
+                })
+            }
+        
 
         } catch (error) {
             console.log("Error while trying to get discord guild : ", error)
