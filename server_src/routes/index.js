@@ -5,6 +5,7 @@ const playlists = require('./playlists')
 const addsuperuser = require('./addsuperuser')
 const discordlogin = require('./discordlogin')
 const discordguild = require('./discordguild')
+const guildinfo = require('./botdizguild')
 require('dotenv').config()
 
 
@@ -26,6 +27,7 @@ require('dotenv').config()
         addsuperuser(this.app, this.db)
         discordlogin(this.app, this.db)
         discordguild(this.app, this.db)
+        botdizguild(this.app, this.db)
     }
 
 }

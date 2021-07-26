@@ -202,7 +202,6 @@ module.exports={
                 }
             })
     
-    
             return voiceChannels
             
         } catch (error) {

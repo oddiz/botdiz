@@ -32,8 +32,13 @@ module.exports = async function playlists(app,db) {
                 
             }
             
-            //find user from username
-            
+            if (!user.data?.spotify?.playlist) {
+                res.send({
+                    savedPlaylists: null
+                })
+
+                return
+            }            
             
             res.send({
                 savedPlaylists: user.data.spotify.playlists

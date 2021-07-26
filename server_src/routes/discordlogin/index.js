@@ -185,7 +185,7 @@ module.exports = async function playlists(app,db) {
                                     .then(guildMemberRoles => guildMemberRoles.cache)
                                     
                                     for (const allowedDjRole of allowedDjRoles){
-                                        if(discordGuildMemberRoles.has(allowedDjRole.role_id)) {
+                                        if(discordGuildMemberRoles.has(allowedDjRole)) {
                                             guild.dj_access = true
                                             guild.administrator = false
                                             guild.owner = false
@@ -202,8 +202,13 @@ module.exports = async function playlists(app,db) {
                     
 
                 }
-
-                const avatarURL = `https://cdn.discordapp.com/avatars/${userResult.id}/${userResult.avatar}`
+                let avatarURL
+                if (userResult.avatar) {
+                    avatarURL = `https://cdn.discordapp.com/avatars/${userResult.id}/${userResult.avatar}`
+                } else {
+                    avatarURL = "https://discord.com/assets/3c6ccb83716d1e4fb91d3082f6b21d77.png"
+                }
+ 
 
                 db.collection('discord_users').updateOne(
                     {

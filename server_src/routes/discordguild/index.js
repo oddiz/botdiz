@@ -10,7 +10,14 @@ module.exports = async function discordguild(app,db) {
                 console.log("No token info in session (in /discordguilds)")
                 return
             }
-            const authToken = await getUserDiscordAuth(reqToken)
+
+            const session = await db.collection('sessions').findOne({ token: reqToken})
+            
+            if (!session) {
+                throw "Session not found with token: "+ token 
+            }
+
+            const authToken = await getUserDiscordAuth(session)
             
             const botdizGuilds = await Botdiz.client.guilds.cache
             
@@ -41,18 +48,9 @@ module.exports = async function discordguild(app,db) {
                 .catch(err => { console.log("Error while trying to get user Guilds :", err); return false})
                 
                 if (userGuilds) {
-                    db.collection('discord_users').updateOne(
-                        {
-                            discord_id: req.session.discord_id
-                        },
-                        {
-                            $set: {
-                                all_guilds: userGuilds
-                            }
-                        }
-                    )
+                    
 
-
+                        let allowedGuilds = []
                     for (const guild of userGuilds) {
                         function makeImageUrl(guildID, hash, { format = 'webp', size } = {size:128}) {
                             const root = "https://cdn.discordapp.com"
@@ -68,10 +66,12 @@ module.exports = async function discordguild(app,db) {
                                 guild.owner = true
                                 guild.administrator = true
                                 responseUserGuilds.push(guild)
+                                allowedGuilds.push(guild)
 
                             } else if ((guild.permissions & 0x8) === 0x8) {
                                 guild.administrator = true
                                 responseUserGuilds.push(guild)
+                                allowedGuilds.push(guild)
 
                             } else {
                                 const botdizGuildOptions = await db.collection('guilds').findOne(
@@ -87,16 +87,17 @@ module.exports = async function discordguild(app,db) {
                                     if ((allowedDjRoles.length > 0)) {
                                         
                                         const discordGuildMemberRoles = await Botdiz.client.guilds.fetch({guild: guild.id})
-                                        .then(guild => guild.members.fetch(userResult.id))
+                                        .then(guild => guild.members.fetch(session.discord_id))
                                         .then(guildMember => guildMember.roles)
                                         .then(guildMemberRoles => guildMemberRoles.cache)
                                         
                                         for (const allowedDjRole of allowedDjRoles){
-                                            if(discordGuildMemberRoles.has(allowedDjRole.role_id)) {
+                                            if(discordGuildMemberRoles.has(allowedDjRole)) {
                                                 guild.dj_access = true
                                                 guild.administrator = false
                                                 guild.owner = false
                                                 responseUserGuilds.push(guild)
+                                                allowedGuilds.push(guild)
 
                                                 break
                                             }
@@ -111,6 +112,17 @@ module.exports = async function discordguild(app,db) {
                             responseUserGuilds.push(guild)
                         }
                     }
+                    db.collection('discord_users').updateOne(
+                        {
+                            discord_id: session.discord_id
+                        },
+                        {
+                            $set: {
+                                allowed_guilds: allowedGuilds,
+                                all_guilds: userGuilds
+                            }
+                        }
+                    )
                     res.send({
                         status: "success",
                         result: responseUserGuilds
@@ -216,13 +228,11 @@ module.exports = async function discordguild(app,db) {
             })
         }
     })
-    async function getUserDiscordAuth (token) {
+    async function getUserDiscordAuth (session) {
         try {
-            const session = await db.collection('sessions').findOne({ token: token})
+            
         
-            if (!session) {
-                throw "Session not found with token: "+ token 
-            }
+            
         
             if (!session.discord_session) {
                 return "NOT_DISCORD_SESSION"
