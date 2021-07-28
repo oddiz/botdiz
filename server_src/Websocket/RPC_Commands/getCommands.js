@@ -13,7 +13,7 @@ const failed = {
  */
 
 module.exports={
-    RPC_getGuilds: async function(allowedGuilds, options={adminOnly: false}) {
+    RPC_getGuilds: async function(allowedGuilds) {
         /* 
         options = {
             adminOnly: true|false
@@ -25,39 +25,20 @@ module.exports={
             
             
     
-            const parsedGuilds = guilds.map(guild => {
-                return {
-                    id:guild.id,
-                    icon:guild.icon,
-                }
-            })
             //console.log(parsedGuilds)
             
             if (allowedGuilds === "ALL") {
+                const parsedGuilds = guilds.map(guild => {
+                    return {
+                        id:guild.id,
+                        name: guild.name,
+                        icon:guild.icon,
+                    }
+                })
                 return parsedGuilds
             } else {
-
-                const allowedGuildIds = allowedGuilds.map(guild => {
-                    return guild.id
-                })
+                return allowedGuilds
                 
-                let filteredGuilds = parsedGuilds.filter(guild => {
-                    return allowedGuildIds.includes(guild.id)
-                })
-
-                if (options.adminOnly) {
-                    filteredGuilds = filteredGuilds.filter(guild => {
-                        let adminCheck = false
-                        for (const allowedGuild of allowedGuilds) {
-                            if (guild.id === allowedGuild.id && allowedGuild.administrator) {
-                                adminCheck = true
-                                break
-                            }
-                        }
-                        return adminCheck
-                    })
-                }
-                return filteredGuilds
             }
             
         } catch (error) {
@@ -71,14 +52,15 @@ module.exports={
             if (allowedGuilds !== "ALL") {
                 let commandAllowed = false 
                 for(const guild of allowedGuilds) {
-                    if (activeGuildId === guild.id) {
+                    if (activeGuildId === guild.id &&
+                        (guild.owner || guild.administrator)) {
                         commandAllowed = true
                     }
                 }
                 if(!commandAllowed) {
                     console.log("Command not allowed!")
     
-                    return failed
+                    return {status: "unauthorized"}
                 }
             }
             const guild = await Botdiz.GuildControllers.find(element => element.guildId === activeGuildId).guildObj
@@ -107,7 +89,8 @@ module.exports={
             if (allowedGuilds !== "ALL") {
                 let commandAllowed = false 
                 for(const guild of allowedGuilds) {
-                    if (activeGuildId === guild.id) {
+                    if (activeGuildId === guild.id &&
+                        (guild.owner || guild.administrator)) {
                         commandAllowed = true
                     }
                 }

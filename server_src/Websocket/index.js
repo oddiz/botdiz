@@ -212,7 +212,10 @@ module.exports = class WebsocketManager {
 
         if (message.type === "exec") {
             const commands = require('./RPC_Commands/execCommands')
-        
+            
+            const adminExecCommands = [
+                "RPC_sendMessage"
+            ]
             let result
             try {
                 //first param is always guildID so make the check here
@@ -223,8 +226,16 @@ module.exports = class WebsocketManager {
                     commandAllowed = true
                 } else {
                     for (const allowedGuild of allowedGuilds) {
-                        if (allowedGuild.id === execGuildId) {
+                        //if command is an admin command check if the user is owner or admin of the guild
+                        if(adminExecCommands.includes(message.command)) {
+                            if (allowedGuild.id === execGuildId && (allowedGuild.owner || allowedGuild.administrator)) {
+                                commandAllowed = true
+                                break
+                            }
+                        //if not only checking if guild is in allowed guild enough
+                        }else if (allowedGuild.id === execGuildId) {
                             commandAllowed = true
+                            break
                         }
                     }
                 }

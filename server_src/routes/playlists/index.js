@@ -31,8 +31,9 @@ module.exports = async function playlists(app,db) {
                 user = await db.collection(dbUserCollectionName).findOne( { username: session.username } )
                 
             }
+
             
-            if (!user.data?.spotify?.playlist) {
+            if (!user.data?.spotify?.playlists) {
                 res.send({
                     savedPlaylists: null
                 })

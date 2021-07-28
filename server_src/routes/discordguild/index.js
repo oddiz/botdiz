@@ -54,7 +54,11 @@ module.exports = async function discordguild(app,db) {
                     for (const guild of userGuilds) {
                         function makeImageUrl(guildID, hash, { format = 'webp', size } = {size:128}) {
                             const root = "https://cdn.discordapp.com"
-                            return `${root}/icons/${guildID}/${hash}.${format}${size ? `?size=${size}` : ''}`;
+                            if(hash){
+                                return `${root}/icons/${guildID}/${hash}.${format}${size ? `?size=${size}` : ''}`;
+                            } else {
+                                return 'https://discord.com/assets/f9bb9c4af2b9c32a2c5ee0014661546d.png'
+                            }
                         }
 
                         guild.iconUrl = makeImageUrl(guild.id, guild.icon)
