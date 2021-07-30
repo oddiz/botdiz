@@ -76,6 +76,10 @@ module.exports = class WebsocketManager {
                 
                 if(!userId || self.connectedClients.has(userId)) {
                     console.log("client already is connected")
+                    ws.send(JSON.stringify({
+                        status: "error",
+                        message: "already connected"
+                    }))
                     return
                 }
                 

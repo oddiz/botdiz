@@ -9,7 +9,7 @@
 ## TODO
 
     - Voice recognition ?
-    - Play from youtube, spotify, soundcloud
+    - Play from youtube, spotify, soundcloud✅
         - play discover weekly
         - play random song, backing track
 
@@ -21,7 +21,7 @@
 
 
     - bot maintainer: 
-        - leave voice if no one is in it after x minutes
+        - leave voice if no one is in it after x minutes ✅
 
 ## TODO SERVER
     
@@ -33,5 +33,3 @@
 
         - 
         - 
-
-        https://open.spotify.com/album/4ckyPfMqe26PrOgEWdjWns?si=Y5tbASc3THaQ5SaRevszhQ&dl_branch=1
