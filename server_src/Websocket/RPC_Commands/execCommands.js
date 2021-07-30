@@ -204,5 +204,23 @@ module.exports={
                 status: "failed",
             }
         }
+    },
+
+    RPC_updateQueue: async function(guildId, queue) {
+        try {
+            const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
+    
+            guildMusicController.queue = queue
+            
+            console.log("updated queue")
+            return {
+                status: "success"
+            }
+        } catch (error) {
+            console.log(error, "<-- Error while trying to execute RPC_updateQueue")
+            return {
+                status: "failed"
+            }
+        }
     }
 }

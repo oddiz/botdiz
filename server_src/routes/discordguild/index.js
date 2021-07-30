@@ -78,6 +78,7 @@ module.exports = async function discordguild(app,db) {
                                 allowedGuilds.push(guild)
 
                             } else {
+                                let djAccess = false
                                 const botdizGuildOptions = await db.collection('guilds').findOne(
                                     {
                                         guild_id: guild.id
@@ -97,6 +98,7 @@ module.exports = async function discordguild(app,db) {
                                         
                                         for (const allowedDjRole of allowedDjRoles){
                                             if(discordGuildMemberRoles.has(allowedDjRole)) {
+                                                djAccess = true
                                                 guild.dj_access = true
                                                 guild.administrator = false
                                                 guild.owner = false
@@ -107,6 +109,13 @@ module.exports = async function discordguild(app,db) {
                                             }
                                         }
                                     }
+                                }
+                                if (!djAccess) {
+                                    //user in guild where botdiz is in but neither allowed to music player nor they are admin
+                                    guild.dj_access = false
+                                    guild.administrator = false 
+                                    guild.owner = false 
+                                    responseUserGuilds.push(guild)
                                 }
                             }
                         } else if((guild.permissions & 0x8) === 0x8) {
