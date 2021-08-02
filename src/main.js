@@ -22,7 +22,7 @@ client.on('ready', async () => {
     const db = await databaseManager.connect()
 
     await updateEpicDeals(db)
-    setInterval(updateEpicDeals, 1000 * 60 * 30)
+    setInterval(updateEpicDeals, 1000 * 60 * 30, db)
     for (const guild of client.guilds.cache) {
         const Controller = new Ctrl(db, client, MsgHandler, guild[1]) ;
         Controller.init()

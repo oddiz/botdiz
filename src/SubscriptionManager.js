@@ -108,7 +108,6 @@ module.exports = class SubscriptionManager {
                         }
 
                     } else {
-                        console.log("Already posted")
                     }
 
                 }
