@@ -102,7 +102,7 @@ async function updateEpicDeals(db) {
             }
         )
 
-        if (dbDeals.next_update_time > new Date().getTime()) {
+        if (dbDeals && dbDeals.next_update_time > new Date().getTime()) {
             return
         }
         const epicApiUrl = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions"
