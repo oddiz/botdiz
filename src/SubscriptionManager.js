@@ -141,7 +141,7 @@ module.exports = class SubscriptionManager {
                 guild_id: this.guild.id
             })
     
-            const dbGuildSubs = dbGuild.subscriptions
+            const dbGuildSubs = dbGuild?.subscriptions
     
             /* 
                 guildSubs = [
