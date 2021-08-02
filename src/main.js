@@ -6,19 +6,25 @@ const client = new Discord.Client( { intents: [
     Discord.Intents.ALL
 ]});
 
+const dbManager = require('../server_src/db/DatabaseManager')
 const MsgHandler = require('./MessageHandler.js');
 const MusicController = require('./MusicController');
 const Ctrl = require('./Controller.js');
+const axios = require('axios')
+const hash = require('object-hash')
 let GuildControllers = []
 
 
 
-client.on('ready', () => {
+client.on('ready', async () => {
     client.user.setActivity(`/help`, {type: 'LISTENING'})
+    const databaseManager = new dbManager
+    const db = await databaseManager.connect()
+
+    await updateEpicDeals(db)
+    setInterval(updateEpicDeals, 1000 * 60 * 30)
     for (const guild of client.guilds.cache) {
-        
-        
-        const Controller = new Ctrl(Discord, client, MsgHandler, guild[1]) ;
+        const Controller = new Ctrl(db, client, MsgHandler, guild[1]) ;
         Controller.init()
         
         GuildControllers.push({
@@ -85,6 +91,91 @@ if (process.env.NODE_ENV == "development") {
 } else {
     client.login(process.env.DISCORD_TOKEN)
 }
+
+async function updateEpicDeals(db) { 
+
+    try {
+
+        const dbDeals = await db.collection('subscription_content').findOne(
+            {
+                type: "epic_deals"
+            }
+        )
+
+        if (dbDeals.next_update_time > new Date().getTime()) {
+            return
+        }
+        const epicApiUrl = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions"
+    
+        const epicApiReply = await axios.get(epicApiUrl, { 
+            headers:{
+                "content-type": "application/json; charset=utf-8"
+            }
+        })
+
+        if (epicApiReply.status !== 200) {
+
+            logger.log("error", "Couldn't reach epic API status code: "+ result.status)
+            return
+        }
+
+        let epicGames = []
+        let nextUpdateTime = Infinity
+        for (element of epicApiReply.data.data.Catalog.searchStore.elements){
+            const effectiveDate = Date.parse(element.effectiveDate)
+            const currentDate = new Date().getTime()
+            const dateDiff = effectiveDate - currentDate
+            const gameTitle = element.title
+            const isActive = dateDiff < 0 || (element.promotions && element.promotions.promotionalOffers.length > 0)? true : false
+
+            const epicDealObject = {
+                gameTitle: gameTitle,
+                isActive: isActive,
+                thumbnail: element.keyImages[2].url
+            }
+            
+            if (!isActive) {
+                if (dateDiff > 1000 * 60 * 60 * 24 * 60) {
+                    continue
+                } else {
+                    epicDealObject.activateTime = effectiveDate
+    
+                    nextUpdateTime = Math.min(effectiveDate, nextUpdateTime)
+                }
+            }
+            
+            epicGames.push(epicDealObject)
+        }
+
+        const dealGamesHash = hash(epicGames, { unorderedArrays: true})
+
+        console.log(dealGamesHash)
+        const epicDealsDatabaseObject = {
+            type: "epic_deals",
+            next_update_time: nextUpdateTime,
+            current_content: epicGames,
+            current_content_hash: dealGamesHash
+        }
+
+        db.collection('subscription_content').updateOne(
+            {
+            type: "epic_deals"
+            },
+            {
+                $set: epicDealsDatabaseObject
+            },
+            {
+                upsert: true
+            }
+        )
+
+        return epicDealsDatabaseObject
+    } catch (error) {
+        console.log("Error updating epic deals: ", error)
+    }
+
+
+} 
 
 module.exports = {
     client: client,

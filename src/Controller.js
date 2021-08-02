@@ -1,19 +1,20 @@
 const { logger } = require("./logger");
 const { MessageEmbed } = require('discord.js')
 const MusicController = require("./MusicController");
+const SubscriptionManager = require('./SubscriptionManager')
 module.exports = class Controller {
     
     
     
-    constructor(discord, client, MsgHandler, guild) {
+    constructor(db, client, MsgHandler, guild) {
 
         this.PREFIX = "!"
         this.debugMode = false
         this.guild = guild
-        this.discord = discord
         this.client = client;
         this.MsgHandler = MsgHandler;
         this.MusicController = new MusicController(this)
+        this.SubscriptionManager = new SubscriptionManager(guild, db)
         this.commands = require('./botCommands')
 
         this.client.application.fetch().then((app) => {
@@ -23,7 +24,7 @@ module.exports = class Controller {
         this.roleColor = guild.me.roles?.color?.color || "#e9b463"
     }
 
-    init() {
+    init = () => {
         const populateCommands = require('./botCommands')
         this.commands = populateCommands(this)
         
@@ -37,6 +38,7 @@ module.exports = class Controller {
         })
 
         this.controllerMaintainer()
+        this.SubscriptionManager.init()
 
     }
 
@@ -100,8 +102,8 @@ module.exports = class Controller {
         } 
         */
         let newEmbed = new MessageEmbed
-        newEmbed.addField(`/${responseObj.command} kullan`,
-                        "Botdiz akıllandı, artık komutlar için / kullanıyor."
+        newEmbed.addField(`Use /${responseObj.command}`,
+                        "Botdiz is now using latest slash command tech."
                         )
                 .setColor("#e9b463")
                         

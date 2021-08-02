@@ -1,7 +1,7 @@
 module.exports = async function (invokedMessage) {
 
     const axios = require('axios')
-    const epicApiUrl = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=tr-TR&country=TR&allowCountries=TR"
+    const epicApiUrl = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions"
 
     
 

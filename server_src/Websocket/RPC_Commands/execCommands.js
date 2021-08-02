@@ -212,7 +212,6 @@ module.exports={
     
             guildMusicController.queue = queue
             
-            console.log("updated queue")
             return {
                 status: "success"
             }

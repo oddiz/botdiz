@@ -175,4 +175,186 @@ module.exports = async function botdizguild(app,db) {
             console.log("Error while updating guild: ", error)
         }
     })
+
+    app.get('/botdizguild/subscriptions/:guildId', async (req, res) => {
+
+        try {
+            const reqGuildId = req.params.guildId
+
+            if(!reqGuildId) {
+                console.log("No guild Id specified")
+                res.status(401).send({
+                    status: "failed",
+                    message: "404 No guild id"
+                })
+                return
+            }
+
+            const token = req.session.token
+    
+            if(!token) {
+                console.log("No token info in session (in /guildinfo)")
+                res.status(401).send({
+                    status: "failed",
+                    message: "401 Unauthorized"
+                })
+    
+                return
+            }
+    
+            const session = await db.collection('sessions').findOne({token: token})
+    
+            if(!session) {
+                res.status(401).send({
+                    status: "failed",
+                    message: "401 Unauthorized"
+                })
+            }
+    
+            if (session.discord_session) {
+                const user = await db.collection('discord_users').findOne({discord_id: session.discord_id})
+                
+                const allowedGuilds = user.allowed_guilds
+
+                let commandAllowed = false;
+
+                for (const guild of allowedGuilds) {
+                    if (guild.id === reqGuildId && (guild.administrator || guild.owner)) {
+                        commandAllowed = true
+
+                        break
+                    }
+                }
+
+                if(!commandAllowed) {
+                    res.status(401).send({
+                        status: "failed",
+                        message: "401 Unauthorized"
+                    })
+
+                    return
+                }
+            }
+
+            let guildSubs = await db.collection('guilds').findOne(
+                {
+                    guild_id: reqGuildId
+                }
+            )
+            .then(guild => guild.subscriptions)
+
+            if (!guildSubs) {
+                guildSubs = []
+            }
+
+            res.send({
+                status:"success",
+                result: guildSubs
+            })
+
+        } catch (error) {
+            console.log("Error while trying to get guild subscriptions: ", error)
+            res.status(401).send({
+                status: "failed",
+                
+            })
+        }
+    }) 
+
+    app.post('/botdizguild/subscriptions/:guildId', async (req, res) => {
+        
+        try {
+            const reqGuildId = req.params.guildId
+    
+            if(!reqGuildId) {
+                console.log("No guild Id specified")
+                res.status(401).send({
+                    status: "failed",
+                    message: "404 No guild id"
+                })
+                return
+            }
+    
+            const token = req.session.token
+    
+            if(!token) {
+                console.log("No token info in session (in /guildinfo)")
+                res.status(401).send({
+                    status: "failed",
+                    message: "401 Unauthorized"
+                })
+    
+                return
+            }
+    
+            const session = await db.collection('sessions').findOne({token: token})
+    
+            if(!session) {
+                res.status(401).send({
+                    status: "failed",
+                    message: "401 Unauthorized"
+                })
+            }
+    
+            if (session.discord_session) {
+                const user = await db.collection('discord_users').findOne({discord_id: session.discord_id})
+                
+                const allowedGuilds = user.allowed_guilds
+    
+                let commandAllowed = false;
+    
+                for (const guild of allowedGuilds) {
+                    if (guild.id === reqGuildId && (guild.administrator || guild.owner)) {
+                        commandAllowed = true
+    
+                        break
+                    }
+                }
+    
+                if(!commandAllowed) {
+                    res.status(401).send({
+                        status: "failed",
+                        message: "401 Unauthorized"
+                    })
+    
+                    return
+                }
+            }
+
+            let dbSubs = await db.collection('guilds').findOne({ guild_id: reqGuildId })
+            .then(guild => guild.subscriptions)
+
+            if (!dbSubs) {
+                dbSubs = []
+            }
+            const reqSubType = req.body.type
+            let subFound = false
+            for (const sub of dbSubs) {
+                if (sub.type === reqSubType) {
+                    subFound = true
+                    sub.subscribed_channel = req.body.subscribed_channel
+                    sub.active = req.body.active
+
+                }
+            }
+
+            if (!subFound) {
+                dbSubs.push(req.body)
+            }
+
+            db.collection('guilds').updateOne(
+                {
+                    guild_id: reqGuildId
+                },
+                {
+                    $set: {
+                        subscriptions: dbSubs
+                    }
+                }
+            )
+            
+        } catch (error) {
+            console.log("Error while trying to update guild subs: ", error)
+        }
+    })
 }

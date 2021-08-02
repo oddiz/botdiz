@@ -43,4 +43,10 @@ module.exports = class DatabaseManager {
         })
 
     }
+
+    getDb () {
+        if (this.db) {
+            return this.db
+        }
+    }
 }
