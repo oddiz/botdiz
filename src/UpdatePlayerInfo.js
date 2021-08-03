@@ -1,4 +1,4 @@
-const { MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 const { logger } = require('./logger')
 
@@ -11,6 +11,8 @@ module.exports = class UpdatePlayerInfo {
 
         this.quit = true
         this.loopCount = 1
+
+        
     }
 
     start() {
@@ -24,6 +26,36 @@ module.exports = class UpdatePlayerInfo {
     }
 
     async updateLoop() {
+        const botdizLinkButton = new MessageActionRow()
+        const botdizLink = process.env.NODE_ENV === "development" ? "http://localhost:3000/app" : "https://botdiz.kaansarkaya.com/app"
+        botdizLinkButton
+            .addComponents(
+                [new MessageButton()
+                    .setLabel("Botdiz Interface")
+                    .setStyle("LINK")
+                    .setURL(botdizLink),
+                ]
+            )
+        // botdizLinkButton
+        //     .addComponents(
+        //         [new MessageButton()
+        //             .setLabel("Botdiz Interface")
+        //             .setStyle("LINK")
+        //             .setURL(botdizLink),
+        //         new MessageButton()
+        //             .setLabel("test")
+        //             .setCustomID("test_id")
+        //             .setStyle("PRIMARY"),
+        //         new MessageButton()
+        //             .setLabel("stop")
+        //             .setCustomID("stop_button")
+        //             .setStyle("DANGER"),
+        //         new MessageButton()
+        //             .setLabel("play")
+        //             .setCustomID("play_button")
+        //             .setStyle("SECONDARY"),
+        //         ]
+        //     )
         while (!this.quit){
             if (!(this.messageToEdit && this.currentSong)){
                 await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL + 2000));
@@ -76,7 +108,7 @@ module.exports = class UpdatePlayerInfo {
                 }
                 
 
-                await this.messageToEdit.edit({ embeds: [newEmbedMessage]})
+                await this.messageToEdit.edit({ embeds: [newEmbedMessage], components: [botdizLinkButton]})
                 
                 this.loopCount ++;
 

@@ -52,6 +52,7 @@ client.on("interaction", interaction => {
     let messageGuildId = interaction.guild.id
     const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
     guildController.handleInteraction(interaction);
+    
 });
 
 client.on("rateLimit", data => {

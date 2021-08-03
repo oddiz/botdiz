@@ -128,6 +128,21 @@ module.exports = class Controller {
     }
     async handleInteraction(interaction) {
         if (interaction.user.bot) return;
+        
+        if(interaction.isButton()) {
+            console.log(interaction.customID)
+            if(!interaction.deferred) {
+                interaction.defer()
+                if (!interaction.replied) {
+                    interaction.reply({content: interaction.customID + " clicked"})
+
+                } else {
+                    interaction.editReply({content: interaction.customID + " clicked"})
+                }
+            }
+
+            return
+        }
 
         const commandName = interaction.commandName
         const args = interaction.options.map(option => option.value)

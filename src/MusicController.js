@@ -1,7 +1,7 @@
 const { logger } = require("./logger")
 const searchYT = require("./scripts/searchYT")
 
-const { MessageEmbed } = require("discord.js")
+const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js")
 
 const {
 	AudioPlayer,
@@ -154,7 +154,7 @@ module.exports = class MusicController {
 
 			} else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
-                console.log("Now playing!!!")
+                //console.log("Now playing!!!")
 			}
 		});
 
@@ -302,7 +302,15 @@ module.exports = class MusicController {
     async createSongEmbed(currentSong) {
         
         let botMessage;
-        
+        const botdizLinkButton = new MessageActionRow()
+        const botdizLink = process.env.NODE_ENV === "development" ? "http://localhost:3000/app" : "https://botdiz.kaansarkaya.com/app"
+        botdizLinkButton
+            .addComponents(
+                new MessageButton()
+                    .setLabel("Botdiz Interface")
+                    .setStyle("LINK")
+                    .setURL(botdizLink)
+            )
         let embedMessage = new MessageEmbed()
         
         embedMessage
@@ -316,8 +324,8 @@ module.exports = class MusicController {
                 .setThumbnail(currentSong.videoThumbnailUrl)
         }
         
-        await this.command.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
-        botMessage = await this.command.reply( { embeds: [embedMessage]}, { new:true, required: true })
+        //await this.command.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
+        botMessage = await this.command.reply( { embeds: [embedMessage], components: [botdizLinkButton]}, { new:true, required: true })
         
 
         if (this.UpdatePlayerInfo.quit) {
@@ -433,16 +441,16 @@ module.exports = class MusicController {
             
             this.clearQueue()
             this.currentSong = null;
-            logger.log("info", "Queue cleared")
+            //logger.log("info", "Queue cleared")
             
             if(this.audioPlayer) {
                 this.audioPlayer.stop(true)
-                logger.log("info", "Audio Player stopped.")
+                //logger.log("info", "Audio Player stopped.")
             }
             
             
             this.UpdatePlayerInfo.stop()
-            logger.log("info", "Player updater stopped")
+            //logger.log("info", "Player updater stopped")
             
             this.queueLock = false;
             //this.voiceConnection.destroy();

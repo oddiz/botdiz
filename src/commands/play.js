@@ -78,15 +78,14 @@ module.exports = async function(invokedMessage, ...args) {
             //bot is in a voice channel
     
             if (memberVoiceChannel.id !== botVoiceChannel.id) {
-            logger.log("info", "Bot is in a voice channel but not in same member's")
-    
+                logger.log("info", "Bot is in a voice channel but not in same member's")
                 if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Playing) {
                     logger.log("info", "Bot is already playing. Won't switch to new channel")
     
                     this.reply("Bot is already playing in another channel ❗")
     
                     return
-                } else if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Idle) {
+                } else if (this.controller.MusicController.audioPlayerStatus == AudioPlayerStatus.Idle || !this.controller.MusicController.audioPlayerStatus) {
                     logger.log("info", "Bot is not playing. Switching to new channel.")
                     
                     let voiceConnection = await joinVoiceChannel({ 
