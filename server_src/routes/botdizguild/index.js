@@ -1,3 +1,6 @@
+const Botdiz = require('../../../src/main')
+
+
 module.exports = async function botdizguild(app,db) {
 
     app.get('/botdizguild/:guildId', async (req, res) => {
@@ -331,6 +334,28 @@ module.exports = async function botdizguild(app,db) {
             let subFound = false
             for (const sub of dbSubs) {
                 if (sub.type === reqSubType) {
+                    const guild = await Botdiz.GuildControllers.find(element => element.guildId === reqGuildId).guildObj
+                    
+                    let subbedChannel
+                    if (guild){
+                        subbedChannel = await guild.channels.fetch(req.body.subscribed_channel)
+                    } 
+
+                    if (subbedChannel) {
+                        const { MessageEmbed } = require('discord.js')
+    
+                        let embedMessage = new MessageEmbed
+    
+                        if (!sub.active && req.body.active ||
+                            (req.body.active && (sub.subscribed_channel !== req.body.subscribed_channel))) {
+                            embedMessage
+                                .setColor("#0FF28F")
+                                .setTitle("This channel is now subscribed to epic deals")
+                                .setTimestamp()
+                            subbedChannel.send( {embeds: [embedMessage]} )
+                        }
+                    }
+
                     subFound = true
                     sub.subscribed_channel = req.body.subscribed_channel
                     sub.active = req.body.active

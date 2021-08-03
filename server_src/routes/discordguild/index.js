@@ -1,6 +1,16 @@
 const fetch = require('node-fetch')
 const Botdiz = require('../../../src/main')
 require('dotenv').config()
+
+function makeImageUrl(guildID, hash, { format = 'webp', size } = {size:128}) {
+    const root = "https://cdn.discordapp.com"
+    if(hash){
+        return `${root}/icons/${guildID}/${hash}.${format}${size ? `?size=${size}` : ''}`;
+    } else {
+        return 'https://discord.com/assets/f9bb9c4af2b9c32a2c5ee0014661546d.png'
+    }
+}
+
 module.exports = async function discordguild(app,db) {
 
     app.get('/discordguilds', async (req, res) => {
@@ -30,7 +40,9 @@ module.exports = async function discordguild(app,db) {
                     responseUserGuilds.push({
                         id: guild.id,
                         icon: guild.icon,
-                        name: guild.name
+                        name: guild.name,
+                        iconUrl: makeImageUrl(guild.id, guild.icon),
+                        administrator: true
                     })
                 })
 
@@ -47,19 +59,12 @@ module.exports = async function discordguild(app,db) {
                 .then(response => response.json())
                 .catch(err => { console.log("Error while trying to get user Guilds :", err); return false})
                 
-                if (userGuilds) {
+                if (userGuilds && Array.isArray(userGuilds)) {
                     
 
                         let allowedGuilds = []
                     for (const guild of userGuilds) {
-                        function makeImageUrl(guildID, hash, { format = 'webp', size } = {size:128}) {
-                            const root = "https://cdn.discordapp.com"
-                            if(hash){
-                                return `${root}/icons/${guildID}/${hash}.${format}${size ? `?size=${size}` : ''}`;
-                            } else {
-                                return 'https://discord.com/assets/f9bb9c4af2b9c32a2c5ee0014661546d.png'
-                            }
-                        }
+                        
 
                         guild.iconUrl = makeImageUrl(guild.id, guild.icon)
                         if (botdizGuildIds.includes(guild.id)) {
