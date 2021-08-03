@@ -33,6 +33,8 @@ module.exports={
                         id:guild.id,
                         name: guild.name,
                         icon:guild.icon,
+                        administrator: true,
+                        botdiz_guild: true
                     }
                 })
                 return parsedGuilds

@@ -42,7 +42,8 @@ module.exports = async function discordguild(app,db) {
                         icon: guild.icon,
                         name: guild.name,
                         iconUrl: makeImageUrl(guild.id, guild.icon),
-                        administrator: true
+                        administrator: true,
+                        botdiz_guild: true
                     })
                 })
 
