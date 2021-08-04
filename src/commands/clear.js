@@ -14,10 +14,10 @@ module.exports = async function (invokedMessage, num) {
         return
     }
 
-    if (num <= 100){
+    if (num <= 100 && num > 0){
         await invokedMessage.channel.bulkDelete(num, true)
     } else {
-        this.wrongUsage(invokedMessage,this.name, "Value should be less than or equal to 100.")
+        this.wrongUsage(invokedMessage,this.name, "Can't delete more than 100 messages or less then 1 (duh).")
     }
 
     this.reply({content: `Deleted ${num} messages`,  ephemeral: true })

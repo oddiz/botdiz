@@ -8,7 +8,7 @@ module.exports = class Controller {
     
     constructor(db, client, MsgHandler, guild) {
 
-        this.PREFIX = "!"
+        this.PREFIX = "/"
         this.debugMode = false
         this.guild = guild
         this.client = client;

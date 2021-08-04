@@ -133,15 +133,15 @@ module.exports = class MusicController {
 				// The queue is then processed to start playing the next track, if one is available.
 
                 
-                logger.log("info","Playing to idle state triggered.")
+                //logger.log("info","Playing to idle state triggered.")
                 if(this.stopping) {
                     this.queue = [];
                 }
                 if(this.queue.length > 0) {
-                    logger.log("info", "Playing next in queue.")
+                    //logger.log("info", "Playing next in queue.")
                     void this.playNext();
                 } else {
-                    logger.log("info","Nothing left in queue.")
+                    //logger.log("info","Nothing left in queue.")
                     this.command.reply("Stopping player 🛑", {new: true})
                     this.stop()
                     this.stopping = false;
@@ -240,8 +240,16 @@ module.exports = class MusicController {
                     this.stop()
                     
                     resolve(false)
+
+                    return
                 }   
                 let nextInQueue = this.queue[0];
+                
+                if (!nextInQueue) {
+                    resolve(false)
+
+                    return
+                }
                 this.queueLock = true
                 if (nextInQueue.isSpotify) {
                     //if came from spotify link
@@ -331,8 +339,8 @@ module.exports = class MusicController {
         if (this.UpdatePlayerInfo.quit) {
             this.UpdatePlayerInfo.start()
         }
-        this.UpdatePlayerInfo.changeMessage(botMessage) 
         this.UpdatePlayerInfo.changeSong(currentSong) 
+        this.UpdatePlayerInfo.changeMessage(botMessage) 
 
         return true
 

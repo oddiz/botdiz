@@ -1,7 +1,8 @@
+const {MessageEmbed} = require('discord.js')
 module.exports = function(invokedMessage,) {
     //takes "on" or "off" as argument
     const inviteLink = "https://discord.com/oauth2/authorize?client_id=851497395190890518&scope=bot+applications.commands&permissions=2184309832"
-    let newEmbed = new this.controller.discord.MessageEmbed()
+    let newEmbed = new MessageEmbed
 
     newEmbed = newEmbed
         .setColor("#e9b463")

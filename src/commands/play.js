@@ -152,7 +152,7 @@ module.exports = async function(invokedMessage, ...args) {
                 //invokedMessage.channel.send("Video found: " + result.videoUrl)
                 getInfoFromYoutubeUrl(result.videoUrl, result2 => {
                     this.controller.MusicController.addToQueue(result2)
-                    this.reply(`Added ${result2.videoTitle} 👍`)
+                    this.reply(`Added \`${result2.videoTitle}\` 👍`)
                     this.controller.MusicController.queueLock = false
                     this.controller.MusicController.processQueue();
                 })

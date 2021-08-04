@@ -113,7 +113,13 @@ module.exports = class UpdatePlayerInfo {
                 this.loopCount ++;
 
             } catch (error) {
-                logger.log("error", "Error in update loop.", error)
+                if (error.code === 10008) {
+                    //message to edit changed should be fixed next update
+                    
+                } else {
+                    logger.log("error", "Error in update loop.", error)
+
+                }
             }
             await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
         }

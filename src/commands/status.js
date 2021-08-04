@@ -12,7 +12,7 @@ module.exports = function (invokedMessage) {
 
             const currentSong = this.controller.MusicController.getCurrentSong()
 
-            
+            this.reply("Current song", { ephemeral: true })
             this.controller.MusicController.command = this
             this.controller.MusicController.createSongEmbed(currentSong)
             

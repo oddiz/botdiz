@@ -48,9 +48,9 @@ module.exports = function (Controller){
             Controller,
             {
                 name: "w2g",
-                description: "Creates a watch2gether room",
+                description: "Creates a watch2gether room. You can watch videos with your friends in sync.",
                 needArgs: true,
-                usage: "/w2g https://www.youtube.com/watch?v=<video id>\n\n/w2g badgers",
+                usage: "/w2g https://www.youtube.com/watch?v=<video id>\n\n/w2g funny memes",
                 options: [
                     {
                         type: "STRING",
@@ -86,9 +86,9 @@ module.exports = function (Controller){
             Controller,
             {
                 name: "clear",
-                description: "Clears channel. Use with caution!",
+                description: "Deletes messages in the channel. Only administrators can use this command. ",
                 needArgs: true,
-                usage:"/clear <amount of message to delete>",
+                usage:"/clear <amount of message to delete (Max 100)>",
                 ephemeral: true,
                 options: [
                     {

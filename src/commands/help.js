@@ -1,3 +1,5 @@
+const { MessageEmbed } = require('discord.js')
+
 module.exports = function(invokedMessage, commandName) {
     if (arguments.length > 2) {
 
@@ -6,8 +8,7 @@ module.exports = function(invokedMessage, commandName) {
         return
     }
 
-    const Discord = this.controller.discord
-    let embedMessage = new Discord.MessageEmbed()
+    let embedMessage = new MessageEmbed
     const PREFIX = this.controller.PREFIX
     embedMessage = embedMessage
         .setColor("#e9b463")
