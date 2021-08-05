@@ -6,6 +6,7 @@ const addsuperuser = require('./addsuperuser')
 const discordlogin = require('./discordlogin')
 const discordguild = require('./discordguild')
 const botdizguild = require('./botdizguild')
+const botdizstats = require('./botdizstats')
 require('dotenv').config()
 
 
@@ -28,6 +29,7 @@ require('dotenv').config()
         discordlogin(this.app, this.db)
         discordguild(this.app, this.db)
         botdizguild(this.app, this.db)
+        botdizstats(this.app, this.db)
     }
 
 }

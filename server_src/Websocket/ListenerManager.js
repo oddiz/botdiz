@@ -114,6 +114,8 @@ module.exports = class ListenerManager {
 
     startMusicPlayerListener(allowedGuilds, guildId) {
         try {
+            //TODO: start 1 music player listener only and subscribe clients to it 
+            // Currently: runs the loop for every websocket listener
             if (allowedGuilds !== "ALL") {
                 let commandAllowed = false 
                 //first param is always guild id
@@ -124,7 +126,7 @@ module.exports = class ListenerManager {
                 }
 
                 if(!commandAllowed) {
-                    console.log("addTextListener command is not allowed for user")
+                    console.log("startMusicPlayerListener command is not allowed for user")
                     return
                 }
             }
