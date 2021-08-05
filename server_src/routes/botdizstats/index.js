@@ -31,7 +31,7 @@ module.exports = async function botdizstats(app,db) {
 
         let totalPlaying = 0
         for (guild of Botdiz.GuildControllers){
-            if (guild.controller.MusicController.audioPlayerStatus !== AudioPlayerStatus.Playing) {
+            if (guild.controller.MusicController.audioPlayerStatus === AudioPlayerStatus.Playing) {
                 totalPlaying ++;
             }
         }
