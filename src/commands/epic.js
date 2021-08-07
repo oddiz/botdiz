@@ -22,30 +22,42 @@ module.exports = async function (invokedMessage) {
         let activeDeals = []
         let futureDeals = []
         for (element of result.data.data.Catalog.searchStore.elements){
-            const effectiveDate = Date.parse(element.effectiveDate)
-            const date = new Date()
-            const currentDate = date.getTime()
-            
-            const dateDiff = effectiveDate - currentDate;
 
+            if(!element.promotions) {
+                continue
+            }
             
-            if (dateDiff < 0 || (element.promotions && element.promotions.promotionalOffers.length > 0)) {
+            const date = new Date()
+            
+            if ((element.promotions.promotionalOffers && element.promotions.promotionalOffers.length > 0)) {
                 //promotion active
                 //console.log("Promotion active for: ", element.title)
                 
                 
+                const endDate = Date.parse(element.promotions.promotionalOffers[0].promotionalOffers[0].endDate)
                 
+                const dateDiff = endDate - date;
+
+                const seconds = Math.floor((dateDiff / (1000) % 60))
+                const minutes = Math.floor((dateDiff / (1000 * 60) % 60))
+                const hours = Math.floor((dateDiff / (1000 * 60 * 60 )) % 24)
+                const days = Math.floor(dateDiff / (1000 * 60 * 60 * 24))
+
                 let embedMessage = new Discord.MessageEmbed()
                 embedMessage
-                    .setColor("#0FF28F")
-                    .setTitle(element.title)
-                    .setThumbnail(element.keyImages[2].url)
-                    .setTimestamp()
-                    .setDescription("Free now on Epic Store!")
-
-
+                .setColor("#0FF28F")
+                .setTitle(element.title)
+                .setThumbnail(element.keyImages[2].url)
+                .setTimestamp()
+                .setDescription(`Free in Epic Store for: **${days} Days** **${hours} Hours** **${minutes} Minutes** **${seconds} Seconds**`)
+                
+                
                 activeDeals.push(embedMessage)
             } else {
+                const effectiveDate = Date.parse(element.promotions.upcomingPromotionalOffers[0].promotionalOffers[0].startDate)
+                const currentDate = date.getTime()
+                
+                const dateDiff = effectiveDate - currentDate;
                 if (dateDiff > 1000 * 60 * 60 * 24 * 60) {
                     //hacky solution- if future deal is more than 60 days
                     continue

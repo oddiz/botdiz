@@ -123,12 +123,15 @@ async function updateEpicDeals(db) {
         let epicGames = []
         let nextUpdateTime = Infinity
         for (element of epicApiReply.data.data.Catalog.searchStore.elements){
-            const effectiveDate = Date.parse(element.effectiveDate)
-            const currentDate = new Date().getTime()
-            const dateDiff = effectiveDate - currentDate
-            const gameTitle = element.title
-            const isActive = dateDiff < 0 || (element.promotions && element.promotions.promotionalOffers.length > 0)? true : false
+            
+            if(!element.promotions) {
+                continue
+            }
 
+            const currentDate = new Date().getTime()
+            const gameTitle = element.title
+            const isActive = element.promotions?.promotionalOffers && element.promotions?.promotionalOffers.length > 0? true : false
+            
             const epicDealObject = {
                 gameTitle: gameTitle,
                 isActive: isActive,
@@ -136,6 +139,8 @@ async function updateEpicDeals(db) {
             }
             
             if (!isActive) {
+                const effectiveDate = Date.parse(element.promotions.upcomingPromotionalOffers[0].promotionalOffers[0].startDate)
+                const dateDiff = effectiveDate - currentDate
                 if (dateDiff > 1000 * 60 * 60 * 24 * 60) {
                     continue
                 } else {
@@ -150,7 +155,6 @@ async function updateEpicDeals(db) {
 
         const dealGamesHash = hash(epicGames, { unorderedArrays: true})
 
-        console.log(dealGamesHash)
         const epicDealsDatabaseObject = {
             type: "epic_deals",
             next_update_time: nextUpdateTime,
