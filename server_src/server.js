@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors")
 const app = express();
 
-const statussocket = require('socket.io')(7070)
 const WsManager = require('./Websocket')
 const DatabaseManager = require('./db/DatabaseManager')
 const RouteManager = require('./routes')
@@ -29,10 +28,6 @@ if (process.env.NODE_ENV === "development") {
 }
 app.use(cors(corsOptions))
 app.use(express.json())
-app.use(require('express-status-monitor')({
-    websocket:statussocket,
-    port: 7070
-}));
 
 let sessionParser;
 if(process.env.NODE_ENV === "development") {
