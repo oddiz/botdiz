@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors")
 const app = express();
 
+const statussocket = require('socket.io')(7070)
 const WsManager = require('./Websocket')
 const DatabaseManager = require('./db/DatabaseManager')
 const RouteManager = require('./routes')
@@ -15,18 +16,23 @@ require('dotenv').config()
 let corsOptions;
 if (process.env.NODE_ENV === "development") {
     corsOptions = {
-        origin: "http://localhost:3000",
+        origin: ["http://localhost:3000","http://localhost:8080"],
+        
         credentials: true,
       }
 
 } else {
     corsOptions = {
-        origin: "https://botdiz.kaansarkaya.com",
+        origin: ["https://botdiz.kaansarkaya.com", "https://api.kaansarkaya.com"],
         credentials: true,
       }
 }
 app.use(cors(corsOptions))
 app.use(express.json())
+app.use(require('express-status-monitor')({
+    websocket:statussocket,
+    port: 7070
+}));
 
 let sessionParser;
 if(process.env.NODE_ENV === "development") {
