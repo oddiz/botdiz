@@ -23,7 +23,7 @@ if (process.env.NODE_ENV === "development") {
 
 } else {
     corsOptions = {
-        origin: ["https://botdiz.kaansarkaya.com", "https://api.kaansarkaya.com"],
+        origin: ["https://botdiz.kaansarkaya.com", "https://api.kaansarkaya.com:8080"],
         credentials: true,
       }
 }
