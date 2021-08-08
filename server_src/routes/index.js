@@ -7,6 +7,7 @@ const discordlogin = require('./discordlogin')
 const discordguild = require('./discordguild')
 const botdizguild = require('./botdizguild')
 const botdizstats = require('./botdizstats')
+const metrics = require('./metrics')
 require('dotenv').config()
 
 
@@ -30,6 +31,7 @@ require('dotenv').config()
         discordguild(this.app, this.db)
         botdizguild(this.app, this.db)
         botdizstats(this.app, this.db)
+        metrics(this.app, this.db)
     }
 
 }
