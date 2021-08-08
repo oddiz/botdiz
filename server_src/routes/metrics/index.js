@@ -3,7 +3,7 @@ collectDefaultMetrics()
 
 module.exports = async function metrics(app,db) {
     
-    app.get('/metrics', async (_req, res) => {
+    app.get('/prommetrics', async (_req, res) => {
         try {
           res.set('Content-Type', register.contentType);
           res.end(await register.metrics());
