@@ -86,7 +86,9 @@ module.exports = class MusicController {
 					/*
 						The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
 					*/
-					await wait((this.voiceConnection.reconnectAttempts + 1) * 5000);
+
+                    await new Promise(resolve => setTimeout(resolve, this.voiceConnection.reconnectAttempts + 1) * 5000)
+
                     logger.log("error", `Voice connection encountered error. Trying to connect again. Attempt ${this.voiceConnection.reconnectAttempts} / 5`)
 					this.voiceConnection.reconnect();
 				} else {

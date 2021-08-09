@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors")
 const app = express();
 
-const AWSXRay = require('aws-xray-sdk')
 const WsManager = require('./Websocket')
 const DatabaseManager = require('./db/DatabaseManager')
 const RouteManager = require('./routes')
@@ -27,7 +26,6 @@ if (process.env.NODE_ENV === "development") {
         credentials: true,
       }
 }
-app.use(AWSXRay.express.openSegment('BotdizServer'))
 app.use(cors(corsOptions))
 app.use(express.json())
 
@@ -105,6 +103,5 @@ if(process.env.NODE_ENV === "development") {
 
 init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers)
 
-app.use(AWSXRay.express.closeSegment())
 
 
