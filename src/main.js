@@ -8,89 +8,91 @@ const client = new Discord.Client( { intents: [
 
 const dbManager = require('../server_src/db/DatabaseManager')
 const MsgHandler = require('./MessageHandler.js');
-const MusicController = require('./MusicController');
 const Ctrl = require('./Controller.js');
 const axios = require('axios')
 const hash = require('object-hash')
-let GuildControllers = []
 
 
-
-client.on('ready', async () => {
-    client.user.setActivity(`/help`, {type: 'LISTENING'})
+async function main() {
+    
+    let GuildControllers = []
     const databaseManager = new dbManager
     const db = await databaseManager.connect()
 
-    await updateEpicDeals(db)
-    setInterval(updateEpicDeals, 1000 * 60 * 30, db)
-    for (const guild of client.guilds.cache) {
-        const Controller = new Ctrl(db, client, MsgHandler, guild[1]) ;
+    client.on('ready', async () => {
+        client.user.setActivity(`/help`, {type: 'LISTENING'})
+    
+        await updateEpicDeals(db)
+        setInterval(updateEpicDeals, 1000 * 60 * 30, db)
+        for (const guild of client.guilds.cache) {
+            const Controller = new Ctrl(db, client, MsgHandler, guild[1]) ;
+            Controller.init()
+            
+            GuildControllers.push({
+                guildId: guild[0],
+                guildObj: guild[1],
+                controller: Controller
+            })
+            logger.log("info", `Creating controller for guild: ${guild[1].name}.`)
+        }
+    
+        logger.log('info', 'The bot is online!')
+    });
+    client.on('debug', m => logger.log('debug', m));
+    client.on('warn', m => logger.log('warn', m));
+    client.on('error', m => logger.log('error', m));
+    
+    client.on("message", message => {
+        if (message.interaction) {return}
+        let messageGuildId = message.guild.id
+        const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
+        guildController.handleMessage(message);
+    })
+    
+    client.on("interaction", interaction => {
+        let messageGuildId = interaction.guild.id
+        const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
+        guildController.handleInteraction(interaction);
+        
+    });
+    
+    client.on("rateLimit", data => {
+        console.error("Rate limit achieved: ")
+        console.error(data)
+    });
+    
+    client.on("guildCreate", guild => {
+        const Controller = new Ctrl(db, client, MsgHandler, guild) ;
         Controller.init()
         
         GuildControllers.push({
-            guildId: guild[0],
-            guildObj: guild[1],
+            guildId: guild.id,
+            guildObj: guild,
             controller: Controller
         })
-        logger.log("info", `Creating controller for guild: ${guild[1].name}.`)
-    }
-
-    logger.log('info', 'The bot is online!')
-});
-client.on('debug', m => logger.log('debug', m));
-client.on('warn', m => logger.log('warn', m));
-client.on('error', m => logger.log('error', m));
-
-client.on("message", message => {
-    if (message.interaction) {return}
-    let messageGuildId = message.guild.id
-    const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
-    guildController.handleMessage(message);
-})
-
-client.on("interaction", interaction => {
-    let messageGuildId = interaction.guild.id
-    const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
-    guildController.handleInteraction(interaction);
+        logger.log("info", `${guild.name} controller added.`)
+        
+    });
     
-});
-
-client.on("rateLimit", data => {
-    console.error("Rate limit achieved: ")
-    console.error(data)
-});
-
-client.on("guildCreate", guild => {
-    const Controller = new Ctrl(Discord, client, MsgHandler, guild) ;
-    Controller.init()
-    
-    GuildControllers.push({
-        guildId: guild.id,
-        guildObj: guild,
-        controller: Controller
-    })
-    logger.log("info", `${guild.name} controller added.`)
-    
-});
-
-client.on("guildDelete", guild => {
-    
-    const deletedGuildId = guild.id
-    for (const [index, guildObj] of GuildControllers.entries()) {
-        if (guildObj.guildId == deletedGuildId) {
-            guildObj.controller.destroy()
-            guildObj.controller = null;
-            GuildControllers.splice(index, 1)
+    client.on("guildDelete", guild => {
+        
+        const deletedGuildId = guild.id
+        for (const [index, guildObj] of GuildControllers.entries()) {
+            if (guildObj.guildId == deletedGuildId) {
+                guildObj.controller.destroy()
+                guildObj.controller = null;
+                GuildControllers.splice(index, 1)
+            }
         }
+        logger.log("info", `${guild.name} controller removed.`)
+    
+    });
+    
+    if (process.env.NODE_ENV == "development") {
+        client.login(process.env.DISCORD_TESTBOT_TOKEN)
+    } else {
+        client.login(process.env.DISCORD_TOKEN)
     }
-    logger.log("info", `${guild.name} controller removed.`)
-
-});
-
-if (process.env.NODE_ENV == "development") {
-    client.login(process.env.DISCORD_TESTBOT_TOKEN)
-} else {
-    client.login(process.env.DISCORD_TOKEN)
 }
 
 async function updateEpicDeals(db) { 
@@ -181,6 +183,8 @@ async function updateEpicDeals(db) {
 
 
 } 
+
+main()
 
 module.exports = {
     client: client,

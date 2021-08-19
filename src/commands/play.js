@@ -181,6 +181,12 @@ module.exports = async function(invokedMessage, ...args) {
             const regex = /^.*youtu.be\/|list=([^#\&\?]*).*/;
             const playlistId = videoUrl.href.match(regex)[1];
             const self = this
+
+            if (playlistId.startsWith("RD")) {
+                this.reply("`Youtube mixes are not supported yet 😟`")
+                self.controller.MusicController.queueLock = false
+                return
+            }
     
             async function getYtPlaylist(){
     
@@ -189,10 +195,10 @@ module.exports = async function(invokedMessage, ...args) {
                 try {
                     playlist = await ytpl(playlistId, { limit: 25 });
                 } catch (error) {
-                    logger.log("error", "Error trying to get playlist info@play.js/ytpl()", "Error: ", error)
-                    this.controller.MusicController.queueLock = false
+                    logger.log("error", "Error trying to get playlist info@play.js/ytpl() " + "Error: " + error)
+                    self.controller.MusicController.queueLock = false
                     
-                    this.reply("Error while trying to add playlist... Contact goddiz 😟")
+                    self.reply("`Error while trying to add playlist... Contact oddiz 😟`")
                     return
                 }
                 /*Array of
@@ -314,7 +320,7 @@ module.exports = async function(invokedMessage, ...args) {
                                     }
                                     self.controller.MusicController.addToQueue(package)
                                 }
-                                self.reply("Album added to queue 👍")
+                                self.reply("\`Album added to queue 👍\`")
                                 self.controller.MusicController.queueLock = false
                                 self.controller.MusicController.processQueue();
                             })
@@ -394,7 +400,7 @@ module.exports = async function(invokedMessage, ...args) {
                                     isSpotify: isSpotify
                                 }
                                 self.controller.MusicController.addToQueue(package)
-                                self.reply(`Added ${songName}`)
+                                self.reply(`Added \`${songName}\``)
                                 self.controller.MusicController.queueLock = false
                                 self.controller.MusicController.processQueue();
                                 /*     
