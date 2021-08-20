@@ -160,7 +160,13 @@ module.exports = class MusicController {
 			}
 		});
 
-		this.audioPlayer.on('error', (error) => logger.log("error", "Audio player error :", error));
+		this.audioPlayer.on('error', (error) => {
+            try {
+                logger.log("error", "Audio player error: ", error.stack)
+            } catch (error) {
+                
+            }
+        });
 
     }
 
