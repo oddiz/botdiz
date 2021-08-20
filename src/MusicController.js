@@ -390,7 +390,7 @@ module.exports = class MusicController {
          * Create a player and play the song
          */
    
-        const spawnAudioResource = require("./scripts/spawnAudioResource")
+        const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
         
         try {
             //logger.log("info", "Trying to create Audio Resource." )    
