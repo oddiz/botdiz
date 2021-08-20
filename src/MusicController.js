@@ -381,10 +381,6 @@ module.exports = class MusicController {
         //wait a few moments so player doesn't skuff
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        /**
-         * Creates a message that shows song info then assigns an updater.
-         */       
-        await this.createSongEmbed(nextInQueue)
         
         
         /**
@@ -398,6 +394,11 @@ module.exports = class MusicController {
             const resource = await spawnAudioResource(nextInQueue);
             //console.log("Got resources")
             await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
+            
+            /**
+             * Creates a message that shows song info then assigns an updater.
+             */       
+            await this.createSongEmbed(nextInQueue)
             
             return "success"
             

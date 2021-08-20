@@ -1,9 +1,7 @@
 const { logger } = require("../logger")
-const axios = require('axios');
-const youtubedl = require('youtube-dl-exec')
+const ytdl = require("ytdl-core");
 
-
-module.exports = function(videoUrl, callback) {
+module.exports = async function(videoUrl, callback) {
     /*
     Returns an object:
             {
@@ -18,41 +16,25 @@ module.exports = function(videoUrl, callback) {
     const href = videoUrl
     const videoId = href.match(regex)[1]
     //\?v=(.*)&|\?v=(.*)$
-    let videoDuration = 0;
     
-    youtubedl(videoUrl, {
-        s: true,
-        e: true,
-        getThumbnail: true,
-        getDuration: true,
-    }).then(response => {
-        const result = response.split("\n")
+    const videoInfo = await ytdl.getBasicInfo(videoId)
+
+    
+    const videoDetails = videoInfo.player_response.videoDetails
+    const title = videoDetails.title
+    const duration = parseInt(videoDetails.lengthSeconds)
+    const thumbnailUrl = videoDetails.thumbnail.thumbnails[0].url
+    
+    const parsedInfo = {
+        videoUrl: href,
+        videoId: videoId,
         
-        let videoDurationString = result[2].split(":")
+        videoTitle: title,
+        videoThumbnailUrl: thumbnailUrl,
+        videoDuration: duration
+    }
 
-        let videoDuration = 0;
-        let secCounter = 1
-        
-        for (let i = videoDurationString.length-1; i >= 0; i--) {
-            videoDuration += parseInt(videoDurationString[i]) * secCounter;
-            
-            secCounter *= 60
-        }   
-
-        const videoInfo = {
-            videoUrl: href,
-            videoId: videoId,
-            
-            videoTitle: result[0],
-            videoThumbnailUrl: result[1],
-            videoDuration: videoDuration
-        }
-
-        callback(videoInfo)
-
-    }).catch( err => {
-        logger.log("error", "Error while trying to get video info inside getInfoFromYoutube\n ERROR: ", err)
-    })
+    callback(parsedInfo)
     
 }
     
