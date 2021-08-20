@@ -1,30 +1,18 @@
-const { raw  } = require('youtube-dl-exec')
+const ytdl = require('ytdl-core');
 const { createAudioResource ,demuxProbe } = require('@discordjs/voice')
 module.exports = function spawnAudioResource(nextInQueue) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         
-        const process = raw(
-            nextInQueue.videoUrl,
-            {
-                o: '-',
-                q: '',
-                f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio/bestvideo/best',
-                r: '10M',
-                noPlaylist: true
-            },
-            { stdio: ['ignore', 'pipe', 'ignore'] },
-        );
-
-        //f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
-        if (!process.stdout) {
-            reject(new Error('No stdout'));
-            return;
-        }
-        const stream = process.stdout;
+        
+        const videoInfo = await ytdl.getInfo(nextInQueue.videoUrl)
+        const audioFormats = ytdl.filterFormats(videoInfo.formats, 'audio');
+        const chosenFormat = ytdl.chooseFormat(audioFormats, {quality: "highestaudio"})
+        console.log(chosenFormat)
+        const stream = ytdl(nextInQueue.videoUrl, { filter: 'audioonly', dlChunkSize:0, liveBuffer:10000, quality:'highestaudio'})
+        
         
         const onError = (error) => {
             console.log("Error while trying to spawn Audio Resource" , error)
-            if (!process.killed) process.kill();
 
             stream.resume();
             reject(error);

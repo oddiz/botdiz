@@ -12,10 +12,10 @@ const Ctrl = require('./Controller.js');
 const axios = require('axios')
 const hash = require('object-hash')
 
+let GuildControllers = []
 
 async function main() {
     
-    let GuildControllers = []
     const databaseManager = new dbManager
     const db = await databaseManager.connect()
 
