@@ -162,6 +162,9 @@ module.exports = class MusicController {
 
 		this.audioPlayer.on('error', (error) => {
             try {
+                const fs = require('fs')
+
+                fs.writeFile('./audioPlayerErrorLog.txt', error)
                 logger.log("error", "Audio player error: ", error.stack)
             } catch (error) {
                 
