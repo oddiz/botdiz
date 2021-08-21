@@ -7,11 +7,12 @@ const { logger } = require('../logger')
 
 const { joinVoiceChannel, AudioPlayerStatus } = require("@discordjs/voice");
 
-module.exports = async function(invokedMessage, options={forceNext:false}) {
+module.exports = async function(invokedMessage, options={query: null, forceNext:false}) {
     try {
-        const input = invokedMessage.options.getString("input")
-    
-        if(invokedMessage){
+        let input = invokedMessage.options.getString("input")
+        if (options.query) {
+            input = options.query
+        } else if(invokedMessage){
     
             // if no arguments passed
             if (!input) {
@@ -115,6 +116,8 @@ module.exports = async function(invokedMessage, options={forceNext:false}) {
                     this.controller.MusicController.setVoiceConnection(voiceConnection)
                 }
             }
+        } else {
+            throw "No arguments provided"
         }
     
         if(this.controller.MusicController.queueLock) {
@@ -441,7 +444,7 @@ module.exports = async function(invokedMessage, options={forceNext:false}) {
         }
         
     } catch (error) {
-        logger.log("error", "Error while executing play.js")
+        logger.log("error", "Error while executing play.js", error)
     }
     
 
