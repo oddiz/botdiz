@@ -135,8 +135,8 @@ module.exports={
 
         const playCommand = guildController.commands.find( ( { name } ) => name === "play" )
 
-        
-        playCommand.execute(false, { query: queryArg })
+        console.log(queryArg)
+        playCommand.execute(null, { query: queryArg })
     },
 
     /**

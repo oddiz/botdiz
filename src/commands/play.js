@@ -9,11 +9,19 @@ const { joinVoiceChannel, AudioPlayerStatus } = require("@discordjs/voice");
 
 module.exports = async function(invokedMessage, options={query: null, forceNext:false}) {
     try {
-        let input = invokedMessage.options.getString("input")
+        let input
         if (options.query) {
             input = options.query
+
+            if (!input) {
+                
+                return null
+            }
+
         } else if(invokedMessage){
-    
+            
+            input = invokedMessage.options.getString("input")
+            
             // if no arguments passed
             if (!input) {
                 this.wrongUsage(invokedMessage, this.name, "")
