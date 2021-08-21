@@ -132,7 +132,7 @@ module.exports = class Controller {
         if(interaction.isButton()) {
             console.log(interaction.customID)
             if(!interaction.deferred) {
-                interaction.defer()
+                interaction.deferReply()
                 if (!interaction.replied) {
                     interaction.reply({content: interaction.customID + " clicked"})
 
@@ -145,10 +145,7 @@ module.exports = class Controller {
         }
 
         const commandName = interaction.commandName
-        const args = interaction.options.map(option => option.value)
-
-
-
+        const args = null
         const foundCommand = this.commands.find( ( { name } ) => name === commandName )
         if (foundCommand) {
             if (this.debugMode){

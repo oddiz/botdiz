@@ -38,6 +38,7 @@ module.exports = class MusicController {
         this.UpdatePlayerInfo.start()
         this.lastInvokedMessage;
 
+        this.audioPlayer = null
         this.audioPlayerStatus;
 
         this.voiceConnection; 
@@ -173,7 +174,7 @@ module.exports = class MusicController {
 
     }
 
-    addToQueue(song) {
+    addToQueue(song, options) {
         /*
         {
         videoUrl: videoUrl,
@@ -183,9 +184,13 @@ module.exports = class MusicController {
         videoDuration: videoDuration
         } 
         */
-            
+        if (options?.forceNext) {
+            this.queue.unshift(song)
+        } else {
             this.queue.push(song) 
+        }
             
+        
     }
 
     async processQueue() {
@@ -237,6 +242,50 @@ module.exports = class MusicController {
             this.queue = []
         } catch (error) {
             logger.log("error", "Error while running clearQueue() Error: " + error)
+        }
+    }
+    
+    async playNext() {
+        const nextInQueue = await this.processNextSong()
+
+        
+        if (!nextInQueue) {
+            //no song is next
+            
+            return
+        }
+
+        //wait a few moments so player doesn't skuff
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        
+        
+        /**
+         * Create a player and play the song
+         */
+   
+        const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
+        
+        try {
+            //logger.log("info", "Trying to create Audio Resource." )    
+            const resource = await spawnAudioResource(nextInQueue);
+            //console.log("Got resources")
+            await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
+            
+            /**
+             * Creates a message that shows song info then assigns an updater.
+             */       
+            await this.createSongEmbed(nextInQueue)
+            
+            return "success"
+            
+        } catch (error) {
+            logger.log("error", "Error occured while trying to create Audio Resource.", error )  
+            //console.log("trying next")
+            //this.playNext()
+            throw new Error("Error while trying to create Audio Resource")
+            return 
+            
         }
     }
 
@@ -371,52 +420,7 @@ module.exports = class MusicController {
         
     }
 
-    async playNext() {
-        const nextInQueue = await this.processNextSong()
 
-        
-        if (!nextInQueue) {
-            //no song is next
-            
-            return
-        }
-
-        //wait a few moments so player doesn't skuff
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        
-        
-        /**
-         * Create a player and play the song
-         */
-   
-        const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
-        
-        try {
-            //logger.log("info", "Trying to create Audio Resource." )    
-            const resource = await spawnAudioResource(nextInQueue);
-            //console.log("Got resources")
-            await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
-            
-            /**
-             * Creates a message that shows song info then assigns an updater.
-             */       
-            await this.createSongEmbed(nextInQueue)
-            
-            return "success"
-            
-        } catch (error) {
-            logger.log("error", "Error occured while trying to create Audio Resource.", error )  
-            //console.log("trying next")
-            //this.playNext()
-            throw new Error("Error while trying to create Audio Resource")
-            return 
-            
-        }
-
-        
-
-    }
 
     async skip(skipAmount) {
         

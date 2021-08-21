@@ -1,19 +1,25 @@
 const { AudioPlayerStatus } = require('@discordjs/voice')
+const { logger } = require('../logger')
 module.exports = async function (invokedMessage) {
-    if (!this.controller.MusicController) {
-        this.reply("Bot is currently not playing.")
+    try {
+        if (!this.controller.MusicController || !this.controller.MusicController.audioPlayer) {
+            this.reply("Bot is currently not playing.")
+            
+            return 
+        }
+        if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
+            this.reply("Player already paused")
+             
+        } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
+            this.reply("Player is not active")
+        } else {
+            await this.controller.MusicController.pause(invokedMessage)
+            
+            this.reply("⏸️ /resume to continue playing.")
+        }
         
-        return 
-    }
-    if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
-        this.reply("Player already paused")
-         
-    } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
-        this.reply("Player is not active")
-    } else {
-        await this.controller.MusicController.pause(invokedMessage)
-        
-        this.reply("⏸️ /resume to continue playing.")
+    } catch (error) {
+        logger.log("error", "Error while executing pause:", error)
     }
 
     

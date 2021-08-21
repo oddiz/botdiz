@@ -40,13 +40,9 @@ module.exports = class Command {
     async execute(invokedMessage, args, isInteraction) {
         this.lastInvokedMessage = invokedMessage;
         this.lastIsInterraction = isInteraction;
-        if(this.controller.debugMode) {
-            const response = `Command: ${this.name}, Args: ${args}`
-            this.reply(response)
-        }
         
         if (isInteraction) {
-            await this.lastInvokedMessage.defer({ ephemeral: this.ephemeral })
+            await this.lastInvokedMessage.deferReply({ ephemeral: this.ephemeral })
         }
 
         try {

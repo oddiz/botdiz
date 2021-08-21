@@ -76,7 +76,7 @@ module.exports={
             
             const channels = await guild.channels.fetch()
             
-            const textChannels = channels.filter(channel => channel.type === "text" && channel.viewable).map(channel => {return {name: channel.name, id: channel.id}})
+            const textChannels = channels.filter(channel => channel.type === "GUILD_TEXT" && channel.viewable).map(channel => {return {name: channel.name, id: channel.id}})
     
             return textChannels
             
@@ -178,8 +178,7 @@ module.exports={
             }
             
             const channels = await guild.channels.fetch()
-    
-            const voiceChannels = channels.filter(channel => channel.type === "voice").map(channel => {
+            const voiceChannels = channels.filter(channel => channel.type === "GUILD_VOICE" && channel.viewable).map(channel => {
                 return {
                     name: channel.name, 
                     id: channel.id,

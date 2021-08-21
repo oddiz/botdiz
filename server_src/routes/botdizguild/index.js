@@ -244,7 +244,7 @@ module.exports = async function botdizguild(app,db) {
                     guild_id: reqGuildId
                 }
             )
-            .then(guild => guild.subscriptions)
+            .then(guild => guild?.subscriptions)
 
             if (!guildSubs) {
                 guildSubs = []
@@ -325,7 +325,7 @@ module.exports = async function botdizguild(app,db) {
             }
 
             let dbSubs = await db.collection('guilds').findOne({ guild_id: reqGuildId })
-            .then(guild => guild.subscriptions)
+            .then(guild => guild?.subscriptions)
 
             if (!dbSubs) {
                 dbSubs = []
@@ -375,6 +375,9 @@ module.exports = async function botdizguild(app,db) {
                     $set: {
                         subscriptions: dbSubs
                     }
+                },
+                {
+                    upsert:true
                 }
             )
             

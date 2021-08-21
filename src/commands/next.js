@@ -1,7 +1,12 @@
 let skip = require('./skip')
-
+const { logger } = require('../logger')
 module.exports = function(invokedMessage) {
 
-    skip = skip.bind(this)
-    skip(invokedMessage, 1)
+    try {
+        skip = skip.bind(this)
+        skip(invokedMessage)
+    } catch (error) {
+        logger.log("error", "Error while executing next command :", error)
+    }
+
 } 

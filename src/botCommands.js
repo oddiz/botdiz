@@ -7,23 +7,13 @@ module.exports = function (Controller){
             Controller,
             {
                 name: "deploy",
-                description: "Deploys slash commands. Must be server owner or goddiz.",
+                description: "Deploys slash commands. Must be server owner or oddiz.",
                 needArgs:false,
                 usage: "/deploy",
                 ignoreSlash:true
                 
             },
             require("./commands/deploy")
-        ),
-        new Command(
-            Controller,
-            {
-                name: "debug",
-                description: "Toggles debug Mode",
-                needArgs:false,
-                usage: "/debug on/off or /debug"
-            },
-            require("./commands/debug")
         ),
         new Command(
             Controller,
@@ -68,7 +58,7 @@ module.exports = function (Controller){
                 name: "play",
                 description: "Plays song from a link or finds from search.",
                 needArgs: true,
-                usage:"/play https://www.youtube.com/watch?v=<video id>\n\n/play https://open.spotify.com/track/<track id>\n\n/play best song in the world",
+                usage:"/play https://www.youtube.com/watch?v=<video id>\n\n/play https://open.spotify.com/track/<track id>\n\n/play chill tunes",
                 noBind: true,
                 ephemeral: false,
                 options: [
@@ -85,8 +75,28 @@ module.exports = function (Controller){
         new Command(
             Controller,
             {
+                name: "playnext",
+                description: "Plays song from a link or finds from search after current song.",
+                needArgs: true,
+                usage:"/playnext https://www.youtube.com/watch?v=<video id>\n\n/playnext https://open.spotify.com/track/<track id>\n\n/playnext chill tunes",
+                noBind: true,
+                ephemeral: false,
+                options: [
+                    {
+                        type: "STRING",
+                        name: "input",
+                        description: "Query to search or URL.",
+                        required: true,
+                    }
+                ]
+            },
+            require("./commands/playnext")
+        ),
+        new Command(
+            Controller,
+            {
                 name: "clear",
-                description: "Deletes messages in the channel. Only administrators can use this command. ",
+                description: "Deletes messages in the channel which are less than 14 days old. Administrators only.",
                 needArgs: true,
                 usage:"/clear <amount of message to delete (Max 100)>",
                 ephemeral: true,

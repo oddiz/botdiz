@@ -3,7 +3,10 @@ require('dotenv').config()
 const { logger } = require("./logger")
 const Discord = require('discord.js')
 const client = new Discord.Client( { intents: [
-    Discord.Intents.ALL
+    Discord.Intents.FLAGS.GUILDS,
+    Discord.Intents.FLAGS.GUILD_VOICE_STATES,
+    Discord.Intents.FLAGS.GUILD_MESSAGES,
+    Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS
 ]});
 
 const dbManager = require('../server_src/db/DatabaseManager')
@@ -42,14 +45,14 @@ async function main() {
     client.on('warn', m => logger.log('warn', m));
     client.on('error', m => logger.log('error', m));
     
-    client.on("message", message => {
+    client.on("messageCreate", message => {
         if (message.interaction) {return}
         let messageGuildId = message.guild.id
         const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
         guildController.handleMessage(message);
     })
     
-    client.on("interaction", interaction => {
+    client.on("interactionCreate", interaction => {
         let messageGuildId = interaction.guild.id
         const guildController = GuildControllers.find( ({ guildId }) => guildId === messageGuildId ).controller 
         guildController.handleInteraction(interaction);
