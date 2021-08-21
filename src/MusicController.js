@@ -166,7 +166,7 @@ module.exports = class MusicController {
                 const fs = require('fs')
 
                 fs.writeFile('./audioPlayerErrorLog.txt', error)
-                logger.log("error", "Audio player error: ", error.stack)
+                logger.log("error", "Audio player error: ", error["stack"])
             } catch (error) {
                 
             }
@@ -264,7 +264,8 @@ module.exports = class MusicController {
          * Create a player and play the song
          */
    
-        const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
+        const spawnAudioResource = require("./scripts/spawnAudioResource")
+        //const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
         
         try {
             //logger.log("info", "Trying to create Audio Resource." )    

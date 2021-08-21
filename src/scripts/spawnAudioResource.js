@@ -4,9 +4,10 @@ module.exports = function spawnAudioResource(nextInQueue) {
     return new Promise(async (resolve, reject) => {
         
         
-        // const videoInfo = await ytdl.getInfo(nextInQueue.videoUrl)
-        // const audioFormats = ytdl.filterFormats(videoInfo.formats, 'audio');
-        // const chosenFormat = ytdl.chooseFormat(audioFormats, {quality: "highestaudio"})
+        const videoInfo = await ytdl.getInfo(nextInQueue.videoUrl)
+        const audioFormats = ytdl.filterFormats(videoInfo.formats, 'audio');
+        const chosenFormat = ytdl.chooseFormat(audioFormats, {quality: "highestaudio"})
+        console.log("Format playing: ", chosenFormat)
         const stream = ytdl(nextInQueue.videoUrl, { filter: 'audio', dlChunkSize:0, liveBuffer:10000, quality:'highestaudio'})
         
         
