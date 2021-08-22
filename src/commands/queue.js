@@ -34,7 +34,7 @@ module.exports = function (invokedMessage) {
             for (const song of queue) {
                 let line = ""
                 
-                line = counter + "- " + song.videoTitle + "\n\n"
+                line = counter + "- " + song.videoTitle + (song.recommendedSong? " [Botdiz Recommended Song]": "") + "\n\n"
                 
                 counter += 1;
                 response = response + line;

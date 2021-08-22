@@ -44,6 +44,8 @@ module.exports = class MusicController {
         this.voiceConnection; 
         this.voiceConnectionState;
 
+        this.songHistory = []
+
         this.currentSong;
         this.queue = [];
 	
@@ -203,11 +205,26 @@ module.exports = class MusicController {
         }
         // If the queue is locked (already being processed), or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
-            
+
+            //remove previous recommended songs
+            for (const [index, song] of this.queue.entries()) {
+                if (song.recommendedSong) {
+                    this.queue.splice(index, 1)
+                }
+            }
+
             this.queueLock = false
 			return "success";
 		} else if (this.audioPlayer.state.status == AudioPlayerStatus.Idle){
             this.queueLock = false
+
+            //remove previous recommended songs
+            for (const [index, song] of this.queue.entries()) {
+                if (song.recommendedSong) {
+                    console.log("this shouldn't trigger. music controller recommended remover. line:223")
+                    this.queue.splice(index, 1)
+                }
+            } 
             const result = await this.playNext();
 
             return result
@@ -263,13 +280,14 @@ module.exports = class MusicController {
         /**
          * Create a player and play the song
          */
-   
         const spawnAudioResource = require("./scripts/spawnAudioResource")
         //const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
         
         try {
+
+            
             //logger.log("info", "Trying to create Audio Resource." )    
-            const resource = await spawnAudioResource(nextInQueue);
+            const resource = await spawnAudioResource(nextInQueue, this.controller);
             //console.log("Got resources")
             await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
             
@@ -466,6 +484,7 @@ module.exports = class MusicController {
             
             this.clearQueue()
             this.currentSong = null;
+            this.songHistory = []
             //logger.log("info", "Queue cleared")
             
             if(this.audioPlayer) {
