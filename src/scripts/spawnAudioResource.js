@@ -192,26 +192,26 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                 reject(error);
             };
 
-            stream.on("readable", () => {
-                if (!broadcastStarted) {
-                    console.log("starting stream based on 'readable'")
-                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
-                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
-                    .catch(onError);
+            // stream.on("readable", () => {
+            //     if (!broadcastStarted) {
+            //         console.log("starting stream based on 'readable'")
+            //         demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+            //         .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+            //         .catch(onError);
     
-                    broadcastStarted = true
-                }
-            })
-            stream.on("data", () => {
-                if (!broadcastStarted) {
-                    console.log("starting stream based on 'data'")
-                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
-                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
-                    .catch(onError);
+            //         broadcastStarted = true
+            //     }
+            // })
+            // stream.on("data", () => {
+            //     if (!broadcastStarted) {
+            //         console.log("starting stream based on 'data'")
+            //         demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+            //         .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+            //         .catch(onError);
     
-                    broadcastStarted = true
-                }
-            })
+            //         broadcastStarted = true
+            //     }
+            // })
             stream.on("end", () => {
                 if (!broadcastStarted) {
                     console.log("starting stream based on 'end'")
