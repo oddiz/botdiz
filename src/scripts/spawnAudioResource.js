@@ -1,5 +1,8 @@
 const ytdl = require('ytdl-core');
-const { createAudioResource ,demuxProbe } = require('@discordjs/voice')
+const { createAudioResource ,demuxProbe, StreamType } = require('@discordjs/voice')
+const fs = require('fs');
+const { CLIENT_RENEG_WINDOW } = require('tls');
+
 module.exports = function spawnAudioResource(nextInQueue, controller) {
     return new Promise(async (resolve, reject) => {
         
@@ -90,19 +93,111 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
         } catch (error) {
 
         }
-        const stream = ytdl(nextInQueue.videoUrl, { filter: 'audio', liveBuffer:10000, quality:'highestaudio'})
+        if(videoInfo.videoDetails.isLiveContent || videoInfo.videoDetails.lengthSeconds > 60 * 60 *2) {
+            
+            const stream = ytdl.downloadFromInfo(videoInfo, 
+                { 
+                    filter: 'audio', 
+                    quality:'highestaudio',
+                    liveBuffer:10000, 
+                    highWaterMark: 1024 * 512, 
+                    dlChunkSize:1024 * 1024 * 10, 
+                }
+            )
+            
+            
         
-        
-        const onError = (error) => {
-            console.log("Error while trying to spawn Audio Resource" , error)
+            const onError = (error) => {
+                console.log("Error on demux probe" , error)
 
-            stream.destroy();
-            reject(error);
-        };
+                stream.destroy();
+                reject(error);
+            };
         
-        demuxProbe(stream)
-        .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
-        .catch(onError);
+            demuxProbe(stream)
+            .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+            .catch(onError);
+
+        } else {
+            
+            const stream = ytdl.downloadFromInfo(videoInfo, 
+                { 
+                    filter: 'audio', 
+                    quality:'highestaudio',
+                    liveBuffer:10000, 
+                    highWaterMark: 1024 * 512, 
+                    dlChunkSize:1024 * 1024 * 10, 
+                }
+            )
+            
+            await fs.writeFile(`./temp/AudioBuffers/${controller.guild.id}`,"", (err) => {
+                if(err) {
+                    console.log("error while trying to create audio buffer file")
+                }
+            })
+            
+            let broadcastStarted = false
+            let starttime
+            
+            stream.once("response", () => {
+                starttime= Date.now()
+        
+                MusicController.downloadFinished = false
+    
+            })
+    
+            await stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
+    
+            await new Promise(resolve => setTimeout(resolve, 1000 * 2))
+            
+            const readline = require('readline');
+            stream.on("progress", (chunkLength, downloaded, total) => {
+                
+                if(MusicController.currentSong?.videoId !== nextInQueue.videoId) {
+                    console.log("\n\n\n\n\nold id: " + MusicController.currentSong?.videoId)
+                    console.log("new id: " + nextInQueue.videoId)
+                    console.log("song changed")
+                    stream.destroy()
+    
+                    return
+                }
+                const percent = (downloaded / total) * 100;
+                const downloadedMinutes =
+                 (Date.now() - starttime) / 1000 / 60;
+                const estimatedDownloadTime = (downloadedMinutes / percent) - downloadedMinutes;
+                readline.cursorTo(process.stdout, 0);
+                process.stdout.write(`${(percent).toFixed(2)}% downloaded `);
+                process.stdout.write(`(${(downloaded / 1024 / 1024).toFixed(2)}MB of ${(total / 1024 / 1024).toFixed(2)}MB)\n`);
+                process.stdout.write(`running for: ${downloadedMinutes.toFixed(2)}minutes`);
+                process.stdout.write(`, estimated time left: ${estimatedDownloadTime.toFixed(2)}minutes `);
+                process.stdout.write(`, chunkLength: ${chunkLength}`);
+                readline.moveCursor(process.stdout, 0, -1);
+                if (Math.ceil(percent) === 100) {
+                    MusicController.downloadFinished = true
+                }
+    
+                if (downloaded > 1024 * 1024 * 1 && !broadcastStarted) {
+                    
+                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+                    .catch(onError);
+    
+                    broadcastStarted = true
+                }
+            })
+    
+    
+    
+            const onError = (error) => {
+                console.log("Error while trying to spawn Audio Resource" , error)
+    
+                stream.destroy();
+                reject(error);
+            };
+        }
+
+
+        
             
     });
 }

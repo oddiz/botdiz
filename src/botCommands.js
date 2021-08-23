@@ -185,7 +185,7 @@ module.exports = function (Controller){
                 noBind: true,
                 ephemeral: true,
             },
-            require("./commands/next")
+            require("./commands/skip")
         ),
         new Command(
             Controller,

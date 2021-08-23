@@ -1,3 +1,5 @@
+const fs = require('fs')
+
 const { logger } = require("./logger")
 const searchYT = require("./scripts/searchYT")
 
@@ -48,6 +50,8 @@ module.exports = class MusicController {
 
         this.currentSong;
         this.queue = [];
+
+        this.deleteAudioBuffer();
 	
     }
 
@@ -144,7 +148,16 @@ module.exports = class MusicController {
                 }
                 if(this.queue.length > 0) {
                     //logger.log("info", "Playing next in queue.")
-                    void this.playNext();
+
+                    if (MusicController.downloadFinished) {
+                        //console.log("Happy and healthy skip :):):):):))")
+                        this.playNext();
+                        return
+                    } else {
+                        //console.log("Bad bad bad skip without finishing download :((:(:(:(:(:(")
+                        this.playNext()
+                        return
+                    }
                 } else {
                     //logger.log("info","Nothing left in queue.")
                     this.command.reply("Stopping player 🛑", {new: true})
@@ -302,7 +315,6 @@ module.exports = class MusicController {
             logger.log("error", "Error occured while trying to create Audio Resource.", error )  
             //console.log("trying next")
             //this.playNext()
-            throw new Error("Error while trying to create Audio Resource")
             return 
             
         }
@@ -439,7 +451,17 @@ module.exports = class MusicController {
         
     }
 
-
+    async deleteAudioBuffer() {
+        try {
+            //delete audio buffer
+            fs.unlink(`./temp/AudioBuffers/${this.controller.guild.id}`, (err) => {
+                
+            })
+            
+        } catch (error) {
+            console.log("Error while trying to delete buffer file  :\n", error)
+        }
+    }
 
     async skip(skipAmount) {
         
@@ -496,6 +518,9 @@ module.exports = class MusicController {
             this.UpdatePlayerInfo.stop()
             //logger.log("info", "Player updater stopped")
             
+            //delete audio buffer file
+            this.deleteAudioBuffer()
+
             this.queueLock = false;
             //this.voiceConnection.destroy();
             //logger.log("info", "Voice connection destroyed.")

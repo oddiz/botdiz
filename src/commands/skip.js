@@ -5,7 +5,6 @@ module.exports = function (invokedMessage) {
     try {
         
         const skipAmount = invokedMessage.options.getInteger("amount") || 1
-
         if (!this.controller.MusicController) {
             this.reply("Bot is currently not playing.")
             
