@@ -119,6 +119,11 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
             .catch(onError);
 
         } else {
+            await fs.writeFile(`./temp/AudioBuffers/${controller.guild.id}`,"", (err) => {
+                if(err) {
+                    console.log("error while trying to create audio buffer file")
+                }
+            })
             
             const stream = ytdl.downloadFromInfo(videoInfo, 
                 { 
@@ -130,11 +135,6 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                 }
             )
             
-            await fs.writeFile(`./temp/AudioBuffers/${controller.guild.id}`,"", (err) => {
-                if(err) {
-                    console.log("error while trying to create audio buffer file")
-                }
-            })
             
             let broadcastStarted = false
             let starttime
@@ -146,9 +146,8 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
     
             })
     
-            await stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
+            stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
     
-            await new Promise(resolve => setTimeout(resolve, 1000 * 2))
             
             const readline = require('readline');
             stream.on("progress", (chunkLength, downloaded, total) => {
@@ -223,12 +222,16 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                     broadcastStarted = true
                 }
             })
-            
-            demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
-                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
-                    .catch(onError);
 
-            broadcastStarted = true
+            await new Promise(resolve => setTimeout(resolve, 1000 * 2))
+
+            if (!broadcastStarted) {
+                demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                        .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+                        .catch(onError);
+    
+                broadcastStarted = true
+            }
 
             
         }
