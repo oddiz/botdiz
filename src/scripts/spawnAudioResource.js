@@ -146,7 +146,7 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
     
             })
     
-            stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
+            await stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
     
             
             const readline = require('readline');
