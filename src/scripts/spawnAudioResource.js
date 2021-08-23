@@ -185,10 +185,29 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                     broadcastStarted = true
                 }
             })
-
+            stream.on("readable", () => {
+                if (!broadcastStarted) {
+                    console.log("starting stream based on 'readable'")
+                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+                    .catch(onError);
+    
+                    broadcastStarted = true
+                }
+            })
+            stream.on("data", () => {
+                if (!broadcastStarted) {
+                    console.log("starting stream based on 'data'")
+                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                    .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
+                    .catch(onError);
+    
+                    broadcastStarted = true
+                }
+            })
             stream.on("end", () => {
                 if (!broadcastStarted) {
-                    console.log("starting stream")
+                    console.log("starting stream based on 'end'")
                     demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
