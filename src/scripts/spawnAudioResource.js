@@ -148,7 +148,7 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
     
             await stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
     
-            await new Promise(resolve => setTimeout(resolve, 1000 * 2))
+            await new Promise(resolve => setTimeout(resolve, 400))
             
             const readline = require('readline');
             stream.on("progress", (chunkLength, downloaded, total) => {
@@ -177,7 +177,7 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                 }
     
                 if (downloaded > 1024 * 1024 * 1 && !broadcastStarted) {
-                    
+                    console.log("creating resource")
                     demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
