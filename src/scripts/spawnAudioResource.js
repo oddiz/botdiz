@@ -148,7 +148,7 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
     
             await stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
     
-            await new Promise(resolve => setTimeout(resolve, 400))
+            await new Promise(resolve => setTimeout(resolve, 1000 * 2))
             
             const readline = require('readline');
             stream.on("progress", (chunkLength, downloaded, total) => {
@@ -185,6 +185,14 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                     broadcastStarted = true
                 }
             })
+
+            const onError = (error) => {
+                console.log("Error while trying to spawn Audio Resource" , error)
+    
+                stream.destroy();
+                reject(error);
+            };
+
             stream.on("readable", () => {
                 if (!broadcastStarted) {
                     console.log("starting stream based on 'readable'")
@@ -215,19 +223,14 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                     broadcastStarted = true
                 }
             })
-    
+            
             demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
 
             broadcastStarted = true
+
             
-            const onError = (error) => {
-                console.log("Error while trying to spawn Audio Resource" , error)
-    
-                stream.destroy();
-                reject(error);
-            };
         }
 
 
