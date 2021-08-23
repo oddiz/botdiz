@@ -188,6 +188,7 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
 
             stream.on("end", () => {
                 if (!broadcastStarted) {
+                    console.log("starting stream")
                     demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
