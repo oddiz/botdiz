@@ -146,6 +146,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
     
         } catch (error) {
             //no link passed
+
         }
         
         if (searchMode) {
@@ -276,7 +277,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
             
             
             //if link is youtube
-            if (videoUrl.host.includes("youtube.com")){
+            if (videoUrl.host.includes("youtube.com") || videoUrl.host.includes("youtu.be")){
                 getInfoFromYoutubeUrl(videoUrl.href, result => {
                     this.controller.MusicController.addToQueue(result, options)
                     this.reply(`Added ${result.videoTitle}`)
@@ -285,9 +286,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                     
                     return
                 })
-            }
-        
-            if (videoUrl.host.includes("spotify.com")){
+            } else if (videoUrl.host.includes("spotify.com")){
                 let spotifyAccessToken = "";
                 
                 const spotifyUri = require('spotify-uri');
@@ -448,11 +447,14 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                 */
                 
     
+            } else {
+                this.reply(`\`Couldn't find  ${input}. Only spotify and youtube links supported at the moment.\``)
+                this.controller.MusicController.queueLock = false
             }
         }
-        
     } catch (error) {
         logger.log("error", "Error while executing play.js", error)
+        this.controller.MusicController.queueLock = false
     }
     
 
