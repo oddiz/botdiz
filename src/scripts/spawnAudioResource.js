@@ -164,20 +164,20 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                 const downloadedMinutes =
                  (Date.now() - starttime) / 1000 / 60;
                 const estimatedDownloadTime = (downloadedMinutes / percent) - downloadedMinutes;
-                readline.cursorTo(process.stdout, 0);
-                process.stdout.write(`${(percent).toFixed(2)}% downloaded `);
-                process.stdout.write(`(${(downloaded / 1024 / 1024).toFixed(2)}MB of ${(total / 1024 / 1024).toFixed(2)}MB)\n`);
-                process.stdout.write(`running for: ${downloadedMinutes.toFixed(2)}minutes`);
-                process.stdout.write(`, estimated time left: ${estimatedDownloadTime.toFixed(2)}minutes `);
-                process.stdout.write(`, chunkLength: ${chunkLength}`);
-                readline.moveCursor(process.stdout, 0, -1);
+                // readline.cursorTo(process.stdout, 0);
+                // process.stdout.write(`${(percent).toFixed(2)}% downloaded `);
+                // process.stdout.write(`(${(downloaded / 1024 / 1024).toFixed(2)}MB of ${(total / 1024 / 1024).toFixed(2)}MB)\n`);
+                // process.stdout.write(`running for: ${downloadedMinutes.toFixed(2)}minutes`);
+                // process.stdout.write(`, estimated time left: ${estimatedDownloadTime.toFixed(2)}minutes `);
+                // process.stdout.write(`, chunkLength: ${chunkLength}`);
+                // readline.moveCursor(process.stdout, 0, -1);
                 if (Math.ceil(percent) === 100) {
                     MusicController.downloadFinished = true
                 }
     
-                if (downloaded > 1024 * 1024 * 1 && !broadcastStarted) {
+                if ((downloaded > 1024 * 1024 * 10 || percent > 50) && !broadcastStarted) {
                     console.log("creating resource")
-                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`, {highWaterMark: 1024 * 52}))
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
     
@@ -214,23 +214,23 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
             // })
             stream.on("end", () => {
                 if (!broadcastStarted) {
+                    broadcastStarted = true
                     console.log("starting stream based on 'end'")
-                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                    demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`, {highWaterMark: 1024 * 52}))
                     .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                     .catch(onError);
     
-                    broadcastStarted = true
                 }
             })
 
             await new Promise(resolve => setTimeout(resolve, 1000 * 2))
 
             if (!broadcastStarted) {
-                demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`))
+                broadcastStarted = true
+                demuxProbe(fs.createReadStream(`./temp/AudioBuffers/${controller.guild.id}`, {highWaterMark: 1024 * 52}))
                         .then((probe) => resolve(createAudioResource(probe.stream, { inputType: probe.type })))
                         .catch(onError);
     
-                broadcastStarted = true
             }
 
             
