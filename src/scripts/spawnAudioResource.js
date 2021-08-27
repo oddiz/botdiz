@@ -1,18 +1,39 @@
 const ytdl = require('ytdl-core');
 const { createAudioResource ,demuxProbe, StreamType } = require('@discordjs/voice')
 const fs = require('fs');
-const { CLIENT_RENEG_WINDOW } = require('tls');
 
+const recommendedLogStream = fs.createWriteStream("./logs/recommended_logs.json", { flags: "a" })
 module.exports = function spawnAudioResource(nextInQueue, controller) {
     return new Promise(async (resolve, reject) => {
         
         
-        const videoInfo = await ytdl.getInfo(nextInQueue.videoUrl)
         const MusicController = controller.MusicController
+        const videoInfo = await ytdl.getInfo(nextInQueue.videoUrl, 
+            {
+                requestOptions: {
+                    headers: {
+                        Cookie: MusicController.youtubeCookies
+                    }
+                }
+            }
+        )
         MusicController.songHistory.push(videoInfo.player_response.videoDetails.videoId)
-
         
+        const musicInfo = videoInfo.videoDetails?.media
+
+        /*
+        musicInfo =  
+        {
+            song: 'DEUTSCHLAND',
+            category: 'Music',
+            category_url: 'https://music.youtube.com/',
+            artist: 'Rammstein',
+            'licensed to youtube by': 'UMG_MK (on behalf of Rammstein); LatinAutor - UMPG, CMRRA, UMPI, LatinAutor, ASCAP, LatinAutorPerf, SODRAC, UNIAO BRASILEIRA DE EDITORAS DE MUSICA - UBEM, and 8 Music Rights Societies'
+        }
+        */
+
         /* 
+        RecommendedSong = 
         {
             id: 'sWjbQGXz2CE',
             title: 'WHAT IS ATRIAL SEPTAL DEFECT (ASD)?',
@@ -26,10 +47,17 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
             isLive: false
         }
         */
-        if(MusicController.queue.length === 0) {
+        if(MusicController.queue.length === 0 && MusicController.autoplay) {
            
             let recommendedNext;
             //console.log(MusicController.songHistory)
+
+            const recommendedSongs = videoInfo.related_videos.map(song => {
+                return {title: song.title , view_count: song.view_count}
+            })
+            recommendedLogStream.write(JSON.stringify(recommendedSongs, null, 2)+ "," + "\n\n" )
+
+
 
             for (const [index, song] of videoInfo.related_videos.entries()) {
                 //console.log("Song id: " + song.id)
@@ -65,6 +93,7 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
         const audioFormats = ytdl.filterFormats(videoInfo.formats, 'audio');
         const chosenFormat = ytdl.chooseFormat(audioFormats, {quality: "highestaudio"})
         /* 
+        chosenFormat = 
         {
             mimeType: 'video/ts; codecs="H.264, aac"',
             qualityLabel: '720p',

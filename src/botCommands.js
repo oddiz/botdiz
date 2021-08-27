@@ -214,6 +214,18 @@ module.exports = function (Controller){
         new Command(
             Controller,
             {
+                name:"autoplay",
+                description: "Toggles autoplay feature. Bot will keep playing recommended songs when queue is finished if enabled.",
+                needArgs: false,
+                usage: "/autoplay",
+        
+        
+            },
+            require("./commands/autoplay")
+        ),
+        new Command(
+            Controller,
+            {
                 name:"invite",
                 description: "Gets invite link for the bot to use in other servers.",
                 needArgs: false,

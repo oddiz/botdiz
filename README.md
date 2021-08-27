@@ -7,7 +7,9 @@
 
 
 ## TODO
-
+    - remove from botdiz interface after dj access removed
+    - skip vote
+    
     - Voice recognition ?
     - Play from youtube, spotify, soundcloud✅
         - play discover weekly
@@ -28,7 +30,7 @@
         - 
 
 ## BUGS
-
+    *  bot crash after trying to send interraction from channel botdiz doesn't have access to
     * After disabling channel leave:
 
         - 

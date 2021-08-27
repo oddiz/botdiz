@@ -97,17 +97,16 @@ module.exports = class UpdatePlayerInfo {
                 
                 if (videoLength == 0){
                     newEmbedMessage = newEmbed
-                    .addField(`Play time:`, `${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')}`)
+                    .addField(`Play time:`, `${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')}\n\n Autoplay: ${this.MusicController.autoplay? "On":"Off"}`)
                 } else if (videoHours > 0) {
                     newEmbedMessage = newEmbed
-                    .addField(`${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')} / ${videoHours}:${videoMins.toString().padStart(2, 0)}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
+                    .addField(`${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')} / ${videoHours}:${videoMins.toString().padStart(2, 0)}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|\n\n Autoplay: ${this.MusicController.autoplay? "On":"Off"} `)
                 } else {
                     newEmbedMessage = newEmbed
-                        .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|`)
+                        .addField(`${streamMins}:${streamSecs.toString().padStart(2, '0')} / ${videoMins}:${videoSecs.toString().padStart(2, '0')}`, `|${lines}|\n\n Autoplay: ${this.MusicController.autoplay? "On":"Off"}`)
                     
                 }
                 
-
                 await this.messageToEdit.edit({ embeds: [newEmbedMessage], components: [botdizLinkButton]})
                 
                 this.loopCount ++;

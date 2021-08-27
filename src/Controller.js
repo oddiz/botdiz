@@ -15,7 +15,7 @@ module.exports = class Controller {
         this.MsgHandler = MsgHandler;
         this.MusicController = new MusicController(this)
         this.SubscriptionManager = new SubscriptionManager(guild, db)
-        this.commands = require('./botCommands')
+        this.commands = null
 
         this.client.application.fetch().then((app) => {
             this.oddiz = app.owner
@@ -27,13 +27,13 @@ module.exports = class Controller {
     init = () => {
         const populateCommands = require('./botCommands')
         this.commands = populateCommands(this)
-        
+        const self = this
         this.guild.commands.fetch().then( commands => {
-            if (commands.size > 0) {
-                //
-            } else {
+            if (commands.size !== self.commands.length ) {
                 logger.log("info", "Deploying slash commands")
                 this.deploySlashCommands()
+            } else {
+                //commands are up to date
             }
         })
 

@@ -1,4 +1,5 @@
 const fs = require('fs')
+const { default: fetch } = require('node-fetch');
 
 const { logger } = require("./logger")
 const searchYT = require("./scripts/searchYT")
@@ -22,7 +23,7 @@ const {
 //const prism = require('prism-media')
 const UpdatePlayerInfo = require('./UpdatePlayerInfo')
 
-const commands = require('./botCommands')
+const commands = require('./botCommands');
 let playCommand;
 for (const command of commands()) {
     if(command.name === 'play') {
@@ -46,7 +47,9 @@ module.exports = class MusicController {
         this.voiceConnection; 
         this.voiceConnectionState;
 
+        this.autoplay = false
         this.songHistory = []
+        this.youtubeCookies = null
 
         this.currentSong;
         this.queue = [];
@@ -210,8 +213,26 @@ module.exports = class MusicController {
         
     }
 
+    async setYoutubeCookies() {
+        try {
+            //get cookie for reccomendations
+            const cookies = await fetch("https://www.youtube.com")
+            .then(res => {
+                return res.headers.get("set-cookie")
+            })
+        
+            this.youtubeCookies = cookies
+            
+            return cookies
+        } catch (error) {
+            logger.log("error", "Error while trying to get youtube cookies: ", error)
+        }
+
+    }
+
     async processQueue() {
 
+        this.setYoutubeCookies()
         if(!this.audioPlayer) {
             console.log("no audio player available")
             this.queue = []
