@@ -9,3 +9,4 @@ log
 /temp
 /build
 .vscode/settings.json
+src/Shokaku/lavalink-server.json

@@ -174,6 +174,10 @@ module.exports = function spawnAudioResource(nextInQueue, controller) {
                 MusicController.downloadFinished = false
     
             })
+
+            stream.on("error", (error) => {
+                console.log("ytdl-core error happened: ", error)
+            })
     
             await stream.pipe(fs.createWriteStream(`./temp/AudioBuffers/${controller.guild.id}`))
     

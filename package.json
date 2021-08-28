@@ -20,6 +20,7 @@
     "object-hash": "^2.2.0",
     "prism-media": "^1.3.1",
     "prom-client": "^13.1.0",
+    "shoukaku": "https://github.com/Deivu/Shoukaku.git",
     "spotify-uri": "^2.2.0",
     "spotify-web-api-node": "^5.0.2",
     "uuid": "^8.3.2",
