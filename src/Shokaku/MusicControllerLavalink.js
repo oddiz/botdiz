@@ -110,6 +110,10 @@ module.exports = class MusicController {
             if(!this.stopped && !this.skipping) {
                 this.playNext();
             }
+            if (this.skipping) {
+                //end triggered because of skip command, ignore play next
+                this.skipping=false
+            }
         });
 
         this.audioPlayer.on('update', (data) => {
@@ -435,7 +439,6 @@ module.exports = class MusicController {
         }
 
         const result = await this.playNext()
-        this.skipping = false
         this.queueLock = false
         return result
 
