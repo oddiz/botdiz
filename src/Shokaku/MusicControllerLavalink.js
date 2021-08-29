@@ -107,7 +107,7 @@ module.exports = class MusicController {
             this.audioPlayerStatus = "stopped"
             console.log("audioplayer ended")
 
-            if(!this.stopped) {
+            if(!this.stopped && !this.skipping) {
                 this.playNext();
             }
         });
