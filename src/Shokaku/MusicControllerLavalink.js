@@ -1,8 +1,8 @@
 const fs = require('fs')
 const { default: fetch } = require('node-fetch');
 
-const { logger } = require("./logger")
-const searchYT = require("./scripts/searchYT")
+const { logger } = require("../logger")
+const searchYT = require("../scripts/searchYT")
 
 const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js")
 
@@ -21,9 +21,11 @@ const {
 } = require('@discordjs/voice');
 //const ytdl = require("ytdl-core");
 //const prism = require('prism-media')
-const UpdatePlayerInfo = require('./UpdatePlayerInfo')
+const UpdatePlayerInfo = require('../UpdatePlayerInfo')
 
-const commands = require('./botCommands');
+const commands = require('../botCommands');
+
+
 let playCommand;
 for (const command of commands()) {
     if(command.name === 'play') {
@@ -31,21 +33,19 @@ for (const command of commands()) {
     }
 }
 module.exports = class MusicController {
-    constructor(controller) {
+    constructor(controller, shoukaku) {
         this.controller = controller;
         this.volume = 1
         this.command = playCommand;
         this.readyLock = false;
-        this.UPDATE_INTERVAL = 5000 // player stats update interval in ms
+        this.UPDATE_INTERVAL = 10000 // player stats update interval in ms
         this.UpdatePlayerInfo = new UpdatePlayerInfo(this)
         this.UpdatePlayerInfo.start()
         this.lastInvokedMessage;
 
-        this.audioPlayer = null
-        this.audioPlayerStatus;
+        this.shoukaku = shoukaku
 
-        this.voiceConnection; 
-        this.voiceConnectionState;
+        this.audioPlayer = null
 
         this.autoplay = false
         this.songHistory = []
@@ -54,8 +54,74 @@ module.exports = class MusicController {
         this.currentSong;
         this.queue = [];
 
-        this.deleteAudioBuffer();
-	
+        this.init()
+    }
+
+    async init() {
+        try {
+            //get audioPlayer from lavalink if available
+            const node = this.shoukaku.getNode()
+            this.audioPlayer = node.players.get(this.controller.guild.id)
+            
+        } catch (error) {
+            
+        }
+
+    }
+
+    async setVoiceConnection(channel) {
+        const node = this.shoukaku.getNode()
+        
+        //If there is audioplayer present we are already connected to voice channel
+        if(!this.audioPlayer) {
+    
+            this.audioPlayer = await node.joinChannel({
+                guildId: this.controller.guild.id,
+                channelId: channel.id,
+                shardId: this.controller.guild.shardId
+            });
+
+            this.activeVoiceChannel = channel
+    
+            this.audioPlayer.on('start', () => {
+                if (this.repeat === 'one') return;
+                this.audioPlayer.playing = true
+                this.stopped = false;
+
+                console.log("audioPlayer started")
+            });
+            this.audioPlayer.on('end', () => {
+                if (this.repeat === 'one') this.queue.unshift(this.current);
+                if (this.repeat === 'all') this.queue.push(this.current);
+                this.audioPlayer.playing = false
+
+                console.log("audioplayer ended")
+
+                if(!this.stopped) {
+                    this.playNext();
+                }
+            });
+            for (const event of ['closed', 'error']) {
+                this.audioPlayer.on(event, data => {
+                    if (data instanceof Error || data instanceof Object) console.error(data);
+                    this.audioPlayer.playing = false
+                    this.queue.length = 0;
+                    this.stop();
+                });
+            }
+        }
+    }
+
+    async disconnectFromVoiceChannel() {
+        try {
+            const node = this.shoukaku.getNode()
+
+            node.leaveChannel(this.controller.guild.id)
+            this.audioPlayer = null
+
+        } catch (error) {
+            console.log("Error while executing disconnectFromVoiceChannel: ", error)
+        }
     }
 
     addToQueue(song, options) {
@@ -95,8 +161,8 @@ module.exports = class MusicController {
     }
 
     async processQueue() {
+        this.queueLock = false
 
-        this.setYoutubeCookies()
         if(!this.audioPlayer) {
             console.log("no audio player available")
             this.queue = []
@@ -104,7 +170,7 @@ module.exports = class MusicController {
             return "failed"
         }
         // If the queue is locked (already being processed), or the audio player is already playing something, return
-        if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle) {
+        if (this.queueLock || this.audioPlayer.playing) {
 
             //remove previous recommended songs
             for (const [index, song] of this.queue.entries()) {
@@ -115,7 +181,8 @@ module.exports = class MusicController {
 
             this.queueLock = false
 			return "success";
-		} else if (this.audioPlayer.state.status == AudioPlayerStatus.Idle){
+        // If not playing
+		} else if (!this.audioPlayer.playing){
             this.queueLock = false
 
             //remove previous recommended songs
@@ -125,9 +192,11 @@ module.exports = class MusicController {
                     this.queue.splice(index, 1)
                 }
             } 
-            const result = await this.playNext();
 
-            return result
+            console.log("playing next")
+            this.playNext();
+
+            return
         }
         
     }
@@ -163,39 +232,30 @@ module.exports = class MusicController {
     }
     
     async playNext() {
-        const nextInQueue = await this.processNextSong()
-
-        
-        if (!nextInQueue) {
-            //no song is next
-            
-            return
-        }
-
-        //wait a few moments so player doesn't skuff
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        
-        
-        /**
-         * Create a player and play the song
-         */
-        const spawnAudioResource = require("./scripts/spawnAudioResource")
-        //const spawnAudioResource = require("./scripts/spawnAudioResource_ytdl_exec")
-        
         try {
+            const nextInQueue = await this.processNextSong()
+
+            if (!nextInQueue) {
+                //no song is next
+                this.command.reply("`No songs left in queue, feel free to add new ones.`", {new: true})
+
+                this.stop()
+                
+                return false
+            }
 
             
-            //logger.log("info", "Trying to create Audio Resource." )    
-            const resource = await spawnAudioResource(nextInQueue, this.controller);
+            console.log(nextInQueue.info)
             //console.log("Got resources")
-            await this.audioPlayer.play(resource, { volume: MusicController.volume }); 
+            
+            this.currentSong = nextInQueue
+            await this.audioPlayer.playTrack(nextInQueue); 
+            
             
             /**
              * Creates a message that shows song info then assigns an updater.
              */       
             await this.createSongEmbed(nextInQueue)
-            
             return "success"
             
         } catch (error) {
@@ -207,147 +267,142 @@ module.exports = class MusicController {
         }
     }
 
-    processNextSong() {
-        return new Promise((resolve, reject) => {
+    /**
+     * 
+     * @returns ShoukakuTrack 
+     */
+    async processNextSong() {
+        try {
+            //console.log(self)
             
-            try {
-                //console.log(self)
-                if (this.queue.length === 0) {
-                    this.command.reply("Stopping player 🛑", {new: true})
-    
-                    this.stop()
-                    
-                    resolve(false)
+            let nextInQueue = this.queue.shift();
+            
+            if (!nextInQueue) {
+            
 
-                    return
-                }   
-                let nextInQueue = this.queue[0];
-                
-                if (!nextInQueue) {
-                    resolve(false)
-
-                    return
-                }
-                this.queueLock = true
-                if (nextInQueue.isSpotify) {
-                    //if came from spotify link
-                    //only videoArtist, videoTitle, isSpotify present
-                    const getInfoFromYoutubeUrl = require("./scripts/getInfoFromYoutubeUrl")
-        
-                    const query = nextInQueue.videoTitle
-                    
-                    searchYT(query, 1, (result) => {
-                                                
-                        if (result) {
-                            //invokedMessage.channel.send("Video found: " + result.videoUrl)
-                            getInfoFromYoutubeUrl(result.videoUrl, result => {
-                                nextInQueue = result;
-                                this.updateCurrentSong(nextInQueue);
-                                
-                                this.queueLock = false
-                                this.queue.shift()
-    
-                                resolve(nextInQueue)
-                            })
-        
-                        } else {
-                            console.error("Error getting YT info from: "+ query)
-                            console.error("Error from music COntroller play next()")
-                        }
-                    })
-        
-                } else {
-                    this.queueLock = false
-                    this.updateCurrentSong(nextInQueue);
-                    this.queue.shift()
-                    resolve(nextInQueue)
-                }
-            } catch (error) {
-                logger.log("error", "Error in processNextSong()", error)
-                reject(error)
+                return false
             }
-        
-        
-        
-        
-        
-        
-        
-        })
+
+            if (nextInQueue.constructor.name === "ShoukakuTrack") {
+                console.log("Track is Shoukaku Track")
+
+
+            } else if (nextInQueue.isSpotify) {
+                //if came from spotify link
+                //only videoArtist, videoTitle, isSpotify present
+                //turn into Shoukaku Track
+    
+                const query = nextInQueue.info.title
+                const node = this.shoukaku.getNode()
+
+                const result = await node.rest.resolve(query, 'youtube')
+
+                if (!result.tracks.length) {
+                    //couldn't find song from spotify song
+                    return false
+                }
+                
+                nextInQueue = result.tracks.shift();
+
+
+            } else {
+                console.log("Couldn't figure out how to process next song. FIX ME!! ")
+                
+                console.log("Track is : ", nextInQueue)
+                
+                this.queueLock = false
+                
+                return false
+            }
+
+            //add thumbnail image if youtube
+            if(nextInQueue.info.sourceName === 'youtube') {
+                const oembed = "https://www.youtube.com/oembed?url="
+                const oEmbedUrl = oembed + nextInQueue.info.uri
+
+                const videoThumbnailUrl = 
+                    await fetch(oEmbedUrl)
+                        .then((res) => res.json())
+                        .then((parsedRes) => parsedRes.thumbnail_url)
+                        .catch(err=> {
+                            console.log("Error while fetching oEmbed. error: ", err)
+                            return null
+                        })
+
+                nextInQueue.info.thumbnail = videoThumbnailUrl
+            }
+
+            this.queueLock = false
             
-        
-
-
-
-            logger.log("error", "ERROR while processing the queue.")
+            return nextInQueue
             
+        } catch (error) {
+            logger.log("error", "Error in processNextSong()", error)
+            this.queueLock = false
+
             return false
+        }
         
     }
 
     async createSongEmbed(currentSong) {
-        
-        let botMessage;
-        const botdizLinkButton = new MessageActionRow()
-        const botdizLink = process.env.NODE_ENV === "development" ? "http://localhost:3000/app" : "https://botdiz.kaansarkaya.com/app"
-        botdizLinkButton
-            .addComponents(
-                new MessageButton()
-                    .setLabel("Botdiz Interface")
-                    .setStyle("LINK")
-                    .setURL(botdizLink)
-            )
-        let embedMessage = new MessageEmbed()
-        
-        embedMessage
-            .setColor(this.controller.roleColor)
-            .addField("Now Playing: ",`${currentSong.videoTitle}`)
-            .setTimestamp()
-
-
-        if(currentSong.videoThumbnailUrl) {
-            embedMessage = embedMessage
-                .setThumbnail(currentSong.videoThumbnailUrl)
-        }
-        
-        //await this.command.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
-        botMessage = await this.command.reply( { embeds: [embedMessage], components: [botdizLinkButton]}, { new:true, required: true })
-        
-
-        if (this.UpdatePlayerInfo.quit) {
-            this.UpdatePlayerInfo.start()
-        }
-        this.UpdatePlayerInfo.changeSong(currentSong) 
-        this.UpdatePlayerInfo.changeMessage(botMessage) 
-
-        return true
-
-        /* 
-        if(lastMessage.author.bot) {
-            lastMessage.edit(embedMessage).then( message => {
-                botMessage = message
-                const originalVideoTitle = nextInQueue.videoTitle;
-                
-                updatePlayer(this, invokedMessage, nextInQueue, botMessage)
-                
-                return true
-            }).catch(err=>{console.log("Error while executing manageSongEmbed() / edit embed"), err})
-        }
-        */
-        
-        
-    }
-
-    async deleteAudioBuffer() {
         try {
-            //delete audio buffer
-            fs.unlink(`./temp/AudioBuffers/${this.controller.guild.id}`, (err) => {
-                
-            })
+            
+            let botMessage;
+            const botdizLinkButton = new MessageActionRow()
+            const botdizLink = process.env.NODE_ENV === "development" ? "http://localhost:3000/app" : "https://botdiz.kaansarkaya.com/app"
+            botdizLinkButton
+                .addComponents(
+                    new MessageButton()
+                        .setLabel("Botdiz Interface")
+                        .setStyle("LINK")
+                        .setURL(botdizLink)
+                )
+            let embedMessage = new MessageEmbed()
+            
+            embedMessage
+                .setColor(this.controller.roleColor)
+                .addField("Now Playing: ",`${currentSong.info.title}`)
+                .setTimestamp()
+    
+    
+            if(currentSong.info.thumbnail) {
+                embedMessage = embedMessage
+                    .setThumbnail(currentSong.info.thumbnail)
+            }
+            
+            //await this.command.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
+            botMessage = await this.command.reply( { embeds: [embedMessage], components: [botdizLinkButton]}, { new:true, required: true })
+            
+    
+            if (this.UpdatePlayerInfo.quit) {
+                this.UpdatePlayerInfo.start()
+            }
+            this.UpdatePlayerInfo.changeSong(currentSong) 
+            this.UpdatePlayerInfo.changeMessage(botMessage) 
+    
+            return true
+    
+            /* 
+            if(lastMessage.author.bot) {
+                lastMessage.edit(embedMessage).then( message => {
+                    botMessage = message
+                    const originalVideoTitle = nextInQueue.videoTitle;
+                    
+                    updatePlayer(this, invokedMessage, nextInQueue, botMessage)
+                    
+                    return true
+                }).catch(err=>{console.log("Error while executing manageSongEmbed() / edit embed"), err})
+            }
+            */
             
         } catch (error) {
-            console.log("Error while trying to delete buffer file  :\n", error)
+            console.log("Error while trying to create song embed: " + error)
+
+            return
         }
+        
+        
     }
 
     async skip(skipAmount) {
@@ -363,33 +418,11 @@ module.exports = class MusicController {
         return result
 
 
-
-        if (this.queue.length == 0){
-            this.command.reply("No playlist to skip ⚠")
-            return
-        }
-        
-        if (skipAmount > this.controller.MusicController.queue.length) {
-            skipAmount = this.controller.MusicController.queue.length
-        }
-
-        if (!skipAmount || skipAmount === 1){
-            this.command.reply(`Skipping ${this.getCurrentSong.videoTitle}`)
-            
-            this.playNext()
-
-        } else {
-            for (let i = 1; i < skipAmount; i++) {
-                this.queue.shift()
-            }
-            this.command.reply(`Skipping ${skipAmount} songs`)
-            this.playNext()
-        }
     }
     
     stop() {
         try {
-            this.stopping = true;
+            this.stopped = true;
             
             this.clearQueue()
             this.currentSong = null;
@@ -397,7 +430,7 @@ module.exports = class MusicController {
             //logger.log("info", "Queue cleared")
             
             if(this.audioPlayer) {
-                this.audioPlayer.stop(true)
+                this.audioPlayer.stopTrack()
                 //logger.log("info", "Audio Player stopped.")
             }
             
@@ -405,8 +438,7 @@ module.exports = class MusicController {
             this.UpdatePlayerInfo.stop()
             //logger.log("info", "Player updater stopped")
             
-            //delete audio buffer file
-            this.deleteAudioBuffer()
+
 
             this.queueLock = false;
             //this.voiceConnection.destroy();
@@ -424,7 +456,7 @@ module.exports = class MusicController {
         
         try {
             
-                this.audioPlayer.pause()
+                this.audioPlayer.setPaused(true)
             
         } catch (error) {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)
@@ -435,7 +467,7 @@ module.exports = class MusicController {
         
         try {
            
-                this.audioPlayer.unpause()
+                this.audioPlayer.setPaused(false)
             
         } catch (error) {
             logger.log("info", "Error while trying to resume.", error)

@@ -58,7 +58,7 @@ module.exports = class UpdatePlayerInfo {
         //     )
         while (!this.quit){
             if (!(this.messageToEdit && this.currentSong)){
-                await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL + 2000));
+                await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
 
                 continue
             }
@@ -68,20 +68,20 @@ module.exports = class UpdatePlayerInfo {
                 let newEmbed = new MessageEmbed()
                     newEmbed = newEmbed
                     .setColor(this.MusicController.controller.roleColor)
-                    .addField("Now Playing: ",`${this.currentSong.videoTitle}`)
+                    .addField("Now Playing: ",`${this.currentSong.info.title}`)
                     .setTimestamp()
-                if(this.currentSong.videoThumbnailUrl) {
+                if(this.currentSong.info.thumbnail) {
                     newEmbed = newEmbed
-                        .setThumbnail(this.currentSong.videoThumbnailUrl)
+                        .setThumbnail(this.currentSong.info.thumbnail)
                 }
     
-                const streamtime = this.MusicController.audioPlayer._state.playbackDuration || 0;
+                const streamtime = this.MusicController.audioPlayer.position || 0;
                 const streamHours = Math.floor(streamtime / (1000 * 60 * 60) % 60)
                 const streamMins = Math.floor(streamtime / (1000 * 60) % 60)
                 const streamSecs = Math.floor(streamtime / 1000 % 60)
                 
                 
-                const videoLength= this.currentSong.videoDuration; //secs
+                const videoLength= this.currentSong.info.length / 1000; //secs
                 const videoHours = Math.floor((videoLength / (60 *60)) % 60)
                 const videoMins = Math.floor((videoLength / 60) % 60)
                 const videoSecs = Math.floor(videoLength % 60)
@@ -95,7 +95,7 @@ module.exports = class UpdatePlayerInfo {
                 lines = lines.join("-")
                 let newEmbedMessage;
                 
-                if (videoLength == 0){
+                if (this.currentSong.info.isStream){
                     newEmbedMessage = newEmbed
                     .addField(`Play time:`, `${streamHours}:${streamMins.toString().padStart(2,0)}:${streamSecs.toString().padStart(2, '0')}\n\n Autoplay: ${this.MusicController.autoplay? "On":"Off"}`)
                 } else if (videoHours > 0) {
@@ -121,6 +121,25 @@ module.exports = class UpdatePlayerInfo {
                 }
             }
             await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
+        }
+
+        if(this.quit) {
+            try {
+                let newEmbed = new MessageEmbed()
+                        newEmbed = newEmbed
+                        .setColor(this.MusicController.controller.roleColor)
+                        .addField("Stopped playing: ",`${this.currentSong.info.title}`)
+                        .setTimestamp()
+                if(this.currentSong.info.thumbnail) {
+                    newEmbed = newEmbed
+                        .setThumbnail(this.currentSong.info.thumbnail)
+                }
+    
+                await this.messageToEdit.edit({ embeds: [newEmbed], components: [botdizLinkButton]})
+                
+            } catch (error) {
+                //silently fail shennanigans
+            }
         }
         this.looping = false
         

@@ -8,14 +8,14 @@ module.exports = async function (invokedMessage) {
             return 
         }
     
-        if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
+        if (this.controller.MusicController.audioPlayer.paused) {
             
             await this.controller.MusicController.resume(invokedMessage)
             
             this.reply("▶️")
-        } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
+        } else if (!this.controller.MusicController.audioPlayer.playing) {
             this.reply("Player is not active")
-        } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Playing){
+        } else if (this.controller.MusicController.audioPlayer.playing){
             this.reply("Player already playing")
         } else {
             logger.log("error","This shouldn't happen @ resume.js")

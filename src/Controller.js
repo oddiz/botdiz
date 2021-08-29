@@ -1,19 +1,18 @@
 const { logger } = require("./logger");
 const { MessageEmbed } = require('discord.js')
-const MusicController = require("./MusicController");
+const MusicController = require("./Shokaku/MusicControllerLavalink");
 const SubscriptionManager = require('./SubscriptionManager')
+
 module.exports = class Controller {
-    
-    
-    
-    constructor(db, client, MsgHandler, guild) {
+        
+    constructor(db, client, MsgHandler, guild, shoukaku) {
 
         this.PREFIX = "/"
         this.debugMode = false
         this.guild = guild
         this.client = client;
         this.MsgHandler = MsgHandler;
-        this.MusicController = new MusicController(this)
+        this.MusicController = new MusicController(this, shoukaku)
         this.SubscriptionManager = new SubscriptionManager(guild, db)
         this.commands = null
 

@@ -1,31 +1,43 @@
 const { Shoukaku, Libraries } = require('shoukaku');
 const servers = require('./lavalink-server.json');
-const options = require('./shoukaku-options.js');
+const options = require('./shokaku-options.js');
 
 
 class ShoukakuHandler extends Shoukaku {
     constructor(client) {
         super(new Libraries.DiscordJS(client), servers, options);
+        
         this.on('ready',
-            (name, resumed) =>
-                client.logger.log(`Lavalink Node: ${name} is now connected`, `This connection is ${resumed ? 'resumed' : 'a new connection'}`)
+            (name, resumed) => {
+                console.log(`Lavalink Node: ${name} is now connected`, `This connection is ${resumed ? 'resumed' : 'a new connection'}`)
+                this.connected = true
+            }
+
         );
         this.on('error',
             (name, error) =>
-                client.logger.error(error)
+                console.error(error)
         );
         this.on('close',
             (name, code, reason) =>
-                client.logger.log(`Lavalink Node: ${name} closed with code ${code}`, reason || 'No reason')
+                console.log(`Lavalink Node: ${name} closed with code ${code}`, reason || 'No reason')
         );
         this.on('disconnect',
             (name, players, moved) =>
-                client.logger.log(`Lavalink Node: ${name} disconnected`, moved ? 'players have been moved' : 'players have been disconnected')
+                console.log(`Lavalink Node: ${name} disconnected`, moved ? 'players have been moved' : 'players have been disconnected')
         );
         this.on('debug',
             (name, reason) =>
-                client.logger.log(`Lavalink Node: ${name}`, reason || 'No reason')
+                console.log(`Lavalink Node: ${name}`, reason || 'No reason')
         );
+    }
+
+    async ready() {
+        while (!this.connected) {
+            await new Promise(resolve => setTimeout(resolve, 200))
+        }
+
+        return
     }
 }
 

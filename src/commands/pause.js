@@ -7,10 +7,10 @@ module.exports = async function (invokedMessage) {
             
             return 
         }
-        if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
+        if (this.controller.MusicController.audioPlayer.paused) {
             this.reply("Player already paused")
              
-        } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
+        } else if (!this.controller.MusicController.audioPlayer.playing) {
             this.reply("Player is not active")
         } else {
             await this.controller.MusicController.pause(invokedMessage)

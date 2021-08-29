@@ -9,26 +9,32 @@ const client = new Discord.Client( { intents: [
     Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS
 ]});
 
+const { Shoukaku } = require("shoukaku")
 const dbManager = require('../server_src/db/DatabaseManager')
 const MsgHandler = require('./MessageHandler.js');
 const Ctrl = require('./Controller.js');
 const axios = require('axios')
 const hash = require('object-hash')
+const ShoukakuHandler = require("./Shokaku/ShokakuHandler")
 
 let GuildControllers = []
 
+
 async function main() {
+    
+    const shoukaku = new ShoukakuHandler(client)
     
     const databaseManager = new dbManager
     const db = await databaseManager.connect()
-
+    
     client.on('ready', async () => {
+        await shoukaku.ready()
         client.user.setActivity(`/help`, {type: 'LISTENING'})
     
         await updateEpicDeals(db)
         setInterval(updateEpicDeals, 1000 * 60 * 30, db)
         for (const guild of client.guilds.cache) {
-            const Controller = new Ctrl(db, client, MsgHandler, guild[1]) ;
+            const Controller = new Ctrl(db, client, MsgHandler, guild[1], shoukaku) ;
             Controller.init()
             
             GuildControllers.push({
@@ -186,6 +192,7 @@ async function updateEpicDeals(db) {
 
 
 } 
+
 
 main()
 

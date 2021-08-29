@@ -29,12 +29,12 @@ module.exports = function (invokedMessage) {
         try {
             let response = "**Current queue:**" + " ```apache\n"
             
-            response = response + "Playing: " + current.videoTitle + "\n\n";
+            response = response + "Playing: " + current.info.title + "\n\n";
             let counter = 1;
             for (const song of queue) {
                 let line = ""
-                
-                line = counter + "- " + song.videoTitle + (song.recommendedSong? " [Botdiz Recommended Song]": "") + "\n\n"
+                console.log(song)
+                line = counter + "- " + song.info.title + (song.recommendedSong? " [Botdiz Recommended Song]": "") + "\n\n"
                 
                 counter += 1;
                 response = response + line;
@@ -45,6 +45,8 @@ module.exports = function (invokedMessage) {
             
         } catch (error) {
             this.reply("Queue is probably bugged atm. Contact my dad.")
+
+            console.log("Error while constructing /queue response: ", error)
         }
         
     } catch (error) {
