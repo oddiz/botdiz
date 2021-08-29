@@ -271,7 +271,7 @@ module.exports = class MusicController {
             //console.log("Got resources")
             
             this.currentSong = nextInQueue
-            await this.audioPlayer.playTrack(nextInQueue); 
+            await this.audioPlayer.playTrack(nextInQueue, { noReplace: false }); 
             
             
             /**
