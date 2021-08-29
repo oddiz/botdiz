@@ -57,7 +57,7 @@ module.exports = class Controller {
                 // if bot is the only member of the voice channel first let the maintainer know bot is alone so it will kill the voice connection next pass 
                 if (members.length === 1 && aloneInVoice) {
                     this.MusicController.stop()
-                    this.MusicController.voiceConnection.destroy()
+                    this.MusicController.disconnectFromVoiceChannel()
                     aloneInVoice = false
                 } else if (members.length === 1) {
                     aloneInVoice = true

@@ -156,11 +156,11 @@ module.exports = class ListenerManager {
                         
         
                         const queue = MusicController.queue
-                        const currentTitle = currentSong?.videoTitle || "";
-                        const streamTime = MusicController.audioPlayer?._state.playbackDuration / 1000 || 0;
-                        const videoLenght= currentSong?.videoDuration || 0;
+                        const currentTitle = currentSong?.info?.title || "";
+                        const streamTime = MusicController.audioPlayer?.position / 1000 || 0;
+                        const videoLenght= currentSong?.info?.length / 1000 || 0;
                         const audioPlayerStatus = MusicController.audioPlayerStatus || "none"
-                        const videoThumbnailUrl = currentSong.videoThumbnailUrl || "";
+                        const videoThumbnailUrl = currentSong?.info?.thumbnail || "";
                         //console.log(queue, currentTitle, streamTime, videoLength)
                         const message = {
                             guild: guildId,
@@ -169,7 +169,8 @@ module.exports = class ListenerManager {
                             streamTime: streamTime,
                             videoLength: videoLenght,
                             audioPlayerStatus: audioPlayerStatus,
-                            videoThumbnailUrl: videoThumbnailUrl
+                            videoThumbnailUrl: videoThumbnailUrl,
+                             
                         }
         
                         const replyMessage = JSON.stringify({

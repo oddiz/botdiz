@@ -71,44 +71,66 @@ module.exports = class MusicController {
 
     async setVoiceConnection(channel) {
         const node = this.shoukaku.getNode()
+
+        if (channel.id === this.activeVoiceChannel?.id) {
+            //already in same channel
+            return
+        }
         
+        await this.stop()
+
+        if (this.audioPlayer) {
+            await node.leaveChannel(this.controller.guild.id)
+        }
         //If there is audioplayer present we are already connected to voice channel
-        if(!this.audioPlayer) {
-    
-            this.audioPlayer = await node.joinChannel({
-                guildId: this.controller.guild.id,
-                channelId: channel.id,
-                shardId: this.controller.guild.shardId
-            });
 
-            this.activeVoiceChannel = channel
-    
-            this.audioPlayer.on('start', () => {
-                if (this.repeat === 'one') return;
-                this.audioPlayer.playing = true
-                this.stopped = false;
+        this.audioPlayer = await node.joinChannel({
+            guildId: this.controller.guild.id,
+            channelId: channel.id,
+            shardId: this.controller.guild.shardId
+        });
 
-                console.log("audioPlayer started")
-            });
-            this.audioPlayer.on('end', () => {
-                if (this.repeat === 'one') this.queue.unshift(this.current);
-                if (this.repeat === 'all') this.queue.push(this.current);
-                this.audioPlayer.playing = false
+        this.activeVoiceChannel = channel
 
-                console.log("audioplayer ended")
+        this.audioPlayer.on('start', () => {
+            if (this.repeat === 'one') return;
+            this.audioPlayer.playing = true
+            this.audioPlayerStatus = "playing"
+            this.stopped = false;
 
-                if(!this.stopped) {
-                    this.playNext();
-                }
-            });
-            for (const event of ['closed', 'error']) {
-                this.audioPlayer.on(event, data => {
-                    if (data instanceof Error || data instanceof Object) console.error(data);
-                    this.audioPlayer.playing = false
-                    this.queue.length = 0;
-                    this.stop();
-                });
+            console.log("audioPlayer started")
+        });
+        this.audioPlayer.on('end', () => {
+            if (this.repeat === 'one') this.queue.unshift(this.current);
+            if (this.repeat === 'all') this.queue.push(this.current);
+            this.audioPlayer.playing = false
+            this.audioPlayerStatus = "stopped"
+            console.log("audioplayer ended")
+
+            if(!this.stopped) {
+                this.playNext();
             }
+        });
+
+        this.audioPlayer.on('update', (data) => {
+            /*
+            data = 
+            {
+                op: 'playerUpdate',
+                state: { connected: true, position: 45800, time: 1630211312429 },
+                guildId: '854409105431330836'
+            }
+            */
+        })
+        for (const event of ['closed', 'error']) {
+            this.audioPlayer.on(event, data => {
+                if (data instanceof Error || data instanceof Object) console.error(data);
+                this.audioPlayer.playing = false
+                this.audioPlayerStatus = "stopped"
+
+                this.queue.length = 0;
+                this.stop();
+            });
         }
     }
 
@@ -196,7 +218,7 @@ module.exports = class MusicController {
             console.log("playing next")
             this.playNext();
 
-            return
+            return "success"
         }
         
     }
@@ -420,7 +442,7 @@ module.exports = class MusicController {
 
     }
     
-    stop() {
+    async stop() {
         try {
             this.stopped = true;
             
@@ -430,17 +452,19 @@ module.exports = class MusicController {
             //logger.log("info", "Queue cleared")
             
             if(this.audioPlayer) {
-                this.audioPlayer.stopTrack()
+                await this.audioPlayer.stopTrack()
                 //logger.log("info", "Audio Player stopped.")
             }
             
             
-            this.UpdatePlayerInfo.stop()
+            await this.UpdatePlayerInfo.stop()
             //logger.log("info", "Player updater stopped")
             
 
 
             this.queueLock = false;
+
+            return
             //this.voiceConnection.destroy();
             //logger.log("info", "Voice connection destroyed.")
 
@@ -455,8 +479,10 @@ module.exports = class MusicController {
     pause() {
         
         try {
-            
+                console.log("pausing player")
+                
                 this.audioPlayer.setPaused(true)
+                this.audioPlayerStatus = "paused"
             
         } catch (error) {
             logger.log("info", "No dispatcher at present.", this.dispatcher, error)
@@ -466,8 +492,11 @@ module.exports = class MusicController {
 
         
         try {
-           
+            console.log("resuming player")
+
                 this.audioPlayer.setPaused(false)
+                this.audioPlayerStatus = "playing"
+
             
         } catch (error) {
             logger.log("info", "Error while trying to resume.", error)

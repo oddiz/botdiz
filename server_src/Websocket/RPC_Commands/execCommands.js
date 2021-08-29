@@ -33,18 +33,11 @@ module.exports={
         try {
             
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
-            if (guildMusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
-                console.log("Player already paused")
-                 
-            } else if (guildMusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
-                console.log("Player is not active")
-            } else {
-                await guildMusicController.pause()
-                
-                return {
-                    status: "success"
-                }
-                
+            
+            await guildMusicController.pause()
+            
+            return {
+                status: "success"
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_pausePlayer :", error)
@@ -59,15 +52,12 @@ module.exports={
             
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
             
-            if (guildMusicController.audioPlayer.state.status === AudioPlayerStatus.Paused) {
-                
-                await guildMusicController.resume()
-
-                return {
-                    status: "success"
-                }
-                
+            await guildMusicController.resume()
+            
+            return {
+                status: "success"
             }
+
         } catch (error) {
             console.log("Error while trying to execute RPC_resumePlayer :", error)
             return {
@@ -154,9 +144,12 @@ module.exports={
                 const videoArtist = item.track.artists[0].name
                 const videoTitle = videoArtist + " - " + videoName
                 const package = {
-                    videoArtist: videoArtist,
-                    videoName: videoName,
-                    videoTitle: videoTitle,
+                    info: {
+                        artist: videoArtist,
+                        trackName: videoName,
+                        title: videoTitle,
+
+                    },
                     isSpotify: true
                 }
                 guildController.MusicController.addToQueue(package)
@@ -165,6 +158,7 @@ module.exports={
             guildController.MusicController.queueLock = false
             const result = await guildController.MusicController.processQueue();
 
+            if(result)
             return {
                 status: result
             }
@@ -184,15 +178,8 @@ module.exports={
         try {
             const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId)
             
-            const voiceConnection = await joinVoiceChannel({
-                channelId: channelId,
-                guildId: guildId,
-                adapterCreator: guildController.guildObj.voiceAdapterCreator,
-                selfMute:false,
-                selfDeaf:false,
-            })
-
-            guildController.controller.MusicController.setVoiceConnection(voiceConnection)
+            const channel = await guildController.guildObj.channels.fetch(channelId)
+            await guildController.controller.MusicController.setVoiceConnection(channel)
 
             return {
                 status: "success",

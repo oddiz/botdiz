@@ -7,9 +7,9 @@ module.exports = function (invokedMessage) {
             
             this.reply("Nothing is playing")
         } else {
-            if(this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Idle) {
+            if(!this.controller.MusicController.audioPlayer.playing) {
                 this.reply("Nothing is playing")
-            } else if (this.controller.MusicController.audioPlayer.state.status === AudioPlayerStatus.Playing){
+            } else if (this.controller.MusicController.audioPlayer.playing){
     
                 const currentSong = this.controller.MusicController.getCurrentSong()
     

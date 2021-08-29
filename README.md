@@ -30,7 +30,7 @@
         - 
 
 ## BUGS
-    *  bot crash after trying to send interraction from channel botdiz doesn't have access to
+    *  bot crash after trying to send interraction from channel botdiz doesn't have access to ✅
     * After disabling channel leave:
 
         - 
