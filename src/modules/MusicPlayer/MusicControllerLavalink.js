@@ -34,6 +34,7 @@ for (const command of commands()) {
 module.exports = class MusicController {
     constructor(controller, shoukaku) {
         this.controller = controller;
+        this.guild = controller.guild
         this.volume = 1
         this.command = playCommand;
         this.readyLock = false;
@@ -41,6 +42,8 @@ module.exports = class MusicController {
         this.EmbedPlayer = new EmbedPlayer(this)
         this.EmbedPlayer.start()
         this.lastInvokedMessage;
+
+        this.skipVotingEnabled = false
 
         this.shoukaku = shoukaku
 
@@ -88,6 +91,8 @@ module.exports = class MusicController {
             channelId: channel.id,
             shardId: this.controller.guild.shardId
         });
+
+        console.log(this.audioPlayer)
 
         this.activeVoiceChannel = channel
 

@@ -1,6 +1,6 @@
-const { logger } = require("./logger");
+const { logger } = require("../logger");
 const { MessageEmbed } = require('discord.js')
-const MusicController = require("./Shokaku/MusicControllerLavalink");
+const MusicController = require("./MusicPlayer/MusicControllerLavalink");
 const SubscriptionManager = require('./SubscriptionManager')
 
 module.exports = class Controller {

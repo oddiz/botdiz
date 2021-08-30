@@ -1,4 +1,4 @@
-const Command = require("./Command");
+const Command = require("./modules/Command");
 
 module.exports = function (Controller){
      
