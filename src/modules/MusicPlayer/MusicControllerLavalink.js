@@ -92,7 +92,6 @@ module.exports = class MusicController {
             shardId: this.controller.guild.shardId
         });
 
-        console.log(this.audioPlayer)
 
         this.activeVoiceChannel = channel
 
@@ -147,7 +146,6 @@ module.exports = class MusicController {
             const node = this.shoukaku.getNode()
 
             node.leaveChannel(this.controller.guild.id)
-            this.audioPlayer = null
 
         } catch (error) {
             console.log("Error while executing disconnectFromVoiceChannel: ", error)
