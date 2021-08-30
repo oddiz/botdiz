@@ -1,5 +1,5 @@
 class MsgHandler {
-    static logger = require("./logger").logger 
+    static logger = require("../logger").logger 
 
     constructor(message, prefix) {
         this.message = message

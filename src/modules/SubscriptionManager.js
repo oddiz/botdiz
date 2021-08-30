@@ -1,4 +1,4 @@
-const { logger } = require("./logger");
+const { logger } = require("../logger");
 const axios = require('axios')
 
 module.exports = class SubscriptionManager {

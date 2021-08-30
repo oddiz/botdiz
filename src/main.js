@@ -11,7 +11,7 @@ const client = new Discord.Client( { intents: [
 
 const { Shoukaku } = require("shoukaku")
 const dbManager = require('../server_src/db/DatabaseManager')
-const MsgHandler = require('./MessageHandler.js');
+const MsgHandler = require('./modules/MessageHandler.js');
 const Ctrl = require('./Controller.js');
 const axios = require('axios')
 const hash = require('object-hash')

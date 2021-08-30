@@ -1,8 +1,7 @@
 const fs = require('fs')
 const { default: fetch } = require('node-fetch');
 
-const { logger } = require("../logger")
-const searchYT = require("../scripts/searchYT")
+const { logger } = require("../../logger")
 
 const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js")
 
@@ -21,9 +20,9 @@ const {
 } = require('@discordjs/voice');
 //const ytdl = require("ytdl-core");
 //const prism = require('prism-media')
-const UpdatePlayerInfo = require('../UpdatePlayerInfo')
+const EmbedPlayer = require('./EmbedPlayer')
 
-const commands = require('../botCommands');
+const commands = require('../../botCommands');
 
 
 let playCommand;
@@ -39,8 +38,8 @@ module.exports = class MusicController {
         this.command = playCommand;
         this.readyLock = false;
         this.UPDATE_INTERVAL = 10000 // player stats update interval in ms
-        this.UpdatePlayerInfo = new UpdatePlayerInfo(this)
-        this.UpdatePlayerInfo.start()
+        this.EmbedPlayer = new EmbedPlayer(this)
+        this.EmbedPlayer.start()
         this.lastInvokedMessage;
 
         this.shoukaku = shoukaku
@@ -401,11 +400,11 @@ module.exports = class MusicController {
             botMessage = await this.command.reply( { embeds: [embedMessage], components: [botdizLinkButton]}, { new:true, required: true })
             
     
-            if (this.UpdatePlayerInfo.quit) {
-                this.UpdatePlayerInfo.start()
+            if (this.EmbedPlayer.quit) {
+                this.EmbedPlayer.start()
             }
-            this.UpdatePlayerInfo.changeSong(currentSong) 
-            this.UpdatePlayerInfo.changeMessage(botMessage) 
+            this.EmbedPlayer.changeSong(currentSong) 
+            this.EmbedPlayer.changeMessage(botMessage) 
     
             return true
     
@@ -460,7 +459,7 @@ module.exports = class MusicController {
             }
             
             
-            await this.UpdatePlayerInfo.stop()
+            await this.EmbedPlayer.stop()
             //logger.log("info", "Player updater stopped")
             
 

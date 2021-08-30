@@ -27,9 +27,9 @@ class ShoukakuHandler extends Shoukaku {
                 console.log(`Lavalink Node: ${name} disconnected`, moved ? 'players have been moved' : 'players have been disconnected')
         );
         this.on('debug',
-            (name, reason) =>
-                console.log(`Lavalink Node: ${name}`, reason || 'No reason')
-        );
+            (name, reason) =>{
+                //console.log(`Lavalink Node: ${name}`, reason || 'No reason')
+            });
     }
 
     async ready() {

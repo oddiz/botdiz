@@ -1,6 +1,6 @@
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
-const { logger } = require('./logger')
+const { logger } = require('../../logger')
 
 module.exports = class UpdatePlayerInfo {
     constructor(MusicController) {
