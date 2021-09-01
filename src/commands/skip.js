@@ -16,6 +16,8 @@ module.exports = function (invokedMessage) {
         const currentSong = this.controller.MusicController.getCurrentSong()
         if (!currentSong) {
             this.reply("Bot is currently not playing.")
+
+            return
         }
     
         if (arguments.length > 2) {
@@ -26,11 +28,9 @@ module.exports = function (invokedMessage) {
             skipAmountInt = parseInt(skipAmount)    
             if (Number.isInteger(skipAmountInt)) {
                 if (skipAmountInt >= 2) {
-                    this.controller.MusicController.skip(skipAmountInt)
-                    this.reply({ content: `Skipping to ${skipAmountInt}. song.`, ephemeral: true })
+                    this.controller.MusicController.SkipHandler.handle(invokedMessage, skipAmountInt)
                 } else if(skipAmountInt == 1) {
-                    this.reply( { content: `Skipping ${currentSong.videoTitle}`, ephemeral: true})
-                    this.controller.MusicController.skip(1)
+                    this.controller.MusicController.SkipHandler.handle(invokedMessage, 1)
     
                 } else if (skipAmountInt == 0) {
                     this.wrongUsage(invokedMessage, this.name, "Huh?")
@@ -43,8 +43,7 @@ module.exports = function (invokedMessage) {
                     return
                 }
             } else if (skipAmount === "" || arguments.length === 1){
-                this.reply({ content:`Skipping ${currentSong.videoTitle}`, ephemeral: true })
-                    this.controller.MusicController.skip(1)
+                    this.controller.MusicController.SkipHandler.handle(invokedMessage, 1)
     
                 return
             } else {

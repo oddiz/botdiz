@@ -3,6 +3,9 @@ const { MessageEmbed } = require('discord.js')
 const MusicController = require("./MusicPlayer/MusicControllerLavalink");
 const SubscriptionManager = require('./SubscriptionManager')
 
+
+const musicPlayerCommands = ["play", "skip", "pause", "playnext", "queue", "resume", "skip", "status", "stop", "votetoskip"]
+
 module.exports = class Controller {
         
     constructor(db, client, MsgHandler, guild, shoukaku) {
@@ -14,19 +17,22 @@ module.exports = class Controller {
         this.MsgHandler = MsgHandler;
         this.MusicController = new MusicController(this, shoukaku)
         this.SubscriptionManager = new SubscriptionManager(guild, db)
+        this.db = db
         this.commands = null
-
+        
         this.client.application.fetch().then((app) => {
             this.oddiz = app.owner
         })
-
+        
         this.roleColor = guild.me.roles?.color?.color || "#e9b463"
     }
-
-    init = () => {
+    
+    init = async () => {
         const populateCommands = require('../botCommands')
         this.commands = populateCommands(this)
         const self = this
+        
+        //check if bot needs to deploy slash commands
         this.guild.commands.fetch().then( commands => {
             if (commands.size !== self.commands.length ) {
                 logger.log("info", "Deploying slash commands")
@@ -35,9 +41,27 @@ module.exports = class Controller {
                 //commands are up to date
             }
         })
-
+        
+        try {
+            let dbGuildObject = await this.db.collection('guilds').findOne({guild_id: this.guild.id})
+            if(!dbGuildObject) {
+                dbGuildObject = {
+                    guild_id: this.guild.id,
+                    guild_name: this.guild.name,
+                    owner_id: this.guild.ownerId
+                }
+            }
+            await this.updateGuildInfoOnDatabase()
+            await this.applyGuildSettings(dbGuildObject)
+            await this.SubscriptionManager.init(dbGuildObject)
+            
+        } catch (error) {
+            console.log("Error while trying to init controller on database related things: ", error)
+        }
+        
+        
         this.controllerMaintainer()
-        this.SubscriptionManager.init()
+
 
     }
 
@@ -73,6 +97,59 @@ module.exports = class Controller {
 
     }
 
+    updateGuildInfoOnDatabase = async (dbGuildObject) => {
+        
+        await this.db.collection('guilds').updateOne(
+            {
+                guild_id: this.guild.id
+            },
+            {
+                $set: {
+                    guild_name: this.guild.name,
+                    owner_id: this.guild.ownerId,
+                }
+            },
+            {
+                upsert:true
+            }
+        )
+        return
+    }
+
+    applyGuildSettings = async (dbGuildObject) => {
+        const settings = dbGuildObject?.settings
+        //apply settings to music controller
+        if (settings) {
+            this.MusicController.applySettings(settings)
+        }
+    }
+
+    saveGuildSettings = async () => {
+        try {
+            const settings = {
+                autoplay: this.MusicController.autoplay,
+                skipVotingEnabled: this.MusicController.skipVotingEnabled,
+                skipVotingPassPercentage: this.MusicController.skipVotingPassPercentage
+            }
+
+            await this.db.collection('guilds').updateOne(
+                {
+                    guild_id: this.guild.id
+                },
+                {
+                    $set:{
+                        settings: settings
+                    }
+                },
+                {
+                    upsert: true
+                }
+            )
+            
+        } catch (error) {
+            
+        }
+    }
     deploySlashCommands() {
         let slashCommands = [];
 
@@ -82,6 +159,8 @@ module.exports = class Controller {
         
         this.guild.commands.set(slashCommands)
     }
+
+
 
     destroy() {
         this.MusicController?.stop();
@@ -101,8 +180,8 @@ module.exports = class Controller {
         } 
         */
         let newEmbed = new MessageEmbed
-        newEmbed.addField(`Use /${responseObj.command}`,
-                        "Botdiz is now using latest slash command tech."
+        newEmbed.addField(`Discord didn't register your message as a command!`,
+                        `Make sure to press tab or enter after you typed /${responseObj.command}!`
                         )
                 .setColor("#e9b463")
                         
@@ -125,25 +204,37 @@ module.exports = class Controller {
         }
         */
     }
+
+    async handleButtonInteraction(interaction) {
+        
+        if(!interaction.deferred) {
+            interaction.deferReply()
+            if (!interaction.replied) {
+                interaction.reply({content: interaction.customID + " clicked"})
+
+            } else {
+                interaction.editReply({content: interaction.customID + " clicked"})
+            }
+        }
+
+    }
     async handleInteraction(interaction) {
         if (interaction.user.bot) return;
         
         if(interaction.isButton()) {
             console.log(interaction.customID)
-            if(!interaction.deferred) {
-                interaction.deferReply()
-                if (!interaction.replied) {
-                    interaction.reply({content: interaction.customID + " clicked"})
-
-                } else {
-                    interaction.editReply({content: interaction.customID + " clicked"})
-                }
-            }
+            this.handleButtonInteraction(interaction)
 
             return
         }
 
+        
         const commandName = interaction.commandName
+
+        if(musicPlayerCommands.includes(commandName)) {
+            this.MusicController.lastInvokedChannel = interaction.channel
+        }
+
         const args = null
         const foundCommand = this.commands.find( ( { name } ) => name === commandName )
         if (foundCommand) {

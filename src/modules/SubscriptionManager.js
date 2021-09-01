@@ -23,8 +23,8 @@ module.exports = class SubscriptionManager {
 
     }
 
-    init = async() => {
-        await this.getGuildSubscriptions()
+    init = async(dbGuildObject) => {
+        await this.getGuildSubscriptions(dbGuildObject)
 
         this.runLoop()
     }
@@ -134,12 +134,10 @@ module.exports = class SubscriptionManager {
         }
     }
 
-    getGuildSubscriptions = async () => {
+    getGuildSubscriptions = async (dbGuildObject) => {
 
         try {
-            const dbGuild = await this.db.collection('guilds').findOne({
-                guild_id: this.guild.id
-            })
+            const dbGuild = dbGuildObject
     
             const dbGuildSubs = dbGuild?.subscriptions
     
@@ -186,6 +184,8 @@ module.exports = class SubscriptionManager {
             
         } catch (error) {
             console.log("Error while trying to get guild subscriptions.", error)
+
+            return false
         }
     }
 

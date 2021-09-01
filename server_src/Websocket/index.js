@@ -121,9 +121,9 @@ module.exports = class WebsocketManager {
             
         }
 
-        let allowedGuilds
+        let allowedGuilds, user
         if (session.discord_session) {
-            const user = await this.db.collection('discord_users').findOne( { discord_id: session.discord_id } )
+            user = await this.db.collection('discord_users').findOne( { discord_id: session.discord_id } )
             allowedGuilds = user.allowed_guilds
         } else if (session.moderator_session) {
             allowedGuilds = "ALL"
@@ -243,7 +243,7 @@ module.exports = class WebsocketManager {
                     }
                 }
                 if (commandAllowed) {
-                    result = await commands[message.command](...message.params)
+                    result = await commands[message.command](user, ...message.params)
                 } else {
                     console.log(`Unauthorized command execution for guildId: ${execGuildId}\nAllowed guilds: ${allowedGuilds}\nSession: ${JSON.stringify(session)}`)
                     return
@@ -253,20 +253,12 @@ module.exports = class WebsocketManager {
                 return
             }
 
-            let reply;
-            if (result?.status === "success") {
-                reply = JSON.stringify({
-                    command: message.command,
-                    status: "success",
-                    message: "Command executed succesfully"
-                })
-            } else {
-                reply = JSON.stringify({
-                    command: message.command,
-                    status: "failed"
-                })
-            }
-            ws.send(reply)
+            const reply = result;
+
+            reply.command = message.command
+            reply.event = "exec_command_status"
+            
+            ws.send(JSON.stringify(reply))
         }
     }
 

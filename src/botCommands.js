@@ -178,6 +178,16 @@ module.exports = function (Controller){
         new Command(
             Controller,
             {
+                name:"votetoskip",
+                description: "Enables / disables voting to skip songs. Only administrator can change this setting.",
+                needArgs: false,
+                usage:"/votetoskip",
+            },
+            require("./commands/votetoskip")   
+        ),
+        new Command(
+            Controller,
+            {
                 name:"next",
                 description: "Skips the current song.",
                 needArgs:false,

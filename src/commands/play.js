@@ -385,11 +385,13 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                     for (const track of tracks) {
                         this.controller.MusicController.addToQueue(track, options)
                     }
+                    this.reply("`Playlist added to queue 👍`")
                 } else {
-                    this.controller.MusicController.addToQueue(tracks.shift())
+                    const track = tracks.shift()
+                    this.controller.MusicController.addToQueue(track)
                 }
                 
-                this.reply("`Playlist added to queue 👍`")
+                this.reply(`\`${track.info.title} added to queue 👍\``)
                 this.controller.MusicController.processQueue()
                 return
 

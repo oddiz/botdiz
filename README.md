@@ -35,3 +35,8 @@
 
         - 
         - 
+
+## RATE LIMITING
+    - cache voice channels and text channels to not send every time
+    - limit users spamming commands
+    - limit bot joining voice channels repeatedly

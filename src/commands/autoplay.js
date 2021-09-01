@@ -4,8 +4,9 @@ module.exports = async function (invokedMessage) {
     try {
         const MusicController = this.controller.MusicController
 
-
         MusicController.autoplay = !MusicController.autoplay
+
+        this.controller.saveGuildSettings()
 
         this.reply({ content: `\`Autoplay is now ${MusicController.autoplay ? "on":"off"}\``})
     } catch (error) {

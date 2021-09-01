@@ -5,23 +5,11 @@ const { logger } = require("../../logger")
 
 const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js")
 
-const {
-	AudioPlayer,
-	AudioPlayerStatus,
-	AudioResource,
-	createAudioPlayer,
-	entersState,
-	VoiceConnectionDisconnectReason,
-	VoiceConnectionStatus,
-    createAudioResource,
-    StreamType,
-    demuxProbe,
-    NoSubscriberBehavior
-} = require('@discordjs/voice');
+
 //const ytdl = require("ytdl-core");
 //const prism = require('prism-media')
 const EmbedPlayer = require('./EmbedPlayer')
-
+const SkipHandler = require('./SkipHandler')
 const commands = require('../../botCommands');
 
 
@@ -31,6 +19,13 @@ for (const command of commands()) {
         playCommand = command
     }
 }
+
+const defaultSettings = {
+    autoplay: false,
+    skipVotingEnabled: false,
+    skipVotingPassPercentage: 0.5
+}
+
 module.exports = class MusicController {
     constructor(controller, shoukaku) {
         this.controller = controller;
@@ -39,17 +34,20 @@ module.exports = class MusicController {
         this.command = playCommand;
         this.readyLock = false;
         this.UPDATE_INTERVAL = 10000 // player stats update interval in ms
+
         this.EmbedPlayer = new EmbedPlayer(this)
         this.EmbedPlayer.start()
+        
+        this.SkipHandler = new SkipHandler(this)
+        this.skipVotingEnabled = defaultSettings.skipVotingEnabled
+        this.skipVotingPassPercentage = defaultSettings.skipVotingPassPercentage
+        
         this.lastInvokedMessage;
 
-        this.skipVotingEnabled = false
-
         this.shoukaku = shoukaku
-
         this.audioPlayer = null
 
-        this.autoplay = false
+        this.autoplay = defaultSettings.autoplay
         this.songHistory = []
         this.youtubeCookies = null
 
@@ -69,6 +67,33 @@ module.exports = class MusicController {
             
         }
 
+    }
+
+    applySettings(settings) {
+        try {
+            if(settings) {
+                console.log("Applying settings", settings)
+                if("autoplay" in settings) {
+                    this.autoplay = settings.autoplay
+                }
+                if("skipVotingEnabled" in settings) {
+                    this.skipVotingEnabled = settings.skipVotingEnabled
+                }
+                if("skipVotingPassPercentage" in settings) {
+                    const passPercentage = settings.skipVotingPassPercentage || defaultSettings.skipVotingPassPercentage
+                    const result = this.SkipHandler.setPassPercentage(passPercentage)
+                    if(result) {
+                        this.skipVotingPassPercentage = passPercentage
+                    }
+
+                }
+
+                //returns true if successful
+            }
+            
+        } catch (error) {
+            console.log("Error while trying to apply settings to Music Controller: ", error)
+        }
     }
 
     async setVoiceConnection(channel) {
@@ -146,6 +171,7 @@ module.exports = class MusicController {
             const node = this.shoukaku.getNode()
 
             node.leaveChannel(this.controller.guild.id)
+            this.activeVoiceChannel = null
 
         } catch (error) {
             console.log("Error while executing disconnectFromVoiceChannel: ", error)
@@ -261,6 +287,7 @@ module.exports = class MusicController {
     
     async playNext() {
         try {
+            this.SkipHandler.endVote()
             const nextInQueue = await this.processNextSong()
 
             if (!nextInQueue) {
@@ -434,6 +461,7 @@ module.exports = class MusicController {
     }
 
     async skip(skipAmount) {
+        console.log(this.skipVotingEnabled ," from music controller")
         
         this.skipping = true
         for (let i = 1; i < skipAmount; i++) {
@@ -464,7 +492,7 @@ module.exports = class MusicController {
             
             await this.EmbedPlayer.stop()
             //logger.log("info", "Player updater stopped")
-            
+            this.SkipHandler.endVote()
 
 
             this.queueLock = false;

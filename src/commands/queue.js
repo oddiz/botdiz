@@ -39,6 +39,10 @@ module.exports = function (invokedMessage) {
                 counter += 1;
                 response = response + line;
             }
+            
+            if (response.length > 2000) {
+                response = response.slice(0,1996)
+            } 
             response = response + "```"
             
             this.reply(response)

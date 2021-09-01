@@ -19,7 +19,9 @@ module.exports = function validate(app, db) {
             const accountInfo = {
                 username: user.username,
                 avatarURL: user.avatarURL,
-                is_admin: user.is_admin
+                is_admin: user.is_admin,
+                user_id: user.discord_id
+
             }
             
             res.send({

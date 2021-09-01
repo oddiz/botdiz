@@ -30,6 +30,16 @@ async function main() {
     client.on('ready', async () => {
         await shoukaku.ready()
         client.user.setActivity(`/help`, {type: 'LISTENING'})
+
+        if(process.env.NODE_ENV === "development") {
+            if(client.username !== "botdiz testing [alpha]") {
+                client.user.setUsername("botdiz testing [alpha]")
+            }
+        } else {
+            if(client.username !== "botdiz [alpha]") {
+                client.user.setUsername("botdiz [alpha]")
+            }
+        }
     
         await updateEpicDeals(db)
         setInterval(updateEpicDeals, 1000 * 60 * 30, db)

@@ -41,6 +41,7 @@ module.exports = class Command {
         this.lastInvokedMessage = invokedMessage;
         this.lastIsInterraction = isInteraction;
         
+        
         if (isInteraction) {
             await this.lastInvokedMessage.deferReply({ ephemeral: this.ephemeral })
         }

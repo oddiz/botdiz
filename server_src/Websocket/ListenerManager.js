@@ -20,7 +20,7 @@ module.exports = class ListenerManager {
         this.startMusicPlayerListener = this.startMusicPlayerListener.bind(this)
         
         
-        this.client.on("message", this.processTextMessage) 
+        this.client.on("messageCreate", this.processTextMessage) 
         this.client.on("voiceStateUpdate", this.processVoiceChannelUpdate)
     }
 
@@ -170,6 +170,7 @@ module.exports = class ListenerManager {
                             videoLength: videoLenght,
                             audioPlayerStatus: audioPlayerStatus,
                             videoThumbnailUrl: videoThumbnailUrl,
+                            skipVoteData: MusicController.SkipHandler.getSkipVoteData()
                              
                         }
         

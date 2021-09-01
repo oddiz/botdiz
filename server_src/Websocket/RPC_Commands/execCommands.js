@@ -4,7 +4,7 @@ const { AudioPlayerStatus, joinVoiceChannel } = require('@discordjs/voice')
 
 module.exports={
 
-    RPC_sendMessage: async function(guildId, channelId, message) {
+    RPC_sendMessage: async function(user,guildId, channelId, message) {
         try {
             const guild = await Botdiz.GuildControllers.find(element => element.guildId === guildId).guildObj
 
@@ -23,13 +23,20 @@ module.exports={
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_sendMessage :", error)
+
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             return {
                 status: "failed"
             }
         }
     },
 
-    RPC_pausePlayer: async function (guildId) {
+    RPC_pausePlayer: async function (user,guildId) {
         try {
             
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
@@ -41,13 +48,19 @@ module.exports={
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_pausePlayer :", error)
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             return {
                 status: "failed"
             }
         }
     },
 
-    RPC_resumePlayer: async function (guildId) {
+    RPC_resumePlayer: async function (user, guildId) {
         try {
             
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
@@ -60,6 +73,12 @@ module.exports={
 
         } catch (error) {
             console.log("Error while trying to execute RPC_resumePlayer :", error)
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             return {
                 status: "failed"
             }
@@ -67,26 +86,26 @@ module.exports={
 
         
     },
-    RPC_skipSong: async function (guildId, skipAmount=1) {
+    RPC_skipSong: async function (user, guildId, skipAmount=1) {
         try {
 
-            
-            const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
-            
-            if (guildMusicController.queue.length === 0){
-                guildMusicController.stop()
-                return
+            if (user.discord_id) {
+                const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
+                
+                if (guildMusicController.queue.length === 0){
+                    guildMusicController.stop()
+                    return
+                }
+                const result = await guildMusicController.SkipHandler.handleInterface(user.discord_id, skipAmount)
+                
+                return result
             }
-            const result = await guildMusicController.skip(skipAmount)
-            
-            return {
-                status: result
-            }
+            console.log("Can't execute skip song command. User doesn't have a discord id.")
         } catch (error) {
             console.log("Error while trying to execute RPC_skipSong :", error)
         }
     },
-    RPC_stopPlayer: async function (guildId) {
+    RPC_stopPlayer: async function (user, guildId) {
         try {
             
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
@@ -98,35 +117,66 @@ module.exports={
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_stopPlayer :", error)
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             return {
                 status: "failed"
             }
         }
     },
-    RPC_deleteQueueSong: async function (guildId, songIndex) {
+    RPC_deleteQueueSong: async function (user, guildId, songIndex) {
         try {
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
             
             guildMusicController.queue.splice(songIndex, 1)
 
             return {
-                status: "success"
+                status: "success",
+                message: `Deleted ${songIndex}. song.`
             }
         } catch (error) {
             console.log("Error while trying to execute RPC_deleteQueueSong :", error)
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
             return {
                 status: "failed"
             }
         }
 
     },
-    RPC_playCommand: async function(guildId, queryArg) {
-        const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
+    RPC_playCommand: async function(user, guildId, queryArg) {
+        try {
+            const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
+    
+            const playCommand = guildController.commands.find( ( { name } ) => name === "play" )
+    
+            console.log(queryArg)
+            playCommand.execute(null, { query: queryArg })
 
-        const playCommand = guildController.commands.find( ( { name } ) => name === "play" )
+            return {
+                status: "success",
+                message: "Executed play command with query: " + queryArg
+            }
+            
+        } catch (error) {
+            console.log("Error while trying to execute RPC_playCommand: ", error)
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
 
-        console.log(queryArg)
-        playCommand.execute(null, { query: queryArg })
+            return {
+                status: "failed"
+            }
+        }
     },
 
     /**
@@ -134,7 +184,7 @@ module.exports={
      * @param {string} guildId 
      * @param {Array} playlistArray Playlist array from module spotifyApi  
      */
-    RPC_addSpotifyPlaylist: async function(guildId, playlistArray) {
+    RPC_addSpotifyPlaylist: async function(user,guildId, playlistArray) {
         try {
             const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller
             guildController.MusicController.queueLock = true
@@ -164,6 +214,12 @@ module.exports={
             }
         } catch (error) {
             console.log("Error while trying to add spotify playlist")
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             try {
                 guildController.MusicController.queueLock = true
             } catch (error) {
@@ -174,7 +230,7 @@ module.exports={
         
     },
 
-    RPC_joinVoiceChannel: async function(guildId, channelId) {
+    RPC_joinVoiceChannel: async function(user, guildId, channelId) {
         try {
             const guildController = await Botdiz.GuildControllers.find(element => element.guildId === guildId)
             
@@ -187,13 +243,19 @@ module.exports={
 
         } catch (error) {
             console.log(error, "<-- Error while trying to execute RPC_joinVoiceChannel command")
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             return {
                 status: "failed",
             }
         }
     },
 
-    RPC_updateQueue: async function(guildId, queue) {
+    RPC_updateQueue: async function(user, guildId, queue) {
         try {
             const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
     
@@ -204,6 +266,12 @@ module.exports={
             }
         } catch (error) {
             console.log(error, "<-- Error while trying to execute RPC_updateQueue")
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+
             return {
                 status: "failed"
             }

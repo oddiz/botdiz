@@ -17,6 +17,8 @@ module.exports = async function (invokedMessage) {
             
             this.reply("⏸️ /resume to continue playing.")
         }
+
+
         
     } catch (error) {
         logger.log("error", "Error while executing pause:", error)
