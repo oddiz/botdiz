@@ -255,10 +255,13 @@ module.exports = class WebsocketManager {
 
             const reply = result;
 
-            reply.command = message.command
-            reply.event = "exec_command_status"
+            if(reply) {
+                reply.command = message?.command
+                reply.event = "exec_command_status"
+                ws.send(JSON.stringify(reply))
+            } 
+
             
-            ws.send(JSON.stringify(reply))
         }
     }
 

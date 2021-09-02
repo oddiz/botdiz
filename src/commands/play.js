@@ -377,23 +377,28 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                 
 
             } else {
-                const { type, tracks, playlistName } = result;
-    
-                const isPlaylist = type === 'PLAYLIST'
-    
-                if (isPlaylist) {
-                    for (const track of tracks) {
-                        this.controller.MusicController.addToQueue(track, options)
+
+                try {
+                    const { type, tracks, playlistName } = result;
+                    const isPlaylist = type === 'PLAYLIST'
+        
+                    if (isPlaylist) {
+                        for (const track of tracks) {
+                            this.controller.MusicController.addToQueue(track, options)
+                        }
+                        this.reply("`Playlist added to queue 👍`")
+                    } else {
+                        const track = tracks.shift()
+                        this.controller.MusicController.addToQueue(track)
+                        
+                        this.reply(`\`${track.info.title} added to queue 👍\``)
                     }
-                    this.reply("`Playlist added to queue 👍`")
-                } else {
-                    const track = tracks.shift()
-                    this.controller.MusicController.addToQueue(track)
+                    this.controller.MusicController.processQueue()
+                    return
+                    
+                } catch (error) {
+                    console.log("Error while trying to parse result from URL: ", error)
                 }
-                
-                this.reply(`\`${track.info.title} added to queue 👍\``)
-                this.controller.MusicController.processQueue()
-                return
 
             }
             
