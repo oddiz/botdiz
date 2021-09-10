@@ -142,6 +142,17 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
         let videoUrl, searchMode
         const self = this;
         searchMode = true
+
+        if (input.includes("/play")) {
+            try {
+                //idiot proofing
+                input = input.replace("/play", "").trim()
+                
+            } catch (error) {
+                
+            }
+
+        }
         try {
             //link is passed
             videoUrl = new URL(input)

@@ -131,6 +131,10 @@ module.exports = class SubscriptionManager {
             
         } catch (error) {
             console.log("Error while running subs loop: ",error)
+            this.looping = false
+            await new Promise(resolve => setTimeout(resolve, 1000 * 60 * 10))
+            //try to rerun the loop
+            this.runLoop()
         }
     }
 
