@@ -151,24 +151,29 @@ module.exports = class UpdatePlayerInfo {
      * Change the message to be updated
      * @param {Message} message 
      */
-    changeMessage(message) {
-        if(!message) {
-            // no message to change
-            return
-        }
-        this.oldMessage = this.messageToEdit
+    async changeMessage(message) {
         try {
-
-            if(this.oldMessage) {
-                //no message to delete so just return
-                this.oldMessage.delete()
-                
+            if(!message) {
+                // no message to change
+                return
             }
-        } catch (err) {
-            logger.log("error", "Error while trying to delete old embed message: ", err)
+            this.oldMessage = this.messageToEdit
+            try {
+    
+                if(this.oldMessage && !this.oldMessage.deleted) {
+                    //no message to delete so just return
+                    await this.oldMessage.delete().catch(err=>{console.log("Error while trying to delete message.")})
+                    
+                }
+            } catch (err) {
+                logger.log("error", "Error while trying to delete old embed message: ", err)
+            }
+            this.messageToEdit = message
+            this.quit = false;
+            
+        } catch (error) {
+            console.log("Error while trying to change embed player message: ", error)
         }
-        this.messageToEdit = message
-        this.quit = false;
     }
 
     /**

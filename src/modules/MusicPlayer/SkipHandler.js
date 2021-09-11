@@ -54,7 +54,6 @@ module.exports = class SkipHandler {
     }
 
     async handle(invokedMessage, skipAmount, options = {forceSkip: false}) {
-        console.log(this.MusicController.skipVotingEnabled ," from skip handler")
         try {
             if (this.MusicController.skipVotingEnabled && !options.forceSkip) {
     
@@ -274,8 +273,10 @@ class SkipVote {
 
         try {
             await new Promise(resolve => setTimeout(resolve, waitTimeSec * 1000));
-    
-            message.delete()
+
+            if(!message.deleted) {
+                await message.delete().catch((err)=> { console.log("Error while trying to delete message.")})
+            }
     
             return
             

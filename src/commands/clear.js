@@ -12,7 +12,7 @@ module.exports = async function (invokedMessage) {
         }
     
         if (deleteAmount <= 100 && deleteAmount > 0){
-            await invokedMessage.channel.bulkDelete(deleteAmount, true)
+            await invokedMessage.channel.bulkDelete(deleteAmount, true).catch(err => {console.log("Error while trying to bulk delete: ", err)})
         } else {
             this.wrongUsage(invokedMessage,this.name, "Can't delete more than 100 messages or less then 1 (duh).")
         }

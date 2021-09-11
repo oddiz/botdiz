@@ -72,7 +72,6 @@ module.exports = class MusicController {
     applySettings(settings) {
         try {
             if(settings) {
-                console.log("Applying settings", settings)
                 if("autoplay" in settings) {
                     this.autoplay = settings.autoplay
                 }
@@ -461,7 +460,6 @@ module.exports = class MusicController {
     }
 
     async skip(skipAmount) {
-        console.log(this.skipVotingEnabled ," from music controller")
         
         this.skipping = true
         for (let i = 1; i < skipAmount; i++) {
