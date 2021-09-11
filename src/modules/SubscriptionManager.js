@@ -25,11 +25,12 @@ module.exports = class SubscriptionManager {
 
     init = async(dbGuildObject) => {
         await this.getGuildSubscriptions(dbGuildObject)
+        
 
         this.runLoop()
     }
 
-    runLoop = async () => {
+    runLoop = async function() {
         try {
             this.stopLoop = false
     
@@ -40,11 +41,10 @@ module.exports = class SubscriptionManager {
             this.looping = true
 
             while (!this.stopLoop) {
-    
                 const { dbGuildSubs } = await this.getGuildSubscriptions()
                 
+                const epicSubObject = await this.subscriptions.get("epic_deals")
 
-                const epicSubObject = this.subscriptions.get("epic_deals")
                 if (epicSubObject) {
                     if ((epicSubObject.last_posted_content_hash !== epicSubObject.current_content_hash) ||
                         (epicSubObject.subscribed_channel !== epicSubObject.last_posted_channel)
@@ -141,7 +141,12 @@ module.exports = class SubscriptionManager {
     getGuildSubscriptions = async (dbGuildObject) => {
 
         try {
-            const dbGuild = dbGuildObject
+            let dbGuild
+            if (dbGuildObject) {
+                dbGuild = dbGuildObject
+            } else {
+                dbGuild = await this.db.collection('guilds').findOne({guild_id: this.guild.id})
+            }
     
             const dbGuildSubs = dbGuild?.subscriptions
     
@@ -176,8 +181,7 @@ module.exports = class SubscriptionManager {
                         
                         subObject.current_content_hash = dbSubObject.current_content_hash
                         subObject.current_content = dbSubObject.current_content
-                        this.subscriptions.set(sub.type, subObject)
-
+                        await this.subscriptions.set(sub.type, subObject)
                     }
                 }
             }
@@ -241,16 +245,23 @@ module.exports = class SubscriptionManager {
             if (epicGame.isActive) {
                 //promotion active
                 //console.log("Promotion active for: ", epicGame.title)
-                
-                
+                const date = new Date()
+                const dateDiff = epicGame.endTime - date
+
+
+                const seconds = Math.floor((dateDiff / (1000) % 60))
+                const minutes = Math.floor((dateDiff / (1000 * 60) % 60))
+                const hours = Math.floor((dateDiff / (1000 * 60 * 60 )) % 24)
+                const days = Math.floor(dateDiff / (1000 * 60 * 60 * 24))
                 
                 let embedMessage = new MessageEmbed
+
                 embedMessage
                     .setColor("#0FF28F")
                     .setTitle(epicGame.gameTitle)
                     .setThumbnail(epicGame.thumbnail)
                     .setTimestamp()
-                    .setDescription("Free now on Epic Store!")
+                    .setDescription(`Free in Epic Store for: **${days} Days** **${hours} Hours** **${minutes} Minutes** **${seconds} Seconds**`)
 
 
                 activeDeals.push(embedMessage)
@@ -282,7 +293,9 @@ module.exports = class SubscriptionManager {
             
         }
         
-        textChannel.send( {embeds: [...activeDeals, ...futureDeals]})
+        textChannel.send( {embeds: [...activeDeals, ...futureDeals]}).catch(err => {
+            console.log("Error while trying to send epic deals in sub manager: ", err)
+        })
 
         
 

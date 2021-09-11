@@ -148,15 +148,19 @@ async function updateEpicDeals(db) {
             if(!element.promotions) {
                 continue
             }
-
+            
             const currentDate = new Date().getTime()
             const gameTitle = element.title
             const isActive = element.promotions?.promotionalOffers && element.promotions?.promotionalOffers.length > 0? true : false
             
+            if(element.price?.totalPrice?.discountPrice !== 0 && isActive){
+                continue
+            }
             const epicDealObject = {
                 gameTitle: gameTitle,
                 isActive: isActive,
-                thumbnail: element.keyImages[2].url
+                thumbnail: element.keyImages[2].url,
+                 
             }
             
             if (!isActive) {
@@ -169,6 +173,9 @@ async function updateEpicDeals(db) {
     
                     nextUpdateTime = Math.min(effectiveDate, nextUpdateTime)
                 }
+            } else {
+                epicDealObject.endTime = Date.parse(element.promotions.promotionalOffers[0].promotionalOffers[0].endDate)
+
             }
             
             epicGames.push(epicDealObject)
@@ -180,7 +187,7 @@ async function updateEpicDeals(db) {
             type: "epic_deals",
             next_update_time: nextUpdateTime,
             current_content: epicGames,
-            current_content_hash: dealGamesHash
+            current_content_hash: dealGamesHash + "a"
         }
 
         db.collection('subscription_content').updateOne(
