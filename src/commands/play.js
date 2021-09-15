@@ -143,10 +143,10 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
         const self = this;
         searchMode = true
 
-        if (input.includes("/play")) {
+        if (input.includes("/play ")) {
             try {
                 //idiot proofing
-                input = input.replace("/play", "").trim()
+                input = input.replace("/play ", "").trim()
                 
             } catch (error) {
                 
@@ -378,7 +378,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                         }
                         
                     } catch (error) {
-                        
+                        console.log("Error while trying to play spotify link: ", error)
                     }
                 } else {
                     return this.reply("`I couldn't find any tracks with query provided!`")
