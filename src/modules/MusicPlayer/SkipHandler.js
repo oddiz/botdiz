@@ -47,6 +47,11 @@ module.exports = class SkipHandler {
                 }
             } else {
                 this.MusicController.skip(skipAmount)
+
+                return {
+                    status: "success",
+                    message: `Skipped ${skipAmount} songs.`
+                }
             }
         } catch (error) {
             console.log("Error while trying to handle interface exec command in skip handler: ", error)

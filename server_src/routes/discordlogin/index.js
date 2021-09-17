@@ -162,6 +162,7 @@ module.exports = async function playlists(app,db) {
                                 */
                                 const allowedDjRoles = botdizGuildOptions.dj_roles
 
+                                
                                 if ((allowedDjRoles.length > 0)) {
                                     /* 
                                     discordGuildMemberRoles = Collection [Map] {

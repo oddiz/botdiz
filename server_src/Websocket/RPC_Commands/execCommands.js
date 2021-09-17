@@ -101,6 +101,10 @@ module.exports={
                 return result
             }
             console.log("Can't execute skip song command. User doesn't have a discord id.")
+
+            return {
+                status: "failed"
+            }
         } catch (error) {
             console.log("Error while trying to execute RPC_skipSong :", error)
         }
