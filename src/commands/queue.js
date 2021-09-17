@@ -33,7 +33,6 @@ module.exports = function (invokedMessage) {
             let counter = 1;
             for (const song of queue) {
                 let line = ""
-                console.log(song)
                 line = counter + "- " + song.info.title + (song.recommendedSong? " [Botdiz Recommended Song]": "") + "\n\n"
                 
                 counter += 1;

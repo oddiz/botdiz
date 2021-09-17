@@ -151,11 +151,22 @@ async function updateEpicDeals(db) {
             
             const currentDate = new Date().getTime()
             const gameTitle = element.title
-            const isActive = element.promotions?.promotionalOffers && element.promotions?.promotionalOffers.length > 0? true : false
-            
-            if(element.price?.totalPrice?.discountPrice !== 0 && isActive){
+            const isActive =
+                element.promotions?.promotionalOffers[0]?.promotionalOffers[0]?.discountSetting?.discountPercentage === 0 &&
+                element.price?.totalPrice?.discountPrice === 0 
+
+            const isUpcoming = 
+                !isActive &&
+                element.promotions?.upcomingPromotionalOffers[0]?.promotionalOffers[0]?.discountSetting?.discountPercentage === 0
+
+                console.log(isActive, isUpcoming) 
+
+            if (!(isActive || isUpcoming)) {
+                //not a free deal skip to next item
+
                 continue
             }
+
             const epicDealObject = {
                 gameTitle: gameTitle,
                 isActive: isActive,
@@ -163,8 +174,9 @@ async function updateEpicDeals(db) {
                  
             }
             
-            if (!isActive) {
-                const effectiveDate = Date.parse(element.promotions.upcomingPromotionalOffers[0].promotionalOffers[0].startDate)
+            if (isUpcoming) {
+                
+                const effectiveDate = Date.parse(element.promotions?.upcomingPromotionalOffers[0]?.promotionalOffers[0]?.startDate)
                 const dateDiff = effectiveDate - currentDate
                 if (dateDiff > 1000 * 60 * 60 * 24 * 60) {
                     continue
@@ -173,12 +185,14 @@ async function updateEpicDeals(db) {
     
                     nextUpdateTime = Math.min(effectiveDate, nextUpdateTime)
                 }
-            } else {
+
+                epicGames.push(epicDealObject)
+            } else if (isActive) {
                 epicDealObject.endTime = Date.parse(element.promotions.promotionalOffers[0].promotionalOffers[0].endDate)
 
+                epicGames.push(epicDealObject)
             }
             
-            epicGames.push(epicDealObject)
         }
 
         const dealGamesHash = hash(epicGames, { unorderedArrays: true})
