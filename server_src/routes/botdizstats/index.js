@@ -1,5 +1,4 @@
 const Botdiz = require('../../../src/main')
-const { AudioPlayerStatus } = require('@discordjs/voice')
 
 module.exports = async function botdizstats(app,db) {
 
@@ -31,7 +30,7 @@ module.exports = async function botdizstats(app,db) {
 
         let totalPlaying = 0
         for (guild of Botdiz.GuildControllers){
-            if (guild.controller.MusicController.audioPlayerStatus === AudioPlayerStatus.Playing) {
+            if (guild.controller.MusicController.audioPlayerStatus === "playing") {
                 totalPlaying ++;
             }
         }
