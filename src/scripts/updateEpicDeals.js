@@ -57,7 +57,7 @@ module.exports = async function updateEpicDeals(db) {
             const epicDealObject = {
                 gameTitle: gameTitle,
                 isActive: isActive,
-                thumbnail: element.keyImages[2].url,
+                thumbnail: element.keyImages[2].url || element.keyImages[1].url || element.keyImages[0].url,
                  
             }
             
