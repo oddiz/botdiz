@@ -241,7 +241,7 @@ module.exports = class MusicController {
             //remove previous recommended songs
             for (const [index, song] of this.queue.entries()) {
                 if (song.recommendedSong) {
-                    console.log("this shouldn't trigger. music controller recommended remover. line:223")
+                    console.log("this shouldn't trigger. music controller recommended remover. line:244")
                     this.queue.splice(index, 1)
                 }
             } 
@@ -471,6 +471,26 @@ module.exports = class MusicController {
         return result
 
 
+    }
+
+    async shuffleQueue() {
+        try {
+            if (this.queue && this.queue.length > 1) {
+                //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+                for (let i = this.queue.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.queue[i], this.queue[j]] = [this.queue[j], this.queue[i]];
+                }
+                return true
+            } else {
+                console.log("not enough songs in queue to shuffle")
+                return true
+            }
+            
+        } catch (error) {
+            logger.log("error", "Error while trying to shuffle queue", error)
+            return false
+        }
     }
     
     async stop() {

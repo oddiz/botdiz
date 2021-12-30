@@ -129,6 +129,8 @@ module.exports = async function playlists(app,db) {
                         "Authorization": "Bearer "+spotifyAuthData.body['access_token'],
                     }
                 })
+
+                
                 
                 return response.json()
             } 

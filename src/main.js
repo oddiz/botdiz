@@ -27,9 +27,8 @@ async function main() {
     const db = await databaseManager.connect()
     
     client.on('ready', async () => {
-        await shoukaku.ready()
         client.user.setActivity(`/help`, {type: 'LISTENING'})
-
+        
         if(process.env.NODE_ENV === "development") {
             if(client.username !== "botdiz testing [alpha]") {
                 client.user.setUsername("botdiz testing [alpha]")
@@ -39,9 +38,10 @@ async function main() {
                 client.user.setUsername("botdiz [alpha]")
             }
         }
-    
+        
         await updateEpicDeals(db)
         setInterval(updateEpicDeals, 1000 * 60 * 30, db)
+        await client.guilds.fetch()
         for (const guild of client.guilds.cache) {
             const Controller = new Ctrl(db, client, MsgHandler, guild[1], shoukaku) ;
             Controller.init()
@@ -53,8 +53,9 @@ async function main() {
             })
             logger.log("info", `Creating controller for guild: ${guild[1].name}.`)
         }
-    
+        
         logger.log('info', 'The bot is online!')
+        await shoukaku.ready()
     });
     client.on('debug', m => logger.log('debug', m));
     client.on('warn', m => logger.log('warn', m));

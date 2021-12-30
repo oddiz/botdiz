@@ -242,6 +242,16 @@ module.exports = function (Controller){
                 usage: "/invite"
             },
             require("./commands/invite")
-        )
+        ),
+        new Command(
+            Controller,
+            {
+                name:"shuffle",
+                description: "Shuffles the current playlist.",
+                needArgs: false,
+                usage: "/shuffle"
+            },
+            require("./commands/shuffle")
+        ),
     ]
 }
