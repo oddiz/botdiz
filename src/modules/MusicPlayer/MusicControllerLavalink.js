@@ -215,41 +215,47 @@ module.exports = class MusicController {
 
     async processQueue() {
         this.queueLock = false
-
-        if(!this.audioPlayer) {
-            console.log("no audio player available")
-            this.queue = []
-            this.queueLock = false
-            return "failed"
-        }
-        // If the queue is locked (already being processed), or the audio player is already playing something, return
-        if (this.queueLock || this.audioPlayer.playing) {
-
-            //remove previous recommended songs
-            for (const [index, song] of this.queue.entries()) {
-                if (song.recommendedSong) {
-                    this.queue.splice(index, 1)
-                }
+        try {
+    
+            if(!this.audioPlayer) {
+                console.log("no audio player available")
+                this.queue = []
+                this.queueLock = false
+                return "failed"
             }
-
-            this.queueLock = false
-			return "success";
-        // If not playing
-		} else if (!this.audioPlayer.playing){
-            this.queueLock = false
-
-            //remove previous recommended songs
-            for (const [index, song] of this.queue.entries()) {
-                if (song.recommendedSong) {
-                    console.log("this shouldn't trigger. music controller recommended remover. line:244")
-                    this.queue.splice(index, 1)
+            // If the queue is locked (already being processed), or the audio player is already playing something, return
+            if (this.queueLock || this.audioPlayer.playing) {
+    
+                //remove previous recommended songs
+                for (const [index, song] of this.queue.entries()) {
+                    if (song?.recommendedSong) {
+                        this.queue.splice(index, 1)
+                    }
                 }
-            } 
-
-            console.log("playing next")
-            this.playNext();
-
-            return "success"
+    
+                this.queueLock = false
+                return "success";
+            // If not playing
+            } else if (!this.audioPlayer.playing){
+                this.queueLock = false
+    
+                //remove previous recommended songs
+                for (const [index, song] of this.queue.entries()) {
+                    if (song?.recommendedSong) {
+                        console.log("this shouldn't trigger. music controller recommended remover. line:244")
+                        this.queue.splice(index, 1)
+                    }
+                } 
+    
+                console.log("playing next")
+                this.playNext();
+    
+                return "success"
+            }
+            
+        } catch (error) {
+            this.queueLock = false
+            console.log("Error while trying to process queue: ", error)
         }
         
     }
