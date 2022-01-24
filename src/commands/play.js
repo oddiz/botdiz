@@ -1,16 +1,13 @@
-const { auth } = require("google-auth-library")
 require("dotenv").config()
-const searchYT = require("../scripts/searchYT")
-const getInfoFromYoutubeUrl = require("../scripts/getInfoFromYoutubeUrl")
 const axios = require('axios');
 const { logger } = require('../logger')
 
-const { joinVoiceChannel, AudioPlayerStatus } = require("@discordjs/voice");
 
 module.exports = async function(invokedMessage, options={query: null, forceNext:false}) {
-    const node = this.controller.MusicController.shoukaku.getNode() 
-
+    
     try {
+        const node = this.controller.MusicController.shoukaku.getNode() 
+        
         let input
         if (options?.query) {
             input = options.query

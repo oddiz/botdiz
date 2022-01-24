@@ -61,6 +61,7 @@ module.exports = class Controller {
         
         
         this.controllerMaintainer()
+        logger.log("info", "Controller initialized for guild: " + this.guild.name)
 
 
     }

@@ -80,16 +80,16 @@ async function main() {
         console.error(data)
     });
     
-    client.on("guildCreate", guild => {
-        const Controller = new Ctrl(db, client, MsgHandler, guild) ;
-        Controller.init()
+    client.on("guildCreate", async guild => {
+        const Controller = new Ctrl(db, client, MsgHandler, guild[1], shoukaku) ;
+        await Controller.init()
         
         GuildControllers.push({
-            guildId: guild.id,
-            guildObj: guild,
-            controller: Controller
+            guildId: guild[0],
+                guildObj: guild[1],
+                controller: Controller
         })
-        logger.log("info", `${guild.name} controller added.`)
+        logger.log("info", `${guild.name} controller added succesfully.`)
         
     });
     
