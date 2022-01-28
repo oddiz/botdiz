@@ -184,208 +184,207 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                
         } else {
             //if URL is provided 
+            //https://open.spotify.com/album/1fvWYcbjuycyHpzNPH1Vfk?si=ZLOzF2y_RPyw6PAJ46Jzaw çalışmıyo test et
             
-            const result = await node.rest.resolve(videoUrl.href) 
-            if (!result) {
-                this.controller.MusicController.queueLock = false
-
-                if (videoUrl.host.includes("spotify.com")){
-                    try {
-                        let spotifyAccessToken = "";
+            if (videoUrl.host.includes("spotify.com")){
+                try {
+                    let spotifyAccessToken = "";
+                    
+                    const spotifyUri = require('spotify-uri');
+                    const parsed = spotifyUri.parse(videoUrl.href)
+                    const SpotifyWebApi = require('spotify-web-api-node');
+                    // credentials are optional
+                    const spotifyApi = new SpotifyWebApi({
+                    clientId: process.env.SPOTIFY_CLIENTID,
+                    clientSecret: process.env.SPOTIFY_CLIENTSECRET
+                    });
+        
+                    
+                    if (parsed.type === "playlist" || parsed.type === "album"){
                         
-                        const spotifyUri = require('spotify-uri');
-                        const parsed = spotifyUri.parse(videoUrl.href)
-                        const SpotifyWebApi = require('spotify-web-api-node');
-                        // credentials are optional
-                        const spotifyApi = new SpotifyWebApi({
-                        clientId: process.env.SPOTIFY_CLIENTID,
-                        clientSecret: process.env.SPOTIFY_CLIENTSECRET
-                        });
-            
-                        
-                        if (parsed.type === "playlist" || parsed.type === "album"){
-                            
-                            spotifyApi.clientCredentialsGrant()
-                                .then(function(result) {
-                                    logger.log("info", 'Spotify Api Auth worked!');
-                                    spotifyAccessToken = result.body.access_token
-            
-                                    spotifyApi.setAccessToken(spotifyAccessToken)
-            
-                                    if (parsed.type === "album") {
-                                        spotifyApi.getAlbumTracks(parsed.id).then((data)=>{
-                                            
-                                            console.log(data.body.items)
-                                            if (data.body.items.length > 0){
+                        spotifyApi.clientCredentialsGrant()
+                            .then(function(result) {
+                                logger.log("info", 'Spotify Api Auth worked!');
+                                spotifyAccessToken = result.body.access_token
+        
+                                spotifyApi.setAccessToken(spotifyAccessToken)
+        
+                                if (parsed.type === "album") {
+                                    spotifyApi.getAlbumTracks(parsed.id).then((data)=>{
+                                        
+                                        console.log(data.body.items)
+                                        if (data.body.items.length > 0){
 
-                                                for (const item of data.body.items) {
-                                                    const videoName = item.name
-                                                    const videoArtist = item.artists[0].name
-                                                    const videoTitle = videoArtist + " - " + videoName
-                                                    const package = {
-                                                        info:{
-                                                            artist: videoArtist,
-                                                            trackName: videoName,
-                                                            title: videoTitle,
-                                                        },
-                                                        isSpotify: true
-                                                }
-                                                self.controller.MusicController.addToQueue(package, options)
-                                                }
-                                                self.reply("\`Album added to queue 👍\`")
-                                                self.controller.MusicController.queueLock = false
-                                                self.controller.MusicController.processQueue();
-                                                
-                                                return
-                                            } else {
-                                                self.controller.MusicController.queueLock = false
-
-                                                self.reply("`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`")
-
-                                                return
-
+                                            for (const item of data.body.items) {
+                                                const videoName = item.name
+                                                const videoArtist = item.artists[0].name
+                                                const videoTitle = videoArtist + " - " + videoName
+                                                const package = {
+                                                    info:{
+                                                        artist: videoArtist,
+                                                        trackName: videoName,
+                                                        title: videoTitle,
+                                                    },
+                                                    isSpotify: true
                                             }
-                                        })
-                                        .catch(err => {
-                                            logger.log("error", "Error while trying to parse spotify album: ", err)
+                                            self.controller.MusicController.addToQueue(package, options)
+                                            }
+                                            self.reply("\`Album added to queue 👍\`")
+                                            self.controller.MusicController.queueLock = false
+                                            self.controller.MusicController.processQueue();
+                                            
+                                            return
+                                        } else {
                                             self.controller.MusicController.queueLock = false
 
                                             self.reply("`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`")
 
                                             return
-                                        })
-                                    } else if (parsed.type === "playlist") {
-                                        spotifyApi.getPlaylist(parsed.id, { limit: 25} )
-                                            .then(function(data) {
-                
-                                                for (const item of data.body.tracks.items){
-                                                    const videoName = item.track.name;
-                                                    const videoArtist = item.track.artists[0].name
-                                                    const videoTitle = videoArtist + " - " + videoName
-                                                    const package = {
-                                                        info: {
-                                                            artist: videoArtist,
-                                                            trackName: videoName,
-                                                            title: videoTitle,
-                                                        },
-                                                        isSpotify: true
-                                                    }
-                                                    self.controller.MusicController.addToQueue(package, options)
+
+                                        }
+                                    })
+                                    .catch(err => {
+                                        logger.log("error", "Error while trying to parse spotify album: ", err)
+                                        self.controller.MusicController.queueLock = false
+
+                                        self.reply("`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`")
+
+                                        return
+                                    })
+                                } else if (parsed.type === "playlist") {
+                                    spotifyApi.getPlaylist(parsed.id, { limit: 25} )
+                                        .then(function(data) {
+            
+                                            for (const item of data.body.tracks.items){
+                                                const videoName = item.track.name;
+                                                const videoArtist = item.track.artists[0].name
+                                                const videoTitle = videoArtist + " - " + videoName
+                                                const package = {
+                                                    info: {
+                                                        artist: videoArtist,
+                                                        trackName: videoName,
+                                                        title: videoTitle,
+                                                    },
+                                                    isSpotify: true
                                                 }
-                                                self.reply("Playlist added to queue 👍")
-                                                self.controller.MusicController.queueLock = false
-                                                self.controller.MusicController.processQueue();
-
-                                                return
-                                            })
-                                            .catch(function(err) {
-                                                logger.log("error", 'Something went wrong when trying to play spotify playlist!', err);
-                                                self.controller.MusicController.queueLock = false
-
-                                                self.reply("`Error while trying to add spotify playlist... Check spotify link again, if issue persists contact oddiz 😟`")
-
-                                                return
-
-                                            })
-                                    } 
-            
-                                })
-                                .catch(err => {
-                                    logger.log("error", "Error trying to get info from spotify api@play.js/spotifyApi()", "Error: ", error)
-                                    
-                                    self.reply("`Error while trying to add playlist... Contact oddiz 😟`")
-                                    self.controller.MusicController.queueLock = false
-                                    
-                                    return
-                                })
-            
-                        } else if (parsed.type === "track"){
-                            
-                            const trackId = parsed.id;
-                
-                            await spotifyApi.clientCredentialsGrant()
-                                .then(function(result) {
-                                    logger.log("info", 'Spotify Api Auth worked! Your access token is: ' + result.body.access_token);
-                                    spotifyAccessToken = result.body.access_token
-                                    spotifyApi.setAccessToken(spotifyAccessToken)
-                                    
-                                    spotifyApi.getAudioFeaturesForTrack(trackId)
-                                    .then(function(data) {
-                
-                                        const spotifyApiTrackUrl= "https://api.spotify.com/v1/tracks/"
-                                        const songId = trackId
-                                        const searchApiUrl = spotifyApiTrackUrl + songId;
-                                        //console.log(searchApiUrl)
-                                        axios.get(searchApiUrl, {
-                                            headers:{
-                                                "Accept": "application/json",
-                                                "Content-Type": "application/json",
-                                                "Authorization": "Bearer "+spotifyAccessToken
+                                                self.controller.MusicController.addToQueue(package, options)
                                             }
-                                        }).then(result => {
-                                            const artistName = result.data.artists[0].name
-                                            //console.log("artist name:", artistName)
-                                            const songName = result.data.name
-                                            //console.log("songName: ", songName )
-                                            const isSpotify = true
-                                            
-                                            const package = {
-                                                info: {
-                                                    trackname: songName,
-                                                    artist: artistName,
-                                                    title: artistName + " - " + songName,
-                                                },
-                                                isSpotify: isSpotify
-                                            }
-                                            self.controller.MusicController.addToQueue(package, options)
-                                            self.reply(`Added \`${songName}\``)
+                                            self.reply("Playlist added to queue 👍")
                                             self.controller.MusicController.queueLock = false
                                             self.controller.MusicController.processQueue();
-                                            /*     
-                                                //
-                                                //    videoId: "123", 
-                                                //    videoUrl: "http:...com/..",
-                                                //    videoTitle: xxtenacion 
-                                                //     
-                                            */
-                                           return
-                                            
-                                        }).catch(error => {
-                                            logger.log("error", "Error while using spotify AI. Error : " + error)
-                                            
-                                            self.reply("`Error while trying to add song... Check spotify link again, if issue persists contact oddiz 😟`")
-                                            self.controller.MusicController.queueLock = false
+
                                             return
                                         })
+                                        .catch(function(err) {
+                                            logger.log("error", 'Something went wrong when trying to play spotify playlist!', err);
+                                            self.controller.MusicController.queueLock = false
+
+                                            self.reply("`Error while trying to add spotify playlist... Check spotify link again, if issue persists contact oddiz 😟`")
+
+                                            return
+
+                                        })
+                                } 
+        
+                            })
+                            .catch(err => {
+                                logger.log("error", "Error trying to get info from spotify api@play.js/spotifyApi()", "Error: ", error)
+                                
+                                self.reply("`Error while trying to add playlist... Contact oddiz 😟`")
+                                self.controller.MusicController.queueLock = false
+                                
+                                return
+                            })
+        
+                    } else if (parsed.type === "track"){
+                        
+                        const trackId = parsed.id;
             
-                                    }, function(err) {
-                                        logger.log("error", err);
+                        await spotifyApi.clientCredentialsGrant()
+                            .then(function(result) {
+                                logger.log("info", 'Spotify Api Auth worked! Your access token is: ' + result.body.access_token);
+                                spotifyAccessToken = result.body.access_token
+                                spotifyApi.setAccessToken(spotifyAccessToken)
+                                
+                                spotifyApi.getAudioFeaturesForTrack(trackId)
+                                .then(function(data) {
+            
+                                    const spotifyApiTrackUrl= "https://api.spotify.com/v1/tracks/"
+                                    const songId = trackId
+                                    const searchApiUrl = spotifyApiTrackUrl + songId;
+                                    //console.log(searchApiUrl)
+                                    axios.get(searchApiUrl, {
+                                        headers:{
+                                            "Accept": "application/json",
+                                            "Content-Type": "application/json",
+                                            "Authorization": "Bearer "+spotifyAccessToken
+                                        }
+                                    }).then(result => {
+                                        const artistName = result.data.artists[0].name
+                                        //console.log("artist name:", artistName)
+                                        const songName = result.data.name
+                                        //console.log("songName: ", songName )
+                                        const isSpotify = true
+                                        
+                                        const package = {
+                                            info: {
+                                                trackname: songName,
+                                                artist: artistName,
+                                                title: artistName + " - " + songName,
+                                            },
+                                            isSpotify: isSpotify
+                                        }
+                                        self.controller.MusicController.addToQueue(package, options)
+                                        self.reply(`Added \`${songName}\``)
+                                        self.controller.MusicController.queueLock = false
+                                        self.controller.MusicController.processQueue();
+                                        /*     
+                                            //
+                                            //    videoId: "123", 
+                                            //    videoUrl: "http:...com/..",
+                                            //    videoTitle: xxtenacion 
+                                            //     
+                                        */
+                                       return
+                                        
+                                    }).catch(error => {
+                                        logger.log("error", "Error while using spotify AI. Error : " + error)
+                                        
+                                        self.reply("`Error while trying to add song... Check spotify link again, if issue persists contact oddiz 😟`")
                                         self.controller.MusicController.queueLock = false
                                         return
-                                    });
-                                }).catch(function(err) {
-                                    logger.log("error", 'If this is printed, it probably means that you used invalid ' +
-                                    'clientId and clientSecret values. Please check!');
-                                    logger.log("error", 'Hint: ');
+                                    })
+        
+                                }, function(err) {
                                     logger.log("error", err);
                                     self.controller.MusicController.queueLock = false
+                                    return
                                 });
-    
-                            return
-                        }
-                        
-                    } catch (error) {
-                        console.log("Error while trying to play spotify link: ", error)
+                            }).catch(function(err) {
+                                logger.log("error", 'If this is printed, it probably means that you used invalid ' +
+                                'clientId and clientSecret values. Please check!');
+                                logger.log("error", 'Hint: ');
+                                logger.log("error", err);
+                                self.controller.MusicController.queueLock = false
+                            });
+
+                        return
                     }
-                } else {
-                    return this.reply("`I couldn't find any tracks with query provided!`")
+                    
+                } catch (error) {
+                    console.log("Error while trying to play spotify link: ", error)
                 }
+            } else {
+                return this.reply("`I couldn't find any tracks with query provided!`")
+            }
 
-
-                
+            const result = await node.rest.resolve(videoUrl.href) 
+            
+            if (!result) {
+                this.controller.MusicController.queueLock = false
+                return this.reply("`I couldn't find any tracks with query provided!`")
 
             } else {
-
                 try {
                     const { type, tracks, playlistName } = result;
                     const isPlaylist = type === 'PLAYLIST'
@@ -410,8 +409,6 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
 
             }
             
-
-
 
         }
     } catch (error) {
