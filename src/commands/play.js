@@ -176,9 +176,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
             this.controller.MusicController.addToQueue(track, options)
             
             this.controller.MusicController.processQueue();
-
             
-
             return
 
                
