@@ -182,12 +182,14 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                
         } else {
             //if URL is provided 
-            //https://open.spotify.com/album/1fvWYcbjuycyHpzNPH1Vfk?si=ZLOzF2y_RPyw6PAJ46Jzaw çalışmıyo test et
             
+            const result = await node.rest.resolve(videoUrl.href) //returns ShoukakuTrackList Object
+            //https://deivu.github.io/Shoukaku/?api#ShoukakuTrackList#type
             
-            const result = await node.rest.resolve(videoUrl.href) 
-            
-            if (!result) {
+            const {type} = result
+
+            //if url is not recognized by lavalink
+            if (type === 'LOAD_FAILED') {
                 if (videoUrl.host.includes("spotify.com")){
                     try {
                         let spotifyAccessToken = "";
@@ -292,7 +294,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                                 .catch(err => {
                                     logger.log("error", "Error trying to get info from spotify api@play.js/spotifyApi()", "Error: ", error)
                                     
-                                    self.reply("`Error while trying to add playlist... Contact oddiz 😟`")
+                                    self.reply("`Error while trying to add spotify playlist... Contact oddiz 😟`")
                                     self.controller.MusicController.queueLock = false
                                     
                                     return
@@ -374,25 +376,29 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                         }
                         
                     } catch (error) {
-                        console.log("Error while trying to play spotify link: ", error)
+                        logger.log("Error while trying to play spotify link: ", error)
+                        return this.reply("`Error while trying to play spotify link, contact oddiz.`")
+
                     }
                 } else {
-                    return this.reply("`I couldn't find any tracks with query provided!`")
+                    this.controller.MusicController.queueLock = false
+                    return this.reply("`I couldn't find any tracks with URL provided!\nSupported links: spotify, youtube, soundcloud`")
                 }
-                this.controller.MusicController.queueLock = false
-                return this.reply("`I couldn't find any tracks with query provided!`")
 
             } else {
                 try {
-                    const { type, tracks, playlistName } = result;
+                    const { tracks, playlistName } = result;
+                    
                     const isPlaylist = type === 'PLAYLIST'
-        
+                    const isTrack = type === 'TRACK'
+
                     if (isPlaylist) {
                         for (const track of tracks) {
                             this.controller.MusicController.addToQueue(track, options)
                         }
-                        this.reply("`Playlist added to queue 👍`")
-                    } else {
+                        this.reply("`"+ playlistName||"Playlist" +" added to queue 👍`")
+
+                    } else if (isTrack) {
                         const track = tracks.shift()
                         this.controller.MusicController.addToQueue(track)
                         
@@ -402,7 +408,17 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                     return
                     
                 } catch (error) {
-                    console.log("Error while trying to parse result from URL: ", error)
+                    
+                    logger.log("error", "Error while trying to parse result from URL: "+ error + "\n result from lavalink is:"+ JSON.stringify(result,null,2))
+                    this.controller.MusicController.queueLock = false
+                    this.reply("`Error trying to process command, contact oddiz.`")
+
+                    //if there is no song in queue stop the music controller to prevent lockdown.
+                    if (this.controller.MusicController.queue.length > 0) {
+                        this.controller.MusicController.stop()
+                        logger.log("info", "Stopping music controller- to prevent lockdown.")
+                    }
+
                 }
 
             }
