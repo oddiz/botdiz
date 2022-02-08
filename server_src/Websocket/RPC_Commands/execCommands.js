@@ -280,5 +280,56 @@ module.exports={
                 status: "failed"
             }
         }
+    },
+    RPC_shuffleQueue: async function (user, guildId) {
+        try {
+
+            if (user.discord_id) {
+                const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
+                
+                if (guildMusicController.queue.length === 0){
+                    guildMusicController.stop()
+                    return
+                }
+                const result = await guildMusicController.shuffleQueue()
+                
+                if(result) {
+                    return {
+                        status: "success"
+                    }
+                }
+            }
+            console.log("Error while trying to execute RPC_shuffleQueue")
+
+            return {
+                status: "failed",
+                reason: "User not found from discord_id"
+            }
+        } catch (error) {
+            console.log("Error while trying to execute RPC_shuffleQueue :", error)
+        }
+    },
+    RPC_seekTo: async function (user, guildId, seekToInMs) {
+        try {
+            if (user.discord_id) {
+                const guildMusicController = await Botdiz.GuildControllers.find(element => element.guildId === guildId).controller.MusicController
+                
+                const result = await guildMusicController.seekTo(seekToInMs)
+                
+                return result
+            }
+
+        } catch (error) {
+
+            console.log("Error while trying to execute RPC_deleteQueueSong :", error)
+            const parsedUser = {
+                discord_id: user.discord_id,
+                username: user.username,
+            }
+            console.log("Invoked user: ", parsedUser)
+            return {
+                status: "failed"
+            }
+        }
     }
 }

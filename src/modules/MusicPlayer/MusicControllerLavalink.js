@@ -29,32 +29,32 @@ const defaultSettings = {
 module.exports = class MusicController {
     constructor(controller, shoukaku) {
         this.controller = controller;
-        this.guild = controller.guild
-        this.volume = 1
+        this.guild = controller.guild;
+        this.volume = 1;
         this.command = playCommand;
         this.readyLock = false;
-        this.UPDATE_INTERVAL = 10000 // player stats update interval in ms
+        this.UPDATE_INTERVAL = 10000; // player stats update interval in ms
 
-        this.EmbedPlayer = new EmbedPlayer(this)
-        this.EmbedPlayer.start()
+        this.EmbedPlayer = new EmbedPlayer(this);
+        this.EmbedPlayer.start();
         
-        this.SkipHandler = new SkipHandler(this)
-        this.skipVotingEnabled = defaultSettings.skipVotingEnabled
-        this.skipVotingPassPercentage = defaultSettings.skipVotingPassPercentage
+        this.SkipHandler = new SkipHandler(this);
+        this.skipVotingEnabled = defaultSettings.skipVotingEnabled;
+        this.skipVotingPassPercentage = defaultSettings.skipVotingPassPercentage;
         
         this.lastInvokedMessage;
 
-        this.shoukaku = shoukaku
-        this.audioPlayer = null
+        this.shoukaku = shoukaku;
+        this.audioPlayer = null;
 
-        this.autoplay = defaultSettings.autoplay
-        this.songHistory = []
-        this.youtubeCookies = null
+        this.autoplay = defaultSettings.autoplay;
+        this.songHistory = [];
+        this.youtubeCookies = null;
 
         this.currentSong;
         this.queue = [];
 
-        this.init()
+        this.init();
     }
 
     async init() {
@@ -64,7 +64,7 @@ module.exports = class MusicController {
             this.audioPlayer = node.players.get(this.controller.guild.id)
             
         } catch (error) {
-            
+            logger.log("error", "Error while initializing MusicController: ", error)
         }
 
     }
@@ -218,10 +218,16 @@ module.exports = class MusicController {
         try {
     
             if(!this.audioPlayer) {
-                console.log("no audio player available")
-                this.queue = []
-                this.queueLock = false
-                return "failed"
+                logger.log("error","No audio player available, trying to initialize")
+                try {
+                    await this.init()
+                } catch (error) {
+                    logger.log("error","Error while trying to initialize audio player: ", error)
+                    this.stop()
+                    return "failed"
+                    
+                }
+
             }
             // If the queue is locked (already being processed), or the audio player is already playing something, return
             if (this.queueLock || this.audioPlayer.playing) {
@@ -232,9 +238,10 @@ module.exports = class MusicController {
                         this.queue.splice(index, 1)
                     }
                 }
-    
+                
                 this.queueLock = false
                 return "success";
+
             // If not playing
             } else if (!this.audioPlayer.playing){
                 this.queueLock = false
@@ -242,7 +249,7 @@ module.exports = class MusicController {
                 //remove previous recommended songs
                 for (const [index, song] of this.queue.entries()) {
                     if (song?.recommendedSong) {
-                        console.log("this shouldn't trigger. music controller recommended remover. line:244")
+                        console.log("this shouldn't trigger. music controller recommended remover.")
                         this.queue.splice(index, 1)
                     }
                 } 
@@ -333,12 +340,10 @@ module.exports = class MusicController {
      */
     async processNextSong() {
         try {
-            //console.log(self)
             
             let nextInQueue = this.queue.shift();
             
             if (!nextInQueue) {
-            
 
                 return false
             }
@@ -464,6 +469,16 @@ module.exports = class MusicController {
         
         
     }
+    
+    async seekTo(timeInMs) {
+        try {
+
+            this.audioPlayer.seekTo(timeInMs)
+            
+        } catch (error) {
+            logger.log("error", "Error while running seekTo() Error: " + error)
+        }
+    }
 
     async skip(skipAmount) {
         
@@ -481,6 +496,7 @@ module.exports = class MusicController {
 
     async shuffleQueue() {
         try {
+            console.log("Shuffling queue")
             if (this.queue && this.queue.length > 1) {
                 //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
                 for (let i = this.queue.length - 1; i > 0; i--) {
@@ -530,7 +546,7 @@ module.exports = class MusicController {
 
             //logger.log("info", "Stopped music player and destroyed MusicController")
         } catch (error) {
-            logger.log("error","Error while running MusicController.stop().", error)
+            logger.log("error","Error while running MusicController.stop(): ", error)
         }
     }
     pause() {
@@ -542,7 +558,7 @@ module.exports = class MusicController {
                 this.audioPlayerStatus = "paused"
             
         } catch (error) {
-            logger.log("info", "No dispatcher at present.", this.dispatcher, error)
+            logger.log("info", "Error while running pause(): " + error)
         }
     }
     resume() {
