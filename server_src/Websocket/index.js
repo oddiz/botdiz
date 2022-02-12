@@ -75,11 +75,11 @@ module.exports = class WebsocketManager {
                 const userId = request.session?.userId;
                 
                 if(!userId || self.connectedClients.has(userId)) {
-                    ws.send(JSON.stringify({
-                        status: "error",
-                        message: "already connected"
-                    }))
-                    return
+                    // ws.send(JSON.stringify({
+                    //     status: "error",
+                    //     message: "already connected"
+                    // }))
+                    
                 }
                 
                 const clientListener = new ListenerManager(self, ws)

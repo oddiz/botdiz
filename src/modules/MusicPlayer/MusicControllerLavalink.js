@@ -53,6 +53,7 @@ module.exports = class MusicController {
 
         this.currentSong;
         this.queue = [];
+        this.lastSeekEvent
 
         this.init();
     }
@@ -472,9 +473,13 @@ module.exports = class MusicController {
     
     async seekTo(timeInMs) {
         try {
-
+            if(this.lastSeekEvent + 1000 > Date.now()){
+                console.log("too soon")
+                return
+            }
             this.audioPlayer.seekTo(timeInMs)
-            
+            this.lastSeekEvent = Date.now()
+
         } catch (error) {
             logger.log("error", "Error while running seekTo() Error: " + error)
         }
