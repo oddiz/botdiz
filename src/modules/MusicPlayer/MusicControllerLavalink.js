@@ -372,14 +372,13 @@ module.exports = class MusicController {
 
 
             } else {
-                console.log("Couldn't figure out how to process next song. FIX ME!! ")
+                console.log("Couldn't figure out how to process next song. FIX ME!! Might be a ShoukakuTrack also, who knows...")
                 
                 console.log("Track is : ", nextInQueue)
                 
                 this.queueLock = false
-                
-                return false
             }
+                
 
             //add thumbnail image if youtube
             if(nextInQueue.info.sourceName === 'youtube') {

@@ -93,14 +93,25 @@ module.exports = class WebsocketManager {
                 //console.log(self.connectedClients)
                 
                 ws.on('message', (msg) => {
-                    const token = request.session.token
-                    self.handleWsMessage(ws, msg, clientListener, token)
+                    try {
+                        const token = request.session.token
+                        self.handleWsMessage(ws, msg, clientListener, token)
+                        
+                    } catch (error) {
+                        console.log("error in websocket message handler")
+                    }
                 })
     
                 ws.on('close', ()=>{
-                    self.connectedClients.get(userId).clientListener.terminate()
-                    self.connectedClients.get(userId).websocket = null
-                    self.connectedClients.delete(userId)
+                    try {
+                        self.connectedClients.get(userId).clientListener.terminate()
+                        self.connectedClients.get(userId).websocket = null
+                        self.connectedClients.delete(userId)
+                        
+                    } catch (error) {
+                        console.log("error closing websocket", error)
+
+                    }
                 })
             })
             
