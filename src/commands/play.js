@@ -382,7 +382,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                     }
                 } else {
                     this.controller.MusicController.queueLock = false
-                    return this.reply("`I couldn't find any tracks with URL provided!\nSupported links: spotify, youtube, soundcloud`")
+                    return this.reply("`I couldn't find any tracks with URL provided!\nSupported platforms: spotify, youtube, soundcloud`")
                 }
 
             } else {
@@ -396,7 +396,7 @@ module.exports = async function(invokedMessage, options={query: null, forceNext:
                         for (const track of tracks) {
                             this.controller.MusicController.addToQueue(track, options)
                         }
-                        this.reply("`"+ playlistName||"Playlist" +" added to queue 👍`")
+                        this.reply("`"+ (playlistName||"Playlist") +" added to queue 👍`")
 
                     } else if (isTrack) {
                         const track = tracks.shift()

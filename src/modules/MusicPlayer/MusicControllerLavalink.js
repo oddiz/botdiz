@@ -60,11 +60,13 @@ module.exports = class MusicController {
     async init() {
         try {
             //get audioPlayer from lavalink if available
-            const node = this.shoukaku.getNode()
-            this.audioPlayer = node.players.get(this.controller.guild.id)
+            const node = await this.shoukaku.getNode()
+            this.audioPlayer = await node.players.get(this.controller.guild.id)
             
+            return true
         } catch (error) {
             logger.log("error", "Error while initializing MusicController: ", error)
+            return false
         }
 
     }
@@ -270,7 +272,12 @@ module.exports = class MusicController {
             if(!this.audioPlayer) {
                 logger.log("error","No audio player available, trying to initialize")
                 try {
-                    await this.init()
+                    const result = await this.init()
+                    if(result) {
+                        logger.log("info","initilaized Audio Player")
+                    } else {
+                        logger.log("error","Could not initialize Audio Player")
+                    }
                 } catch (error) {
                     logger.log("error","Error while trying to initialize audio player: ", error)
                     this.stop()
