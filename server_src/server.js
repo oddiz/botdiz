@@ -16,6 +16,31 @@ const https = require('https')
 const fs = require('fs')
 require('dotenv').config()
 
+
+Sentry.init({
+    dsn: process.env.SENTRY_URI,
+    integrations: [
+      // enable HTTP calls tracing
+      new Sentry.Integrations.Http({ tracing: true }),
+      // enable Express.js middleware tracing
+      new Tracing.Integrations.Express({
+        // to trace all requests to the default router
+        app,
+        // alternatively, you can specify the routes you want to trace:
+        // router: someRouter,
+      }),
+    ],
+  
+    // We recommend adjusting this value in production, or using tracesSampler
+    // for finer control
+    tracesSampleRate: 1.0,
+  });
+
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+
+
+
 let corsOptions;
 if (process.env.NODE_ENV === "development") {
     corsOptions = {
@@ -59,29 +84,10 @@ if(process.env.NODE_ENV === "development") {
       });
 }
 
-Sentry.init({
-    dsn: process.env.SENTRY_URIc,
-    integrations: [
-      // enable HTTP calls tracing
-      new Sentry.Integrations.Http({ tracing: true }),
-      // enable Express.js middleware tracing
-      new Tracing.Integrations.Express({
-        // to trace all requests to the default router
-        app,
-        // alternatively, you can specify the routes you want to trace:
-        // router: someRouter,
-      }),
-    ],
-  
-    // We recommend adjusting this value in production, or using tracesSampler
-    // for finer control
-    tracesSampleRate: 1.0,
-  });
-  
+
   
   async function init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers) {
-    app.use(Sentry.Handlers.requestHandler());
-    app.use(Sentry.Handlers.tracingHandler());
+
 
     app.use(sessionParser)
     //setup database

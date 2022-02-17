@@ -10,3 +10,5 @@ log
 /build
 .vscode/settings.json
 src/Shokaku/lavalink-server.json
+
+*.log
