@@ -355,7 +355,7 @@ module.exports = class MusicController {
 
             if (!nextInQueue) {
                 //no song is next
-                this.command.reply("`No songs left in queue, feel free to add new ones.`")
+                //this.command.reply("`No songs left in queue, feel free to add new ones.`")
                 this.stop()
                 
                 return false
