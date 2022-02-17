@@ -26,7 +26,7 @@ const logger = winston.createLogger({
         new Sentry(sentryOptions)
 	],
     exceptionHandlers: [
-        new transports.File({ filename: 'exceptions.log' })
+        new winston.transports.File({ filename: 'exceptions.log' })
     ],
 	
     
