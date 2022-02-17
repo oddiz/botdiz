@@ -25,6 +25,10 @@ module.exports = class UpdatePlayerInfo {
         this.quit = true;
     }
 
+    getQuitState() {
+        return this.quit
+    }
+
     async updateLoop() {
         const botdizLinkButton = new MessageActionRow()
         const botdizLink = process.env.NODE_ENV === "development" ? "http://localhost:3000/app" : "https://botdiz.kaansarkaya.com/app"
@@ -56,7 +60,14 @@ module.exports = class UpdatePlayerInfo {
         //             .setStyle("SECONDARY"),
         //         ]
         //     )
-        while (!this.quit){
+        while (!this.getQuitState()){
+
+            const currentSong = this.MusicController.getCurrentSong()
+
+            if(!currentSong || this.MusicController.stopped) {
+                this.stop()
+            }
+
             if (!(this.messageToEdit && this.currentSong)){
                 await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
 
@@ -123,9 +134,8 @@ module.exports = class UpdatePlayerInfo {
             await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
         }
         
-        await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
 
-        if(this.quit) {
+        if(this.getQuitState()) {
             
             try {
                 let newEmbed = new MessageEmbed()
@@ -142,7 +152,7 @@ module.exports = class UpdatePlayerInfo {
                 
             } catch (error) {
                 //silently fail shennanigans
-                console.log("Stopped player thingy: "+error)
+                console.log("Error trying to post stopped playing message: "+error)
             }
         }
         this.looping = false

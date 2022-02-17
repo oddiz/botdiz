@@ -36,7 +36,6 @@ module.exports = class MusicController {
         this.UPDATE_INTERVAL = 10000; // player stats update interval in ms
 
         this.EmbedPlayer = new EmbedPlayer(this);
-        this.EmbedPlayer.start();
         
         this.SkipHandler = new SkipHandler(this);
         this.skipVotingEnabled = defaultSettings.skipVotingEnabled;
@@ -571,10 +570,7 @@ module.exports = class MusicController {
         try {
             this.stopped = true;
              
-            if (this.audioPlayer) {
-                this.audioPlayer.playing = false
-                this.audioPlayerStatus = "stopped"
-            }
+            
 
             this.clearQueue()
             this.currentSong = null;
@@ -582,12 +578,14 @@ module.exports = class MusicController {
             //logger.log("info", "Queue cleared")
             
             if(this.audioPlayer) {
+                this.audioPlayer.playing = false
+                this.audioPlayerStatus = "stopped"
                 await this.audioPlayer.stopTrack()
                 //logger.log("info", "Audio Player stopped.")
             }
             
             
-            await this.EmbedPlayer.stop()
+            this.EmbedPlayer.stop()
             //logger.log("info", "Player updater stopped")
             this.SkipHandler.endVote()
 
