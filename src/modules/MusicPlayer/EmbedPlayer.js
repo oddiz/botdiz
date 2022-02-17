@@ -123,8 +123,6 @@ module.exports = class UpdatePlayerInfo {
             await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
         }
 
-        await new Promise(resolve => setTimeout(resolve, this.MusicController.UPDATE_INTERVAL));
-
         if(this.quit) {
             
             try {
