@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors")
+
 const app = express();
+
+const Sentry = require("@sentry/node");
+const Tracing = require("@sentry/tracing");
 
 const WsManager = require('./Websocket')
 const DatabaseManager = require('./db/DatabaseManager')
@@ -55,9 +59,30 @@ if(process.env.NODE_ENV === "development") {
       });
 }
 
+Sentry.init({
+    dsn: process.env.SENTRY_URIc,
+    integrations: [
+      // enable HTTP calls tracing
+      new Sentry.Integrations.Http({ tracing: true }),
+      // enable Express.js middleware tracing
+      new Tracing.Integrations.Express({
+        // to trace all requests to the default router
+        app,
+        // alternatively, you can specify the routes you want to trace:
+        // router: someRouter,
+      }),
+    ],
+  
+    // We recommend adjusting this value in production, or using tracesSampler
+    // for finer control
+    tracesSampleRate: 1.0,
+  });
+  
   
   async function init(app, RouteManager, DatabaseManager, DiscordClient, GuildControllers) {
-    
+    app.use(Sentry.Handlers.requestHandler());
+    app.use(Sentry.Handlers.tracingHandler());
+
     app.use(sessionParser)
     //setup database
     console.log("Setting up database.")
@@ -81,6 +106,7 @@ if(process.env.NODE_ENV === "development") {
     console.log("Initilizing Route Manager.")
     const RouteMngr = new RouteManager (app, db)
     RouteMngr.run()
+    app.use(Sentry.Handlers.errorHandler());
     let server;
     if (process.env.NODE_ENV === "development") {
         server = app.listen(8080, () => console.log("Api is running on port 8080"))

@@ -1,4 +1,13 @@
 const winston = require('winston')
+const Sentry = require('winston-sentry-log');
+
+const sentryOptions = {
+    config: {
+        dsn: process.env.SENTRY_URI,
+    },
+    level: "info"
+};
+
 
 const logger = winston.createLogger({
 	transports: [
@@ -10,14 +19,20 @@ const logger = winston.createLogger({
                     )
         }),
 		new winston.transports.File({ 
-            filename: 'log',
-            format: winston.format.simple()
+            filename: 'error.log',
+            format: winston.format.json(),
+            level: "warn"
         }),
+        new Sentry(sentryOptions)
 	],
+    exceptionHandlers: [
+        new transports.File({ filename: 'exceptions.log' })
+    ],
 	
     
 
 });
+
 
 winston.addColors({
     error: 'red',

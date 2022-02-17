@@ -2,6 +2,8 @@
   "dependencies": {
     "@discordjs/opus": "^0.5.3",
     "@discordjs/voice": "^0.4.0",
+    "@sentry/node": "^6.17.9",
+    "@sentry/tracing": "^6.17.9",
     "argon2": "^0.28.2",
     "axios": "^0.21.1",
     "bufferutil": "^4.0.3",
@@ -25,6 +27,7 @@
     "spotify-web-api-node": "^5.0.2",
     "uuid": "^8.3.2",
     "winston": "^3.3.3",
+    "winston-sentry-log": "^1.0.24",
     "youtube-dl-exec": "^1.2.4",
     "youtube-mp3-downloader": "^0.7.7",
     "youtube.get-video-info": "^1.0.2",
