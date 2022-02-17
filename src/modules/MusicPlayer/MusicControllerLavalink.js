@@ -120,7 +120,8 @@ module.exports = class MusicController {
 
         this.activeVoiceChannel = channel
 
-        this.audioPlayer.on('start', () => {
+        this.audioPlayer.on('start', (data) => {
+
             if (this.repeat === 'one') return;
             this.audioPlayer.playing = true
             this.audioPlayerStatus = "playing"
@@ -128,14 +129,15 @@ module.exports = class MusicController {
 
             console.log("audioPlayer started")
         });
-        this.audioPlayer.on('end', () => {
+        this.audioPlayer.on('end', (data) => {
+
             if (this.repeat === 'one') this.queue.unshift(this.current);
             if (this.repeat === 'all') this.queue.push(this.current);
             this.audioPlayer.playing = false
             this.audioPlayerStatus = "stopped"
-            console.log("audioplayer ended")
-
-            if(!this.stopped && !this.skipping) {
+            console.log("audioplayer ended. Reason: ", data.reason)
+            
+            if((!this.stopped && !this.skipping) || data.reason === "LOAD_FAILED") {
                 this.playNext();
             }
             if (this.skipping) {
@@ -145,6 +147,7 @@ module.exports = class MusicController {
         });
 
         this.audioPlayer.on('update', (data) => {
+
             /*
             data = 
             {
@@ -154,11 +157,58 @@ module.exports = class MusicController {
             }
             */
         })
+        this.audioPlayer.on('resumed', (data) => {
+            console.log("Resumed event triggered: " + data)
+
+            
+            /*
+            data = 
+            {
+          
+            }
+            */
+        })
+        this.audioPlayer.on('exception', (data) => {
+            try {
+                console.log(data)
+                this.command.reply("```js\n//Error while processing song.\nname: \""+ this.currentSong.info.title+"\"\nurl: \""+ this.currentSong.info.uri +"\"\ntrack_id: \""+ data.track +"\"\nerror: \"" + data.exception.message + "\"," + "\ncause: \""+ data.exception.cause + "\""+"```", { required: true })
+                
+                this.EmbedPlayer.stop()
+                if(!this.stopped) {
+                    this.playNext()
+                }
+                
+            } catch (error) {
+                logger.log("error", "Error while executing exception event: ", error)
+            }
+            /*
+            data = {
+                error: 'Something broke when playing the track.',
+                exception: {
+                    severity: 'FAULT', 
+                    cause: 'java.io.IOException: Invalid status code for video info response: 410', 
+                    message: 'Something broke when playing the track.'
+                },
+                guildId: '861409127225229363',
+                op: 'event',
+                track: 'QAAAigIAHkR5RSAtIEZhbnRhc3kgLSBPZmZpY2lhbCBWaWRlbwASVGlnZXJzdXNoaSBSZWNvcmRzAAAAAAADR9gACzZRRndvNTdXS3dnAAEAK2h0dHBzOi8vd3d3LnlvdXR1YmUuY29tL3dhdGNoP3Y9NlFGd281N1dLd2cAB3lvdXR1YmUAAAAAAAAAAA==',
+                type: 'TrackExceptionEvent'
+            }
+            */
+        })
+        this.audioPlayer.on('closed', (data) => {
+            console.log("Player closed reason: " + data)
+
+            /*
+            data = 
+            {
+                
+            }
+            */
+        })
         for (const event of ['closed', 'error']) {
             this.audioPlayer.on(event, data => {
                 if (data instanceof Error || data instanceof Object) console.error(data);
-                this.audioPlayer.playing = false
-                this.audioPlayerStatus = "stopped"
 
                 this.queue.length = 0;
                 this.stop();
@@ -305,8 +355,7 @@ module.exports = class MusicController {
 
             if (!nextInQueue) {
                 //no song is next
-                this.command.reply("`No songs left in queue, feel free to add new ones.`", {new: true})
-
+                this.command.reply("`No songs left in queue, feel free to add new ones.`")
                 this.stop()
                 
                 return false
@@ -350,7 +399,6 @@ module.exports = class MusicController {
             }
 
             if (nextInQueue.constructor.name === "ShoukakuTrack") {
-                console.log("Track is Shoukaku Track")
 
 
             } else if (nextInQueue.isSpotify) {
@@ -522,7 +570,12 @@ module.exports = class MusicController {
     async stop() {
         try {
             this.stopped = true;
-            
+             
+            if (this.audioPlayer) {
+                this.audioPlayer.playing = false
+                this.audioPlayerStatus = "stopped"
+            }
+
             this.clearQueue()
             this.currentSong = null;
             this.songHistory = []
