@@ -5,7 +5,7 @@ const sentryOptions = {
     config: {
         dsn: process.env.SENTRY_URI,
     },
-    level: "info"
+    level: "error"
 };
 
 
