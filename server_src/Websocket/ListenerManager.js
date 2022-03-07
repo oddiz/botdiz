@@ -144,9 +144,12 @@ module.exports = class ListenerManager {
             const MusicController = guildController?.MusicController
     
             this.listenMusicPlayer = true;
-            runLoop(this.websocket, MusicController, guildId)
+
+            if (this.websocket) {
+                runLoop(this.websocket, MusicController, guildId)
+            }
             
-            function runLoop(websocket, MusicController, loopGuildId) {
+            const runLoop = (websocket, MusicController, loopGuildId) => {
                 setTimeout(function() {
                     if (!self.listenMusicPlayer || (self.musicListenerGuildId !== loopGuildId)) {
                         return
@@ -184,6 +187,8 @@ module.exports = class ListenerManager {
                         websocket.send(replyMessage)
                     } catch (error) {
                         console.log("Exception in music player listener loop: ", error)
+
+                        return
                     }
                     runLoop(websocket, MusicController, loopGuildId)
                 }, 400)

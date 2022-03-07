@@ -8,22 +8,20 @@
 
 ## TODO
     - remove from botdiz interface after dj access removed
-    - skip vote
+    - skip vote ✅
     
     - Voice recognition ?
     - Play from youtube, spotify, soundcloud✅
         - play discover weekly
-        - play random song, backing track
 
-    - random game from steam?
 
     - song queue with buttons
-    - help command with buttons, categorize music commands together
-    - oddiz Embed Class (set color to role color, add easy way to print messages in style - even only string)
+
 
 
     - bot maintainer: 
         - leave voice if no one is in it after x minutes ✅
+        - leave voice if player is paused after x minutes
 
 ## TODO SERVER
     

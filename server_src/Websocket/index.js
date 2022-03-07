@@ -161,7 +161,6 @@ module.exports = class WebsocketManager {
         if(message.type === "ping") {
             ws.send(JSON.stringify({
                 event:"pong",
-                token: token,
                 result:"success"
             }))
 
@@ -212,7 +211,6 @@ module.exports = class WebsocketManager {
 
             //when a result comes back construct a reply
             const reply = {
-                token: message.token,
                 command: message.command,
                 result: result
             }

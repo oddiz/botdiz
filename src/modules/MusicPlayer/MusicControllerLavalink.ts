@@ -1,0 +1,773 @@
+import fetch from 'node-fetch';
+import { logger } from '../../logger';
+import {
+    MessageEmbed,
+    MessageActionRow,
+    MessageButton,
+    ChannelResolvable,
+    TextBasedChannel,
+    VoiceBasedChannel,
+    Message,
+} from 'discord.js';
+
+//const ytdl = require("ytdl-core");
+//const prism = require('prism-media')
+import { EmbedPlayer } from './EmbedPlayer';
+import { SkipHandler } from './SkipHandler';
+import { botCommands } from '../../botCommands';
+import { Controller as BotdizGuildController } from '@src/modules/Controller';
+import { Command as BotdizCommand } from '@src/modules/Command';
+import { ShoukakuHandler } from '@src/Shokaku/ShokakuHandler';
+import { ShoukakuPlayer, ShoukakuTrack } from 'shoukaku';
+import { DbGuildSettings } from 'server_src/db/databaseTypes';
+import recommendSong from '@src/scripts/recommendSong';
+
+let playCommand: BotdizCommand;
+
+const defaultSettings = {
+    autoplay: false,
+    skipVotingEnabled: false,
+    skipVotingPassPercentage: 0.5,
+};
+
+export interface BotdizTrack {
+    info: {
+        artist: string;
+        trackName: string;
+        title: string;
+    };
+    isSpotify: boolean;
+    recommendedSong?: boolean;
+}
+export interface BotdizShoukakuTrack extends ShoukakuTrack {
+    recommendedSong?: boolean;
+    thumbnail?: string;
+}
+
+export type QueueTrack = BotdizTrack | BotdizShoukakuTrack;
+
+export class MusicController {
+    public controller;
+    public guild;
+    private volume: number;
+    private playCommand: BotdizCommand;
+    private readyLock: boolean;
+    public UPDATE_INTERVAL: number;
+    public EmbedPlayer;
+    public SkipHandler;
+    public skipVotingEnabled: boolean;
+    public skipVotingPassPercentage: number;
+    public shoukaku;
+    public audioPlayer: ShoukakuPlayer | undefined;
+    public autoplay: boolean;
+    public songHistory: string[];
+    public youtubeCookies: string | null;
+    public lastInvokedChannel: TextBasedChannel | null;
+    public queue: QueueTrack[];
+    public queueLock: boolean;
+    public currentSong: BotdizShoukakuTrack | null;
+    public lastSeekEventTime: number;
+    public activeVoiceChannel: VoiceBasedChannel | null;
+    public audioPlayerStatus: 'PLAYING' | 'PAUSED' | 'STOPPED' | 'SKIPPING';
+    public repeat: 'ONE' | 'ALL' | 'NONE';
+
+    constructor(controller: BotdizGuildController, shoukaku: ShoukakuHandler) {
+        for (const command of botCommands(controller)) {
+            if (command.name === 'play') {
+                playCommand = command;
+
+                break;
+            }
+        }
+        this.controller = controller;
+        this.guild = controller.guild;
+        this.volume = 1;
+        this.playCommand = playCommand;
+        this.readyLock = false;
+        this.UPDATE_INTERVAL = 10000; // player stats update interval in ms
+
+        this.EmbedPlayer = new EmbedPlayer(this);
+
+        this.SkipHandler = new SkipHandler(this);
+        this.skipVotingEnabled = defaultSettings.skipVotingEnabled;
+        this.skipVotingPassPercentage =
+            defaultSettings.skipVotingPassPercentage;
+
+        this.shoukaku = shoukaku;
+        this.audioPlayer = undefined;
+
+        this.autoplay = defaultSettings.autoplay;
+        this.songHistory = [];
+        this.youtubeCookies = null;
+
+        this.currentSong = null;
+        this.queue = [];
+        this.lastSeekEventTime = 0;
+
+        this.lastInvokedChannel = null;
+        this.queueLock = false;
+        this.audioPlayerStatus = 'STOPPED';
+        this.repeat = 'NONE';
+        this.activeVoiceChannel = null;
+
+        this.init();
+    }
+
+    async init() {
+        try {
+            //get audioPlayer from lavalink if available
+            const node = await this.shoukaku.getNode();
+            this.audioPlayer = await node.players.get(this.controller.guild.id);
+
+            return true;
+        } catch (error) {
+            logger.log(
+                'error',
+                'Error while initializing MusicController: ',
+                error
+            );
+            return false;
+        }
+    }
+
+    applySettings(settings: DbGuildSettings) {
+        try {
+            if (settings) {
+                if ('autoplay' in settings) {
+                    this.autoplay = settings.autoplay;
+                }
+                if ('skipVotingEnabled' in settings) {
+                    this.skipVotingEnabled = settings.skipVotingEnabled;
+                }
+                if ('skipVotingPassPercentage' in settings) {
+                    const passPercentage =
+                        settings.skipVotingPassPercentage ||
+                        defaultSettings.skipVotingPassPercentage;
+                    const result =
+                        this.SkipHandler.setPassPercentage(passPercentage);
+                    if (result) {
+                        this.skipVotingPassPercentage = passPercentage;
+                    }
+                }
+
+                //returns true if successful
+            }
+        } catch (error) {
+            console.log(
+                'Error while trying to apply settings to Music Controller: ',
+                error
+            );
+        }
+    }
+
+    async setVoiceConnection(channel: VoiceBasedChannel) {
+        const node = this.shoukaku.getNode();
+
+        if (channel.id === this.activeVoiceChannel?.id) {
+            //already in same channel
+            return;
+        }
+
+        await this.stop();
+
+        if (this.audioPlayer) {
+            await node.leaveChannel(this.controller.guild.id);
+        }
+        //If there is audioplayer present we are already connected to voice channel
+
+        this.audioPlayer = await node.joinChannel({
+            guildId: this.controller.guild.id,
+            channelId: channel.id,
+            shardId: this.controller.guild.shardId,
+        });
+
+        this.activeVoiceChannel = channel;
+
+        this.audioPlayer.on('start', (data) => {
+            if (this.repeat === 'ONE') return;
+            this.audioPlayerStatus = 'PLAYING';
+
+            console.log('audioPlayer started');
+        });
+        this.audioPlayer.on('end', (data) => {
+            if (this.currentSong) {
+                if (this.repeat === 'ONE') this.queue.unshift(this.currentSong);
+                if (this.repeat === 'ALL') this.queue.push(this.currentSong);
+            }
+
+            //reason can be: "FINISHED" | "LOAD_FAILED" | "STOPPED" | "REPLACED" | "CLEANUP";
+            const reason = data.reason;
+
+            if (this.audioPlayerStatus === 'SKIPPING') {
+                console.log("reason should be 'REPLACED' reason: " + reason);
+                this.audioPlayerStatus = 'STOPPED';
+                return;
+            }
+            this.audioPlayerStatus = 'STOPPED';
+            console.log('audioplayer ended. Reason: ', reason);
+
+            if (data.reason === 'LOAD_FAILED' || data.reason === 'FINISHED') {
+                this.playNext();
+            }
+
+            if (data.reason === 'STOPPED') {
+                this.stop();
+            }
+
+            if (data.reason === 'CLEANUP') {
+                console.log(
+                    "CLEANUP end event triggered. Don't know why this is happening"
+                );
+            }
+        });
+
+        this.audioPlayer.on('update', (data) => {
+            /*
+            data = 
+            {
+                op: 'playerUpdate',
+                state: { connected: true, position: 45800, time: 1630211312429 },
+                guildId: '854409105431330836'
+            }
+            */
+        });
+        this.audioPlayer.on('resumed', () => {
+            console.log('Resumed event triggered: ');
+
+            this.audioPlayerStatus = 'PLAYING';
+
+            /*
+            data = 
+            {
+          
+            }
+            */
+        });
+        this.audioPlayer.on('exception', (data) => {
+            try {
+                logger.log(
+                    'error',
+                    'Exception triggered in audioPlayer: ',
+                    data
+                );
+                if (this.currentSong) {
+                    this.playCommand.reply(
+                        '```js\n//Error while processing song.\nname: "' +
+                            this.currentSong.info.title +
+                            '"\nurl: "' +
+                            this.currentSong.info.uri +
+                            '"\ntrack_identifier: "' +
+                            this.currentSong.info.identifier +
+                            '"\nerror: "' +
+                            data.exception?.message +
+                            '",' +
+                            '\ncause: "' +
+                            data.exception?.cause +
+                            '"' +
+                            '```',
+                        { required: true }
+                    );
+                }
+
+                this.EmbedPlayer.stop();
+                if (this.audioPlayerStatus !== 'STOPPED') {
+                    this.playNext();
+                }
+            } catch (error) {
+                logger.log(
+                    'error',
+                    'Error while executing exception event: ',
+                    error
+                );
+            }
+            /*
+            data = {
+                error: 'Something broke when playing the track.',
+                exception: {
+                    severity: 'FAULT', 
+                    cause: 'java.io.IOException: Invalid status code for video info response: 410', 
+                    message: 'Something broke when playing the track.'
+                },
+                guildId: '861409127225229363',
+                op: 'event',
+                track: 'QAAAigIAHkR5RSAtIEZhbnRhc3kgLSBPZmZpY2lhbCBWaWRlbwASVGlnZXJzdXNoaSBSZWNvcmRzAAAAAAADR9gACzZRRndvNTdXS3dnAAEAK2h0dHBzOi8vd3d3LnlvdXR1YmUuY29tL3dhdGNoP3Y9NlFGd281N1dLd2cAB3lvdXR1YmUAAAAAAAAAAA==',
+                type: 'TrackExceptionEvent'
+            }
+            */
+        });
+        this.audioPlayer.on('closed', (data) => {
+            console.log('Player closed reason: ' + data);
+
+            /*
+            data = 
+            {
+                
+            }
+            */
+        });
+        this.audioPlayer.on('closed', (data) => {
+            if (data instanceof Error || data instanceof Object)
+                logger.log('info', 'Audioplayer closed: ' + data);
+
+            this.queue.length = 0;
+            this.stop();
+        });
+    }
+
+    async disconnectFromVoiceChannel() {
+        try {
+            const node = this.shoukaku.getNode();
+
+            node.leaveChannel(this.controller.guild.id);
+            this.activeVoiceChannel = null;
+        } catch (error) {
+            console.log(
+                'Error while executing disconnectFromVoiceChannel: ',
+                error
+            );
+        }
+    }
+
+    addToQueue(song: QueueTrack, forceNext: boolean) {
+        /*
+        {
+        videoUrl: videoUrl,
+        videoId: videoId,
+        videoTitle: videoTitle,
+        videoThumbnailUrl:videoThumbnailUrl,
+        videoDuration: videoDuration
+        } 
+        */
+        if (forceNext) {
+            this.queue.unshift(song);
+        } else {
+            this.queue.push(song);
+        }
+    }
+
+    async setYoutubeCookies() {
+        try {
+            //get cookie for reccomendations
+            const cookies = await fetch('https://www.youtube.com').then(
+                (res) => {
+                    return res.headers.get('set-cookie');
+                }
+            );
+
+            this.youtubeCookies = cookies;
+
+            return cookies;
+        } catch (error) {
+            logger.log(
+                'error',
+                'Error while trying to get youtube cookies: ',
+                error
+            );
+        }
+    }
+
+    async processQueue() {
+        this.queueLock = false;
+        try {
+            if (!this.audioPlayer) {
+                logger.log(
+                    'error',
+                    'No audio player available, trying to initialize'
+                );
+                try {
+                    const result = await this.init();
+                    if (result) {
+                        logger.log(
+                            'info',
+                            'initilaized Audio Player here is the Audio Player: ' +
+                                this.audioPlayer
+                        );
+                    } else {
+                        logger.log(
+                            'error',
+                            'Could not initialize Audio Player'
+                        );
+                    }
+                } catch (error) {
+                    logger.log(
+                        'error',
+                        'Error while trying to initialize audio player: ',
+                        error
+                    );
+                    this.stop();
+                    return 'failed';
+                }
+            }
+            // If the queue is locked (already being processed), or the audio player is already playing something, return
+            if (this.queueLock || this.audioPlayerStatus === 'PLAYING') {
+                //remove previous recommended songs
+                for (const [index, song] of this.queue.entries()) {
+                    if (song?.recommendedSong) {
+                        this.queue.splice(index, 1);
+                    }
+                }
+
+                this.queueLock = false;
+                return 'success';
+
+                // If not playing
+            } else {
+                this.queueLock = false;
+
+                //remove previous recommended songs
+                for (const [index, song] of this.queue.entries()) {
+                    if (song?.recommendedSong) {
+                        console.log(
+                            "this shouldn't trigger. music controller recommended remover."
+                        );
+                        this.queue.splice(index, 1);
+                    }
+                }
+
+                console.log('playing next');
+                this.playNext();
+
+                return 'success';
+            }
+        } catch (error) {
+            this.queueLock = false;
+            console.log('Error while trying to process queue: ', error);
+        }
+    }
+
+    getCurrentSong() {
+        try {
+            return this.currentSong;
+        } catch (error) {
+            //if there is no current song
+            return null;
+        }
+    }
+
+    updateCurrentSong(song: BotdizShoukakuTrack) {
+        try {
+            this.currentSong = song;
+        } catch (error) {
+            logger.log(
+                'error',
+                'Error while running updateCurrentSong() Error: ' + error
+            );
+        }
+    }
+
+    clearQueue() {
+        try {
+            this.queue = [];
+        } catch (error) {
+            logger.log(
+                'error',
+                'Error while running clearQueue() Error: ' + error
+            );
+        }
+    }
+
+    async playNext() {
+        try {
+            this.SkipHandler.endVote();
+            const nextSong = await this.processNextSong();
+
+            if (!nextSong) {
+                //no song is next
+                //this.playCommand.reply("`No songs left in queue, feel free to add new ones.`")
+                this.stop();
+
+                return false;
+            }
+
+            console.log(nextSong.info);
+            //console.log("Got resources")
+            if (this.audioPlayer) {
+                this.updateCurrentSong(nextSong);
+                await this.audioPlayer.playTrack(nextSong, {
+                    noReplace: false,
+                });
+            } else {
+                logger.log(
+                    'error',
+                    'No audio player available /MusicController/playNext()'
+                );
+
+                this.stop();
+
+                return false;
+            }
+
+            /**
+             * Creates a message that shows song info then assigns an updater.
+             */
+            await this.createSongEmbed(nextSong);
+            return 'success';
+        } catch (error) {
+            logger.log(
+                'error',
+                'Error occured while trying to create Audio Resource.',
+                error
+            );
+            //console.log("trying next")
+            //this.playNext()
+            return;
+        }
+    }
+
+    async processNextSong(): Promise<BotdizShoukakuTrack | null> {
+        try {
+            let nextInQueue = this.queue.shift();
+            let processedSong;
+
+            if (!nextInQueue) {
+                return null;
+            }
+
+            const nextIsBotdizTrack = nextInQueue as BotdizTrack;
+            if (nextIsBotdizTrack.isSpotify) {
+                //if came from spotify link
+                //only videoArtist, videoTitle, isSpotify present
+                //turn into Shoukaku Track
+
+                const query = nextIsBotdizTrack.info.title;
+                const node = this.shoukaku.getNode();
+
+                const result = await node.rest.resolve(query, 'youtube');
+
+                if (!result.tracks.length) {
+                    //couldn't find song from spotify song
+                    return null;
+                }
+
+                processedSong = result.tracks.shift() as BotdizShoukakuTrack;
+            } else if (nextInQueue instanceof ShoukakuTrack) {
+                processedSong = nextInQueue;
+            } else {
+                console.log(
+                    "Couldn't figure out how to process next song. FIX ME!! Might be a ShoukakuTrack also, who knows..."
+                );
+                //bug here with adding "deep end foushee" from interface
+
+                console.log('Track is : ', nextInQueue);
+
+                this.queueLock = false;
+            }
+
+            if (processedSong) {
+                if (processedSong.info.sourceName === 'youtube') {
+                    const oembed = 'https://www.youtube.com/oembed?url=';
+                    const oEmbedUrl = oembed + processedSong.info.uri;
+
+                    const videoThumbnailUrl = await fetch(oEmbedUrl)
+                        .then((res) => res.json())
+                        .then((parsedRes) => parsedRes.thumbnail_url)
+                        .catch((err) => {
+                            console.log(
+                                'Error while fetching oEmbed. error: ',
+                                err
+                            );
+                            return null;
+                        });
+
+                    processedSong.thumbnail = videoThumbnailUrl;
+                }
+
+                this.queueLock = false;
+
+                return processedSong;
+            } else {
+                logger.log(
+                    'error',
+                    'Error while trying to process next song. processSong is ' +
+                        processedSong
+                );
+
+                return null;
+            }
+            //add thumbnail image if youtube
+        } catch (error) {
+            logger.log('error', 'Error in processNextSong()', error);
+            this.queueLock = false;
+
+            return null;
+        }
+    }
+
+    async createSongEmbed(currentSong: BotdizShoukakuTrack) {
+        try {
+            let botMessage;
+            const botdizLinkButton = new MessageActionRow();
+            const botdizLink =
+                process.env.NODE_ENV === 'development'
+                    ? 'http://localhost:3000/app'
+                    : 'https://botdiz.kaansarkaya.com/app';
+            botdizLinkButton.addComponents(
+                new MessageButton()
+                    .setLabel('Botdiz Interface')
+                    .setStyle('LINK')
+                    .setURL(botdizLink)
+            );
+            let embedMessage = new MessageEmbed();
+
+            embedMessage
+                .setColor(this.controller.roleColor)
+                .addField('Now Playing: ', `${currentSong.info.title}`)
+                .setTimestamp();
+
+            if (currentSong.thumbnail) {
+                embedMessage = embedMessage.setThumbnail(currentSong.thumbnail);
+            }
+
+            //await this.playCommand.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
+            botMessage = await this.playCommand.reply(
+                { embeds: [embedMessage], components: [botdizLinkButton] },
+                { new: true, required: true }
+            );
+
+            if (botMessage instanceof Message) {
+                if (this.EmbedPlayer.quit) {
+                    this.EmbedPlayer.start();
+                }
+
+                this.EmbedPlayer.changeSong(currentSong);
+                this.EmbedPlayer.changeMessage(botMessage);
+
+                return true;
+            } else {
+                throw new Error(
+                    'Unexpected type for botMessage: ' + botMessage
+                );
+            }
+
+            /* 
+            if(lastMessage.author.bot) {
+                lastMessage.edit(embedMessage).then( message => {
+                    botMessage = message
+                    const originalVideoTitle = nextInQueue.videoTitle;
+                    
+                    updatePlayer(this, invokedMessage, nextInQueue, botMessage)
+                    
+                    return true
+                }).catch(err=>{console.log("Error while executing manageSongEmbed() / edit embed"), err})
+            }
+            */
+        } catch (error) {
+            console.log('Error while trying to create song embed: ' + error);
+
+            return;
+        }
+    }
+
+    async seekTo(timeInMs: number) {
+        try {
+            if (this.lastSeekEventTime + 1000 > Date.now()) {
+                console.log('too soon');
+                return;
+            } else if (this.audioPlayer) {
+                this.audioPlayer.seekTo(timeInMs);
+                this.lastSeekEventTime = Date.now();
+            }
+        } catch (error) {
+            logger.log('error', 'Error while running seekTo() Error: ' + error);
+        }
+    }
+
+    async skip(skipAmount: number) {
+        this.audioPlayerStatus = 'SKIPPING';
+        for (let i = 1; i < skipAmount; i++) {
+            this.queue.shift();
+        }
+
+        const result = await this.playNext();
+        this.queueLock = false;
+        return result;
+    }
+
+    async shuffleQueue() {
+        try {
+            console.log('Shuffling queue');
+            if (this.queue && this.queue.length > 1) {
+                //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+                for (let i = this.queue.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.queue[i], this.queue[j]] = [
+                        this.queue[j],
+                        this.queue[i],
+                    ];
+                }
+                return true;
+            } else {
+                console.log('not enough songs in queue to shuffle');
+                return true;
+            }
+        } catch (error) {
+            logger.log('error', 'Error while trying to shuffle queue', error);
+            return false;
+        }
+    }
+
+    async stop() {
+        try {
+            this.audioPlayerStatus = 'STOPPED';
+
+            this.clearQueue();
+            this.currentSong = null;
+            this.songHistory = [];
+            //logger.log("info", "Queue cleared")
+
+            if (this.audioPlayer) {
+                await this.audioPlayer.stopTrack();
+                //logger.log("info", "Audio Player stopped.")
+            }
+
+            this.EmbedPlayer.stop();
+            //logger.log("info", "Player updater stopped")
+            this.SkipHandler.endVote();
+
+            this.queueLock = false;
+
+            return;
+            //this.voiceConnection.destroy();
+            //logger.log("info", "Voice connection destroyed.")
+
+            //this.controller.MusicController = null
+            //logger.log("info", "Music Controller destroyed")
+
+            //logger.log("info", "Stopped music player and destroyed MusicController")
+        } catch (error) {
+            logger.log(
+                'error',
+                'Error while running MusicController.stop(): ',
+                error
+            );
+        }
+    }
+    pause() {
+        try {
+            if (this.audioPlayer) {
+                console.log('pausing player');
+
+                this.audioPlayer.setPaused(true);
+                this.audioPlayerStatus = 'PAUSED';
+            } else {
+                logger.log('warn', 'no player to pause');
+            }
+        } catch (error) {
+            logger.log('info', 'Error while running pause(): ' + error);
+        }
+    }
+    resume() {
+        try {
+            if (this.audioPlayer) {
+                console.log('resuming player');
+
+                this.audioPlayer.setPaused(false);
+                this.audioPlayerStatus = 'PLAYING';
+            } else {
+                logger.log('warn', 'no player to resume');
+            }
+        } catch (error) {
+            logger.log('info', 'Error while trying to resume.', error);
+        }
+    }
+}
