@@ -1,12 +1,13 @@
-import { Command } from "src/modules/Command"
+import { Command } from "../modules/Command"
 import { CommandInteraction } from "discord.js"
 import { logger } from "../logger"
 
-export default async (invokedMessage: CommandInteraction) => {
+export default async function (this: Command, invokedMessage?: CommandInteraction | null) {
 
-    const self = this as unknown as Command
+    const self = this
     try {
-        
+        if (!invokedMessage) throw "invokedMessage is not defined"
+
         const skipAmount = invokedMessage.options.getInteger("amount") || 1
         const musicController = self.controller.MusicController
 

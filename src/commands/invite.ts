@@ -1,10 +1,10 @@
 import { MessageEmbed } from 'discord.js'
-import { logger } from 'src/logger'
-import { Command } from 'src/modules/Command'
+import { logger } from '../logger'
+import { Command } from '../modules/Command'
 
-export default async () => {
+export default async function (this: Command) {
 
-    const self = this as unknown as Command
+    const self = this
     try {
         //takes "on" or "off" as argument
         const inviteLink = "https://discord.com/oauth2/authorize?client_id=851497395190890518&scope=bot+applications.commands&permissions=2184309832"

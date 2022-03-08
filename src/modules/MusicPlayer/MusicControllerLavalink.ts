@@ -8,6 +8,7 @@ import {
     TextBasedChannel,
     VoiceBasedChannel,
     Message,
+    CommandInteraction,
 } from 'discord.js';
 
 //const ytdl = require("ytdl-core");
@@ -15,12 +16,11 @@ import {
 import { EmbedPlayer } from './EmbedPlayer';
 import { SkipHandler } from './SkipHandler';
 import { botCommands } from '../../botCommands';
-import { Controller as BotdizGuildController } from 'src/modules/Controller';
-import { Command as BotdizCommand } from 'src/modules/Command';
-import { ShoukakuHandler } from 'src/Shokaku/ShokakuHandler';
+import { Controller as BotdizGuildController } from '../../modules/Controller';
+import { Command as BotdizCommand } from '../../modules/Command';
+import { ShoukakuHandler } from '../../Shokaku/ShokakuHandler';
 import { ShoukakuPlayer, ShoukakuTrack } from 'shoukaku';
-import { DbGuildSettings } from 'server_src/db/databaseTypes';
-import recommendSong from 'src/scripts/recommendSong';
+import { DbGuildSettings } from '../../../server_src/db/databaseTypes';
 
 let playCommand: BotdizCommand;
 
@@ -72,14 +72,16 @@ export class MusicController {
     public repeat: 'ONE' | 'ALL' | 'NONE';
 
     constructor(controller: BotdizGuildController, shoukaku: ShoukakuHandler) {
-        for (const command of botCommands(controller)) {
+        this.controller = controller;
+        
+        for (const command of this.controller.commands) {
             if (command.name === 'play') {
                 playCommand = command;
 
                 break;
             }
         }
-        this.controller = controller;
+
         this.guild = controller.guild;
         this.volume = 1;
         this.playCommand = playCommand;
@@ -118,7 +120,6 @@ export class MusicController {
             //get audioPlayer from lavalink if available
             const node = await this.shoukaku.getNode();
             this.audioPlayer = await node.players.get(this.controller.guild.id);
-
             return true;
         } catch (error) {
             logger.log(
@@ -369,35 +370,7 @@ export class MusicController {
     async processQueue() {
         this.queueLock = false;
         try {
-            if (!this.audioPlayer) {
-                logger.log(
-                    'error',
-                    'No audio player available, trying to initialize'
-                );
-                try {
-                    const result = await this.init();
-                    if (result) {
-                        logger.log(
-                            'info',
-                            'initilaized Audio Player here is the Audio Player: ' +
-                                this.audioPlayer
-                        );
-                    } else {
-                        logger.log(
-                            'error',
-                            'Could not initialize Audio Player'
-                        );
-                    }
-                } catch (error) {
-                    logger.log(
-                        'error',
-                        'Error while trying to initialize audio player: ',
-                        error
-                    );
-                    this.stop();
-                    return 'failed';
-                }
-            }
+            
             // If the queue is locked (already being processed), or the audio player is already playing something, return
             if (this.queueLock || this.audioPlayerStatus === 'PLAYING') {
                 //remove previous recommended songs
@@ -482,6 +455,9 @@ export class MusicController {
             }
 
             console.log(nextSong.info);
+            if (!this.audioPlayer) {
+                await this.init()
+            }
             //console.log("Got resources")
             if (this.audioPlayer) {
                 this.updateCurrentSong(nextSong);
@@ -595,7 +571,7 @@ export class MusicController {
         }
     }
 
-    async createSongEmbed(currentSong: BotdizShoukakuTrack) {
+    async createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null) {
         try {
             let botMessage;
             const botdizLinkButton = new MessageActionRow();
@@ -621,6 +597,13 @@ export class MusicController {
             }
 
             //await this.playCommand.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
+            if(invokedMessage) {
+                this.playCommand.lastInvokedMessage = invokedMessage;
+                if (invokedMessage instanceof CommandInteraction) {
+                    this.playCommand.lastIsInteraction = true;
+                }
+            } 
+            
             botMessage = await this.playCommand.reply(
                 { embeds: [embedMessage], components: [botdizLinkButton] },
                 { new: true, required: true }

@@ -5,9 +5,9 @@ import { Express } from 'express'
 
 import dotenv from 'dotenv'
 import { BotdizSession } from 'server_src/types'
-import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from 'server_src/db/databaseTypes'
-import { logger } from 'src/logger'
-import { getToken } from 'server_src/scripts/getToken'
+import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from '../../db/databaseTypes'
+import { logger } from '../../../src/logger'
+import { getToken } from '../../scripts/getToken'
 dotenv.config()
 
 const UNAUTH_RESPONSE = {

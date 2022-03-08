@@ -1,7 +1,22 @@
 import { ApplicationCommandOptionData } from "discord.js";
 import { Command } from "./modules/Command";
 import { Controller as BotdizGuildContoller } from "./modules/Controller";
-import { helpCommand } from "./commands/help";
+import helpCommand from "./commands/help";
+import autoplayCommand from "./commands/autoplay";
+import w2gCommand from "./commands/w2g";
+import stopCommand from "./commands/stop";
+import playCommand from "./commands/play";
+import playNextCommand from "./commands/playnext";
+import clearCommand from "./commands/clear";
+import skipCommand from "./commands/skip";
+import pauseCommand from "./commands/pause";
+import resumeCommand from "./commands/resume";
+import shuffleCommand from "./commands/shuffle";
+import queueCommand from "./commands/queue";
+import statusCommand from "./commands/status";
+import voteToSkipCommand from "./commands/votetoskip";
+import epicCommand from "./commands/epic";
+
 
 export interface BotdizCommand {
     name: string;
@@ -12,7 +27,7 @@ export interface BotdizCommand {
     ephemeral?: boolean;
     options?: ApplicationCommandOptionData[];
 }
-export const botCommands = (Controller: BotdizGuildContoller) => {
+export const botCommands = function (Controller: BotdizGuildContoller) {
 
     return [
         new Command(
@@ -44,7 +59,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                     required: true,
                 }]
             },
-            require("./commands/w2g")
+            w2gCommand
         ),
         new Command(
             Controller, {
@@ -61,7 +76,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                     required: true,
                 }]
             },
-            require("./commands/play")
+            playCommand
         ),
         new Command(
             Controller, {
@@ -78,7 +93,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                     required: true,
                 }]
             },
-            require("./commands/playnext")
+            playNextCommand
         ),
         new Command(
             Controller, {
@@ -94,7 +109,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                     required: true
                 }]
             },
-            require("./commands/clear")
+            clearCommand
         ),
         new Command(
             Controller, {
@@ -104,7 +119,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 usage: "/stop",
                 noBind: true
             },
-            require("./commands/stop")
+            stopCommand
         ),
         new Command(
             Controller, {
@@ -114,7 +129,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 usage: "/pause",
                 noBind: true
             },
-            require("./commands/pause")
+            pauseCommand
         ),
         new Command(
             Controller, {
@@ -124,7 +139,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 usage: "/resume",
                 noBind: true
             },
-            require("./commands/resume")
+            resumeCommand
         ),
         new Command(
             Controller, {
@@ -133,7 +148,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 needArgs: false,
                 usage: "/queue"
             },
-            require("./commands/queue")
+            queueCommand
 
         ),
         new Command(
@@ -151,7 +166,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                     required: false
                 }]
             },
-            require("./commands/skip")
+            skipCommand
         ),
         new Command(
             Controller, {
@@ -160,7 +175,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 needArgs: false,
                 usage: "/votetoskip",
             },
-            require("./commands/votetoskip")
+            voteToSkipCommand
         ),
         new Command(
             Controller, {
@@ -171,7 +186,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 noBind: true,
                 ephemeral: true,
             },
-            require("./commands/skip")
+            skipCommand
         ),
         new Command(
             Controller, {
@@ -182,7 +197,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 ephemeral: true
 
             },
-            require('./commands/status')
+            statusCommand
         ),
         new Command(
             Controller, {
@@ -193,7 +208,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
 
 
             },
-            require("./commands/epic")
+            epicCommand
         ),
         new Command(
             Controller, {
@@ -204,7 +219,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
 
 
             },
-            require("./commands/autoplay")
+            autoplayCommand
         ),
         new Command(
             Controller, {
@@ -222,7 +237,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                 needArgs: false,
                 usage: "/shuffle"
             },
-            require("./commands/shuffle")
+            shuffleCommand
         ),
     ]
 }

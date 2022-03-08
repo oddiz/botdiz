@@ -1,26 +1,13 @@
-import { DbDiscordGuild } from 'server_src/db/databaseTypes';
-import { client as DiscordClient, GuildControllers } from 'src/main';
+import { DbDiscordGuild } from '../../db/databaseTypes';
+import { client as DiscordClient, GuildControllers } from '../../../src/main';
 import { TextChannel } from 'discord.js';
 const failed = {
     status: 'failed',
 };
-/**
- * Botdiz.client
- * Botdiz.GuildControllers
- *    {
- *       guildId: guild[0],
- *       guildObj: guild[1],
- *       controller: Controller
- *    }
- */
 
 module.exports = {
     RPC_getGuilds: async function (allowedGuilds: DbDiscordGuild[] | 'ALL') {
-        /* 
-        options = {
-            adminOnly: true|false
-        }
-        */
+        
         try {
             const guilds = await DiscordClient.guilds.cache;
 
@@ -119,7 +106,7 @@ module.exports = {
                 if (!commandAllowed) {
                     console.log('Command not allowed!');
 
-                    return failed;
+                    return { status: 'unauthorized' };
                 }
             }
 
@@ -186,7 +173,7 @@ module.exports = {
                 if (!commandAllowed) {
                     console.log('Command not allowed!');
 
-                    return failed;
+                    return { status: 'unauthorized' };
                 }
             }
             const guild = await GuildControllers.find(

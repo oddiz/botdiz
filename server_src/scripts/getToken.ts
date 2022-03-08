@@ -1,4 +1,4 @@
-import { BotdizSession } from "server_src/types"
+import { BotdizSession } from "../types"
 import { Request, Response, Query } from "express-serve-static-core"
 
 export const getToken = (

@@ -1,12 +1,12 @@
 import fetch from 'node-fetch';
-import { client as DiscordClient } from 'src/main';
-import { makeImageUrl } from 'server_src/scripts/makeImageUrl';
+import { client as DiscordClient } from '../../../src/main';
+import { makeImageUrl } from '../../scripts/makeImageUrl';
 import dotenv from 'dotenv';
 import { Db } from 'mongodb';
 import { Express } from 'express';
-import { getToken } from 'server_src/scripts/getToken';
+import { getToken } from '../../scripts/getToken';
 import { Guild } from 'discord.js';
-import { DbDiscordSession, DbGuildObject, DbSession } from 'server_src/db/databaseTypes';
+import { DbDiscordSession, DbGuildObject, DbSession } from '../../db/databaseTypes';
 dotenv.config();
 
 interface BotdizGuild {

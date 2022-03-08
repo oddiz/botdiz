@@ -1,7 +1,8 @@
 import { logger } from "../logger";
 import { ApplicationCommandData, ApplicationCommandOptionData, CommandInteraction, InteractionReplyOptions, Message, MessageOptions, MessagePayload, ReplyMessageOptions } from "discord.js";
-import { Controller as BotdizController} from "src/modules/Controller";
-import { PlayCommandOptions } from "src/commands/play";
+import { Controller as BotdizController} from "./Controller";
+import { PlayCommandOptions } from "../commands/play";
+import { botCommands } from "../botCommands";
 
 interface BotdizCommandConfig {
     name: string;
@@ -20,7 +21,7 @@ export type replyOptions = {
     required?: boolean;
 }
 
-export type CommandFunction = (invokedMessage: CommandInteraction | null, options?: PlayCommandOptions | null ) => Promise<void>
+export type CommandFunction = (invokedMessage?: CommandInteraction | null, options?: PlayCommandOptions | null ) => Promise<void>
 export class Command {
     /*
     config:
@@ -49,7 +50,7 @@ export class Command {
     constructor(
         controller: BotdizController,
         config: BotdizCommandConfig,
-        func: (invokedMessage: CommandInteraction | null, options?: PlayCommandOptions | null ) => void
+        func: CommandFunction
     ) {
         this.controller = controller
 
@@ -114,6 +115,8 @@ export class Command {
         options: replyOptions = { followup: false, new: false, required: true }
     ) {
         try {
+
+            const commands = botCommands
             if (!this.lastInvokedMessage) {
                 // no message to reply
                 return
@@ -126,7 +129,7 @@ export class Command {
                 //if we have interaction
 
                 if (
-                    this.lastInvokedMessage.deferred &&
+                    !this.lastInvokedMessage.deferred &&
                     !this.lastInvokedMessage.replied
                 ) {
                     return this.lastInvokedMessage.reply(content)

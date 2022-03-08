@@ -1,5 +1,5 @@
 import { Interaction, MessagePayload, TextChannel, Message, MessageOptions } from "discord.js";
-import { logger } from "src/logger";
+import { logger } from "../logger";
 export interface InteractionReplyOptions {
     followup?: boolean;
     new?: boolean;

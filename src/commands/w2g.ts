@@ -1,4 +1,4 @@
-import { Command } from 'src/modules/Command';
+import { Command } from '../modules/Command';
 import { CommandInteraction } from 'discord.js';
 import dotenv from 'dotenv'
 dotenv.config()
@@ -7,10 +7,13 @@ import fetch from 'node-fetch';
 import { logger } from '../logger';
 import searchYT from '../scripts/searchYT';
 
-export default async(invokedMessage: CommandInteraction ) => {
+export default async function (this:Command, invokedMessage?: CommandInteraction | null ) {
 
-    const self = this as unknown as Command
+    const self = this 
     try {
+
+        if(!invokedMessage) throw "invokedMessage is not defined"
+
         const input = invokedMessage.options.getString("input")
     
         let videoUrl, searchMode;

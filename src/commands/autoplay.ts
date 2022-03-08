@@ -1,7 +1,7 @@
 import { logger } from '../logger'
-import { Command } from 'src/modules/Command'
-export default async () => {
-    const self = this as unknown as Command
+import { Command } from '../modules/Command'
+export default async function (this: Command)  {
+    const self = this 
     try {
         const MusicController = self.controller.MusicController
 

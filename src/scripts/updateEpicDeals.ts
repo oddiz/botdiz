@@ -2,8 +2,8 @@ import { Db } from "mongodb"
 
 import hash from 'object-hash'
 import axios from 'axios'
-import { logger } from 'src/logger'
-import { DbEpicGameContent, DbSubscriptionContent } from "server_src/db/databaseTypes"
+import { logger } from '../logger'
+import { DbEpicGameContent, DbSubscriptionContent } from "../../server_src/db/databaseTypes"
 
 interface epicDealObject {
     gameTitle: string;

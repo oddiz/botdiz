@@ -1,5 +1,5 @@
 import { Client, Message, Guild, VoiceState } from 'discord.js';
-import { client as DiscordClient, GuildControllers } from 'src/main';
+import { client as DiscordClient, GuildControllers } from '../../src/main';
 import {
     RPC_listenTextChannel,
     RPC_listenVoiceChannels,
@@ -7,7 +7,7 @@ import {
 import {
     AllowedGuild,
 } from 'server_src/db/databaseTypes';
-import { MusicController } from 'src/modules/MusicPlayer/MusicControllerLavalink';
+import { MusicController } from '../../src/modules/MusicPlayer/MusicControllerLavalink';
 import WebSocket from 'ws';
 
 
@@ -216,7 +216,7 @@ export class ListenerManager {
                     try {
                         const currentSong = MusicController.currentSong;
 
-                        if (!currentSong) throw 'No current song';
+                        
 
                         const queue = MusicController.queue;
                         const currentTitle = currentSong?.info?.title || '';

@@ -14,12 +14,11 @@ export const client = new Discord.Client({
 })
 
 import { DatabaseManager as dbManager } from '../server_src/db/DatabaseManager'
-import { Controller as Ctrl } from './modules/Controller.js'
 import { ShoukakuHandler } from './Shokaku/ShokakuHandler'
 import { updateEpicDeals } from './scripts/updateEpicDeals'
 
 import { Guild } from 'discord.js'
-import { Controller as BotdizController } from '.\\modules\\Controller.js'
+import { Controller as BotdizController } from './modules/Controller'
 
 export interface GuildController {
     guildId: string
@@ -59,7 +58,7 @@ async function main(): Promise<void> {
         setInterval(updateEpicDeals, 1000 * 60 * 30, db)
         await client.guilds.fetch()
         for (const guild of client.guilds.cache) {
-            const Controller = new Ctrl(db, client, guild[1], shoukaku)
+            const Controller = new BotdizController(db, client, guild[1], shoukaku)
             Controller.init()
 
             GuildControllers.push({
@@ -124,7 +123,7 @@ async function main(): Promise<void> {
     })
 
     client.on('guildCreate', async (guild) => {
-        const Controller = new Ctrl(db, client, guild, shoukaku)
+        const Controller = new BotdizController(db, client, guild, shoukaku)
         await Controller.init()
 
         GuildControllers.push({

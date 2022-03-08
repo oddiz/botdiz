@@ -1,12 +1,15 @@
-import { Command } from 'src/modules/Command'
+import { Command } from '../modules/Command'
 import { CommandInteraction, GuildMember, Interaction, TextChannel } from 'discord.js'
 import { logger } from '../logger'
 
-export  default async (invokedMessage: CommandInteraction) => {
+export default async function (this: Command, invokedMessage?: CommandInteraction | null) {
 
-    const self = this as unknown as Command
+    const self = this
 
     try {
+
+        if (!invokedMessage) throw "invokedMessage is not defined"
+
         const guildMember = invokedMessage.member
 
         if (guildMember instanceof GuildMember) {

@@ -1,9 +1,8 @@
 import { CommandInteraction, GuildMember, Message, MessageEmbed, TextBasedChannel, User } from "discord.js"
-import { BotdizWebSocketMessage } from "server_src/types"
 
 import replyInterraction from '../../scripts/replyInterraction'
 import { BotdizShoukakuTrack, MusicController } from "./MusicControllerLavalink"
-import { ExecCommandResponse } from "server_src/Websocket/RPC_Commands/execCommands";
+import { ExecCommandResponse } from "../../../server_src/Websocket/RPC_Commands/execCommands";
 
 interface AddVoteStatus {
     voteAdded: boolean;

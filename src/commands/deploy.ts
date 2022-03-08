@@ -1,9 +1,9 @@
-import { Command } from "src/modules/Command";
+import { Command } from "../modules/Command";
 import { CommandInteraction } from "discord.js";
 import { logger } from "../logger";
 
-export default async (invokedMessage: CommandInteraction) => {
-    const self = this as unknown as Command;
+export default async function (this: Command, invokedMessage: CommandInteraction) {
+    const self = this;
     try {
         const guildOwner = await invokedMessage.guild?.fetchOwner()
         

@@ -5,14 +5,14 @@ import { Server } from 'http';
 import { Db } from 'mongodb';
 import { Express, Request, RequestHandler, Response } from 'express';
 import { Client } from 'discord.js';
-import { GuildController } from 'src/main';
+import { GuildController } from '../../src/main';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
-import { getToken } from 'server_src/scripts/getToken';
+import { getToken } from '../scripts/getToken';
 import { logger } from '@sentry/utils';
 import { BotdizSession } from 'server_src/types';
-import { AllowedGuild, DbDiscordGuild, DbDiscordUser } from 'server_src/db/databaseTypes';
-import commands from './RPC_Commands/execCommands';
+import { AllowedGuild, DbDiscordGuild, DbDiscordUser } from '../db/databaseTypes';
+import execCommands from './RPC_Commands/execCommands';
 
 interface BotdizWebsocketClient {
     websocket: WebSocket;
@@ -195,6 +195,8 @@ export default class WebsocketManager {
                 return;
             }
 
+            
+
             if (session.moderator_session) {
                 allowedGuilds = 'ALL';
             }
@@ -289,7 +291,6 @@ export default class WebsocketManager {
             }
 
             if (message.type === 'exec') {
-                const commands = require('./RPC_Commands/execCommands');
                 const adminExecCommands = ['RPC_sendMessage'];
                 let result;
                 try {
@@ -320,7 +321,9 @@ export default class WebsocketManager {
                         }
                     }
                     if (commandAllowed) {
-                        result = await commands[message.command](
+                        if(!user) throw "user is null"
+                        
+                        result = await execCommands[message.command](
                             user,
                             ...message.params
                         );
@@ -334,19 +337,24 @@ export default class WebsocketManager {
                     }
                 } catch (error) {
                     console.log(
-                        'Error while trying to execute command: ',
-                        message.command,
-                        'args: ',
-                        message.params
+                        'Error while trying to execute command: \n',
+                        message.command + "\n",
+                        'args: \n',
+                        message.params, "\n",
+                        'error :\n',
+                        error 
                     );
                     return;
                 }
 
-                const reply = result;
+                const reply = {
+                   ...result,
+                   event: 'exec_command_status',
+                   command: message.command,
+                };
 
                 if (reply) {
-                    reply.command = message?.command;
-                    reply.event = 'exec_command_status';
+                    
                     ws.send(JSON.stringify(reply));
                 }
             }

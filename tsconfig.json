@@ -8,8 +8,6 @@
         "moduleResolution": "node"                                   /* Specify what module code is generated. */,
         "baseUrl": "."                                          /* Specify the base directory to resolve non-relative module names. */,
         "paths": {                                              /* Specify a set of entries that re-map imports to additional lookup locations. */
-            "src/*": ["./src/*"],
-            "server_src/*": ["./server_src/*"]
         } ,
         "types": [                                              /* Specify type package names to be included without being referenced in a source file. */
             "spotify-api"

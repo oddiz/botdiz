@@ -1,9 +1,9 @@
 import { CommandInteraction, MessageEmbed } from "discord.js"
 
-import { logger } from 'src/logger'
-import { Command, CommandFunction } from "src/modules/Command"
+import { logger } from '../logger'
+import { Command, CommandFunction } from "../modules/Command"
 
-export const helpCommand: CommandFunction = async function (this: Command, invokedMessage: CommandInteraction | null): Promise<void> {
+export default async function (this: Command, invokedMessage?: CommandInteraction | null): Promise<void> {
     const self = this 
     try {
         

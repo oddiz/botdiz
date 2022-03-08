@@ -1,6 +1,6 @@
 import { Shoukaku, Libraries } from 'shoukaku';
 import servers from './lavalink-server.json';
-import { options } from './shokaku-options.js';
+import { options } from './shokaku-options';
 import { Client } from 'discord.js'
 
 

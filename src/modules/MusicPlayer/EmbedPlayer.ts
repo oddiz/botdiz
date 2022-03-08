@@ -227,7 +227,7 @@ export class EmbedPlayer {
             this.oldMessage = this.messageToEdit
             try {
     
-                if(this.oldMessage && !this.oldMessage.deleted) {
+                if(this.oldMessage) {
                     //no message to delete so just return
                     await this.oldMessage.delete().catch(err=>{console.log("Error while trying to delete message.")})
                     

@@ -1,14 +1,14 @@
 import {Guild, Client as DiscordClient, User, Message, CommandInteraction, ButtonInteraction, Interaction, ColorResolvable } from "discord.js"
-import { Command } from "./Command.js"
-import { ShoukakuHandler } from "../Shokaku/ShokakuHandler.js"
-import { MsgHandler } from "./MessageHandler.js";
-import { botCommands } from '../botCommands.js'
+import { Command } from "./Command"
+import { ShoukakuHandler } from "../Shokaku/ShokakuHandler"
+import { MsgHandler } from "./MessageHandler";
+import { botCommands } from '../botCommands'
 import { logger } from "../logger";
 import { MessageEmbed } from 'discord.js';
 import { MusicController } from "./MusicPlayer/MusicControllerLavalink";
 import { SubscriptionManager } from './SubscriptionManager';
 import { Db } from "mongodb";
-import { DbGuildObject } from "server_src/db/databaseTypes.js";
+import { DbGuildObject } from "../../server_src/db/databaseTypes";
 
 
 const musicPlayerCommands = ["play", "skip", "pause", "playnext", "queue", "resume", "skip", "status", "stop", "votetoskip"]
@@ -31,10 +31,10 @@ export class Controller {
         this.debugMode = false
         this.guild = guild
         this.client = client;
+        this.commands = botCommands(this)
         this.MusicController = new MusicController(this, shoukaku)
         this.SubscriptionManager = new SubscriptionManager(guild, db)
         this.db = db
-        this.commands = []
         this.oddiz = null
         this.client.application?.fetch().then((app) => {
             this.oddiz = app.owner as User | null
@@ -44,7 +44,6 @@ export class Controller {
     }
     
     init = async () => {
-        this.commands = botCommands(this)
         //check if bot needs to deploy slash commands
         this.guild.commands.fetch().then( commands => {
             if (commands.size !== this.commands.length ) {

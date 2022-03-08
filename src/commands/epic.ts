@@ -1,9 +1,9 @@
-import { Command } from 'src/modules/Command'
+import { Command } from '../modules/Command'
 import { logger } from '../logger'
 
-export default async () => {
+export default async function (this: Command) {
 
-    const self = this as unknown as Command
+    const self = this
     try {
         const { MessageEmbed } = require('discord.js')
         

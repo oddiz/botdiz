@@ -8,7 +8,19 @@
 
 
         
-
+        {
+            "name": "Launch TypeScript",
+            "type": "node",
+            "request": "launch",
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register/transpile-only"],
+            "args": ["./server_src/server.ts"],
+            "cwd": "${workspaceFolder}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": ["<node_internals>/**", "node_modules/**"],
+            "env": {
+              "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.json"
+            }
+        },
         {
             "type": "node",
             "request": "launch",

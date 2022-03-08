@@ -1,26 +1,31 @@
-import { Command } from "src/modules/Command";
-import { Controller } from "src/modules/Controller";
-import { QueueTrack } from "src/modules/MusicPlayer/MusicControllerLavalink";
-import { CommandInteraction, GuildMember } from "discord.js";
+import { Command } from '../modules/Command';
+import { Controller } from '../modules/Controller';
+import { QueueTrack } from '../modules/MusicPlayer/MusicControllerLavalink';
+import { CommandInteraction, GuildMember } from 'discord.js';
 import spotifyUri, { Album, Track } from 'spotify-uri';
 
 import SpotifyWebApi from 'spotify-web-api-node';
 
-import dotenv from "dotenv";
-dotenv.config()
+import dotenv from 'dotenv';
+dotenv.config();
 
-import axios from "axios";
-import { logger } from "src/logger";
+import axios from 'axios';
+import { logger } from '../logger';
 
 export type PlayCommandOptions = {
     query?: string | null;
     forceNext?: boolean;
-}
-export default async (
-    invokedMessage: CommandInteraction | null,
-    options: PlayCommandOptions = { query: null, forceNext: false }
-) => {
-    const self = this as unknown as Command;
+};
+export default async function (
+    this: Command,
+    invokedMessage?: CommandInteraction | null,
+    options?: PlayCommandOptions | null
+): Promise<void> {
+    const self = this;
+    const optionsDefault = {
+        query: null || options?.query,
+        forceNext: false || options?.forceNext,
+    };
     try {
         const controller = self.controller as Controller;
         const musicController = controller.MusicController;
@@ -36,11 +41,11 @@ export default async (
         const node = musicController.shoukaku.getNode();
 
         let input;
-        if (options?.query) {
-            input = options.query;
+        if (optionsDefault?.query) {
+            input = optionsDefault.query;
 
             if (!input) {
-                return null;
+                return;
             }
         } else if (invokedMessage) {
             input = invokedMessage.options.getString('input');
@@ -101,7 +106,7 @@ export default async (
                     'Audio player is not found on the music controller, trying to initialize'
                 );
                 await musicController.init();
-                return;
+                
             }
 
             if (!botVoiceChannel) {
@@ -199,15 +204,18 @@ export default async (
             if (searchResult?.tracks.length === 0) {
                 musicController.queueLock = false;
 
-                return self.reply(
-                    "`I couldn't find any tracks with query provided!`"
-                );
+                self.reply("`I couldn't find any tracks with query provided!`");
+
+                return;
             }
 
             const track = searchResult.tracks.shift();
             if (track) {
                 self.reply(`\`Added ${track.info.title} to queue!\``);
-                musicController.addToQueue(track, options.forceNext || false);
+                musicController.addToQueue(
+                    track,
+                    optionsDefault.forceNext || false
+                );
 
                 musicController.processQueue();
 
@@ -215,9 +223,9 @@ export default async (
             } else {
                 musicController.queueLock = false;
 
-                return self.reply(
-                    "`I couldn't find any tracks with query provided!`"
-                );
+                self.reply("`I couldn't find any tracks with query provided!`");
+
+                return;
             }
         } else if (videoUrl) {
             //if URL is provided
@@ -303,7 +311,8 @@ export default async (
                                                                 };
                                                             musicController.addToQueue(
                                                                 botdizSong,
-                                                                options.forceNext || false
+                                                                optionsDefault.forceNext ||
+                                                                    false
                                                             );
                                                         }
                                                         self.reply(
@@ -368,7 +377,8 @@ export default async (
                                                         };
                                                     musicController.addToQueue(
                                                         botdizSong,
-                                                        options.forceNext || false
+                                                        optionsDefault.forceNext ||
+                                                            false
                                                     );
                                                 }
                                                 self.reply(
@@ -489,7 +499,8 @@ export default async (
                                                                 };
                                                             musicController.addToQueue(
                                                                 botdizSong,
-                                                                options.forceNext || false
+                                                                optionsDefault.forceNext ||
+                                                                    false
                                                             );
                                                             self.reply(
                                                                 `Added \`${songName}\``
@@ -548,15 +559,17 @@ export default async (
                             'Error while trying to play spotify link: ',
                             error
                         );
-                        return self.reply(
+                        self.reply(
                             '`Error while trying to play spotify link, contact oddiz.`'
                         );
+                        return;
                     }
                 } else {
                     musicController.queueLock = false;
-                    return self.reply(
+                    self.reply(
                         "`I couldn't find any tracks with URL provided!\nSupported platforms: spotify, youtube, soundcloud`"
                     );
+                    return;
                 }
             } else {
                 try {
@@ -567,7 +580,10 @@ export default async (
 
                     if (isPlaylist) {
                         for (const track of tracks) {
-                            musicController.addToQueue(track, options.forceNext || false);
+                            musicController.addToQueue(
+                                track,
+                                optionsDefault.forceNext || false
+                            );
                         }
                         self.reply(
                             '`' +
@@ -577,7 +593,10 @@ export default async (
                     } else if (isTrack) {
                         const track = tracks.shift();
                         if (track) {
-                            musicController.addToQueue(track, options.forceNext || false);
+                            musicController.addToQueue(
+                                track,
+                                optionsDefault.forceNext || false
+                            );
                             self.reply(
                                 `\`${track.info.title} added to queue 👍\``
                             );
@@ -617,4 +636,4 @@ export default async (
             self.controller.MusicController.queueLock = false;
         }
     }
-};
+}

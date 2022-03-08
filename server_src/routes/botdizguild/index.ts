@@ -1,8 +1,8 @@
-import { GuildControllers } from 'src/main';
+import { GuildControllers } from '../../../src/main';
 import { Db } from 'mongodb';
 import { Express } from 'express';
-import { getToken } from 'server_src/scripts/getToken';
-import { DbDiscordUser } from 'server_src/db/databaseTypes';
+import { getToken } from '../../scripts/getToken';
+import { DbDiscordUser } from '../../db/databaseTypes';
 import { MessageEmbed, TextChannel } from 'discord.js';
 
 export default async function botdizguild(app: Express, db: Db) {

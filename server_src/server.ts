@@ -1,5 +1,4 @@
-require("module-alias/register")
-require("ts-node/register")
+//require("module-alias/register")
 
 import express from "express";
 import cors from "cors";
@@ -12,7 +11,7 @@ import * as Tracing from "@sentry/tracing";
 import WsManager from './Websocket';
 import { DatabaseManager } from './db/DatabaseManager';
 import { RouteManager } from './routes'
-import { client as DiscordClient, GuildControllers } from 'src/main'
+import { client as DiscordClient, GuildControllers } from '../src/main'
 import session from 'express-session';
 import https from 'https';
 import fs from 'fs';

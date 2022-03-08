@@ -1,10 +1,10 @@
-import { Command } from "src/modules/Command"
+import { Command } from "../modules/Command"
 import { CommandInteraction } from "discord.js"
 import { logger } from "../logger"
 
-module.exports = async function () {
+export default async function (this: Command) {
 
-    const self = this as unknown as Command
+    const self = this
     try {
         if (!self.controller.MusicController) {
             self.reply("Bot is currently not playing.")

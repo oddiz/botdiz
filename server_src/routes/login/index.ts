@@ -5,9 +5,9 @@ import fetch from 'node-fetch'
 import dotenv from 'dotenv'
 import { Express } from 'express' 
 import { Db } from 'mongodb'
-import { logger } from 'src/logger'
-import { DbSession, DbUser } from 'server_src/db/databaseTypes'
-import { BotdizSession } from 'server_src/types'
+import { logger } from '../../../src/logger'
+import { DbSession, DbUser } from '../../db/databaseTypes'
+import { BotdizSession } from '../../types'
 dotenv.config()
 
 export default async function login(app: Express, db: Db) {

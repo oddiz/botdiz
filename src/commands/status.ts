@@ -1,8 +1,9 @@
-import { Command } from 'src/modules/Command'
+import { Command } from '../modules/Command'
 import { logger } from '../logger'
+import { CommandInteraction } from 'discord.js';
 
-export default async () => {
-    const self = this as unknown as Command
+export default async function (this: Command, invokedMessage?: CommandInteraction | null) {
+    const self = this;
     try {
         const musicController = self.controller.MusicController;
         if (!musicController) {
@@ -16,7 +17,7 @@ export default async () => {
                 const currentSong = musicController.getCurrentSong()
                 if (currentSong) {
                     await self.reply("`Current song:`")
-                    musicController.createSongEmbed(currentSong)
+                    musicController.createSongEmbed(currentSong, invokedMessage)
                 }
                 
                 
