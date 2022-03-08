@@ -15,12 +15,12 @@ import {
 import { EmbedPlayer } from './EmbedPlayer';
 import { SkipHandler } from './SkipHandler';
 import { botCommands } from '../../botCommands';
-import { Controller as BotdizGuildController } from '@src/modules/Controller';
-import { Command as BotdizCommand } from '@src/modules/Command';
-import { ShoukakuHandler } from '@src/Shokaku/ShokakuHandler';
+import { Controller as BotdizGuildController } from 'src/modules/Controller';
+import { Command as BotdizCommand } from 'src/modules/Command';
+import { ShoukakuHandler } from 'src/Shokaku/ShokakuHandler';
 import { ShoukakuPlayer, ShoukakuTrack } from 'shoukaku';
 import { DbGuildSettings } from 'server_src/db/databaseTypes';
-import recommendSong from '@src/scripts/recommendSong';
+import recommendSong from 'src/scripts/recommendSong';
 
 let playCommand: BotdizCommand;
 

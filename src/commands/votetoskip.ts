@@ -1,4 +1,4 @@
-import { Command } from "@src/modules/Command";
+import { Command } from "src/modules/Command";
 import { CommandInteraction, GuildMember } from "discord.js";
 import { logger } from "../logger";
 

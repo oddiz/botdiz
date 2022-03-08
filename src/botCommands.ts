@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionData } from "discord.js";
 import { Command } from "./modules/Command";
 import { Controller as BotdizGuildContoller } from "./modules/Controller";
+import { helpCommand } from "./commands/help";
 
 export interface BotdizCommand {
     name: string;
@@ -28,7 +29,7 @@ export const botCommands = (Controller: BotdizGuildContoller) => {
                     required: false,
                 }]
             },
-            require("./commands/help")
+            helpCommand
         ),
         new Command(
             Controller, {

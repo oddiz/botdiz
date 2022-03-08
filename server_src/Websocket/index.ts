@@ -1,17 +1,17 @@
 import uuid from 'uuid';
 import WebSocket, { RawData } from 'ws';
-import ListenerManager from './ListenerManager';
+import { ListenerManager } from './ListenerManager';
 import { Server } from 'http';
 import { Db } from 'mongodb';
 import { Express, Request, RequestHandler, Response } from 'express';
 import { Client } from 'discord.js';
-import { GuildController } from '@src/main';
+import { GuildController } from 'src/main';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
-import { getToken } from '@server_src/scripts/getToken';
+import { getToken } from 'server_src/scripts/getToken';
 import { logger } from '@sentry/utils';
-import { BotdizSession } from '@server_src/types';
-import { DbDiscordGuild, DbDiscordUser } from '@server_src/db/databaseTypes';
+import { BotdizSession } from 'server_src/types';
+import { AllowedGuild, DbDiscordGuild, DbDiscordUser } from 'server_src/db/databaseTypes';
 import commands from './RPC_Commands/execCommands';
 
 interface BotdizWebsocketClient {
@@ -113,7 +113,7 @@ export default class WebsocketManager {
             });
         });
 
-        this.WebsocketServer.on('connection', async (ws, request) => {
+        this.WebsocketServer.on('connection', async (ws: WebSocket, request) => {
             const self = this;
             const req = request as Request;
             const session = req.session as BotdizSession;
@@ -127,7 +127,7 @@ export default class WebsocketManager {
                     // }))
                 }
 
-                const clientListener = new ListenerManager(self, ws);
+                const clientListener = new ListenerManager(ws);
 
                 const client: BotdizWebsocketClient = {
                     websocket: ws,
@@ -222,8 +222,8 @@ export default class WebsocketManager {
             }
             if (message.type === 'listenMusicPlayer') {
                 clientListener.startMusicPlayerListener(
-                    allowedGuilds,
-                    ...message.params
+                    allowedGuilds as AllowedGuild[] | 'ALL',
+                    message.guildId
                 );
             }
 
@@ -240,10 +240,9 @@ export default class WebsocketManager {
                  */
 
                 clientListener.addTextListener(
-                    allowedGuilds,
-                    message.listenerId,
-                    message.command,
-                    message.params
+                    allowedGuilds as AllowedGuild[] | 'ALL',
+                    message.guildId,
+                    message.channelId
                 );
 
                 //console.log(JSON.stringify(clientListener))
@@ -253,10 +252,9 @@ export default class WebsocketManager {
 
             if (message.type === 'addVoiceChannelListener') {
                 clientListener.addVoiceChannelListener(
-                    allowedGuilds,
-                    message.listenerId,
-                    message.command,
-                    message.params
+                    allowedGuilds as AllowedGuild[] | 'ALL',
+                    message.guildId,
+                    
                 );
 
                 //console.log(JSON.stringify(clientListener))
@@ -302,7 +300,7 @@ export default class WebsocketManager {
                     if (allowedGuilds === 'ALL') {
                         commandAllowed = true;
                     } else {
-                        const allowedGuildsArray = allowedGuilds as DbDiscordGuild[];
+                        const allowedGuildsArray = allowedGuilds as AllowedGuild[];
                         for (const allowedGuild of allowedGuildsArray) {
                             //if command is an admin command check if the user is owner or admin of the guild
                             if (adminExecCommands.includes(message.command)) {

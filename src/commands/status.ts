@@ -1,4 +1,4 @@
-import { Command } from '@src/modules/Command'
+import { Command } from 'src/modules/Command'
 import { logger } from '../logger'
 
 export default async () => {

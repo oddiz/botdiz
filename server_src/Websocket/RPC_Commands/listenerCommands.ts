@@ -1,53 +1,65 @@
-import { Message, TextChannel } from "discord.js"
+import { Message, TextChannel, VoiceState } from 'discord.js';
+import WebSocket from 'ws';
 
 
-module.exports={
-    RPC_listenTextChannel: function(id: string, websocket: WebSocket, guildId: string, channelId: string){
+export type ListenerConstructedFunction = VoiceListenerConstructedFunction | TextListenerConstructedFunction;
 
-        return function(message: Message) {
-            const listenerID = id
-            const guildID = guildId
-            const channelID = channelId
+export type ListenerFunction = (
+    websocket: WebSocket,
+    guildId: string,
+    channelId?: string
+) => ListenerConstructedFunction;
 
-            const channel = message.channel as TextChannel
-
-            //console.log(id, guildId, channelId)
-            if (guildID == channel.guild.id &&  channelID == channel.id){
-                
-                const replyMessage = JSON.stringify({
-                    event: "new_message",
-                    listenerId:listenerID,
-                    message: {
-                        type: message.type,
-                        author: message.author.username,
-                        content: message.content
-                    }
-                })
+type VoiceListenerConstructedFunction = (
+    message:  VoiceState,
+) => void;
+type TextListenerConstructedFunction = (
+    message:  Message,
+) => void;
 
 
-                
-                websocket.send(replyMessage)
+export const RPC_listenTextChannel = (
+        websocket: WebSocket,
+        guildId: string,
+        channelId: string
+): TextListenerConstructedFunction => {
+    return function (message: Message) {
+        const guildID = guildId;
+        const channelID = channelId;
 
-            }
-                
+        const channel = message.channel as TextChannel;
+
+        //console.log(id, guildId, channelId)
+        if (guildID == channel.guild.id && channelID == channel.id) {
+            const replyMessage = JSON.stringify({
+                event: 'new_message',
+                listenerId: guildID,
+                message: {
+                    type: message.type,
+                    author: message.author.username,
+                    content: message.content,
+                },
+            });
+
+            websocket.send(replyMessage);
         }
-    },
-    RPC_listenVoiceChannels: function (id: string, websocket: WebSocket, guildId: string) {
-        return function(message: Message) {
-            const listenerID = id
-            //console.log(id, guildId, channelId)
+    };
+}
+export const RPC_listenVoiceChannels = (
+        websocket: WebSocket,
+        guildId: string
+): VoiceListenerConstructedFunction => {
+    return function (message: VoiceState) {
+        //console.log(id, guildId, channelId)
 
-            if(guildId === message.guild?.id) {
-                const replyMessage = JSON.stringify({
-                    event: "voicechannel_update",
-                    listenerId: listenerID,
-                    guildId: guildId
-                })
-                
-                websocket.send(replyMessage)
-            }
-                
+        if (guildId === message.guild?.id) {
+            const replyMessage = JSON.stringify({
+                event: 'voicechannel_update',
+                listenerId: guildId,
+                guildId: guildId,
+            });
+
+            websocket.send(replyMessage);
         }
-    }
-    
+    };
 }

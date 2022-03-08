@@ -1,6 +1,6 @@
-import { DbDiscordUser } from '@server_src/db/databaseTypes';
-import { GuildControllers } from '@src/main';
-import { BotdizTrack, QueueTrack } from '@src/modules/MusicPlayer/MusicControllerLavalink';
+import { DbDiscordUser } from 'server_src/db/databaseTypes';
+import { GuildControllers } from 'src/main';
+import { BotdizTrack, QueueTrack } from 'src/modules/MusicPlayer/MusicControllerLavalink';
 import { TextChannel, VoiceChannel } from 'discord.js';
 
 export type ExecCommandResponse = {

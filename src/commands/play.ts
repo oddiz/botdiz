@@ -1,6 +1,6 @@
-import { Command } from "@src/modules/Command";
-import { Controller } from "@src/modules/Controller";
-import { QueueTrack } from "@src/modules/MusicPlayer/MusicControllerLavalink";
+import { Command } from "src/modules/Command";
+import { Controller } from "src/modules/Controller";
+import { QueueTrack } from "src/modules/MusicPlayer/MusicControllerLavalink";
 import { CommandInteraction, GuildMember } from "discord.js";
 import spotifyUri, { Album, Track } from 'spotify-uri';
 
@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 dotenv.config()
 
 import axios from "axios";
-import { logger } from "@src/logger";
+import { logger } from "src/logger";
 
 export type PlayCommandOptions = {
     query?: string | null;

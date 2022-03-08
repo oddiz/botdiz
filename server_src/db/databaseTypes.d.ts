@@ -1,4 +1,5 @@
 import {ListOfUsersPlaylistsResponse} from "@types/spotify-api"
+import { Guild } from "discord.js";
 
 export interface DbGuildSubscriptions {
     type: string;
@@ -35,6 +36,11 @@ export interface DbGuildObject {
 
 }
 
+export interface AllowedGuild extends Guild {
+    administrator?: boolean;
+    owner?: boolean;
+}
+
 export interface DbSpotifyData {
     auth_token: string;
     refresh_token: string;
@@ -63,8 +69,8 @@ export interface DbDiscordUser extends DbUserData {
     avatar: string | null;
     email: string;
 
-    all_guilds: DbDiscordGuild[];
-    allowed_guilds: DbDiscordGuild[];
+    all_guilds: AllowedGuild[];
+    allowed_guilds: AllowedGuild[] | [];
 
 
 }

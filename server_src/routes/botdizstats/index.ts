@@ -1,5 +1,5 @@
-import { getToken } from '@server_src/scripts/getToken'
-import { GuildControllers } from '@src/main'
+import { getToken } from 'server_src/scripts/getToken'
+import { GuildControllers } from 'src/main'
 import { Express } from 'express'
 import { Db } from 'mongodb'
 

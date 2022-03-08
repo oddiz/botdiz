@@ -1,7 +1,8 @@
 import { Shoukaku, Libraries } from 'shoukaku';
-import * as servers from './lavalink-server.json';
+import servers from './lavalink-server.json';
 import { options } from './shokaku-options.js';
 import { Client } from 'discord.js'
+
 
 export class ShoukakuHandler extends Shoukaku {
     private connected: boolean;

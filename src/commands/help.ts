@@ -1,11 +1,13 @@
 import { CommandInteraction, MessageEmbed } from "discord.js"
 
-import { logger } from '@src/logger'
-import { Command } from "@src/modules/Command"
+import { logger } from 'src/logger'
+import { Command, CommandFunction } from "src/modules/Command"
 
-export default async (invokedMessage: CommandInteraction) => {
-    const self = this as unknown as Command
+export const helpCommand: CommandFunction = async function (this: Command, invokedMessage: CommandInteraction | null): Promise<void> {
+    const self = this 
     try {
+        
+        if (!invokedMessage) throw "No invoked message"
         
         const commandName = invokedMessage.options.getString("command")
     

@@ -1,6 +1,6 @@
 import { Db } from "mongodb";
 import { Express } from "express";
-import { DbDiscordUser, DbUserData } from "@server_src/db/databaseTypes";
+import { DbDiscordUser, DbUserData } from "server_src/db/databaseTypes";
 import { Session } from "express-session";
 
 interface ValidateUserData {

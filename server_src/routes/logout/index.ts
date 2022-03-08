@@ -1,4 +1,4 @@
-import { getToken } from '@server_src/scripts/getToken'
+import { getToken } from 'server_src/scripts/getToken'
 import { Express } from 'express'
 import { Db } from 'mongodb'
 

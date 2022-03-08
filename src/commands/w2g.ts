@@ -1,4 +1,4 @@
-import { Command } from '@src/modules/Command';
+import { Command } from 'src/modules/Command';
 import { CommandInteraction } from 'discord.js';
 import dotenv from 'dotenv'
 dotenv.config()

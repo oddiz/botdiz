@@ -1,6 +1,6 @@
-import { Command } from "@src/modules/Command"
+import { Command } from "src/modules/Command"
 
-import { logger } from '@src/logger'
+import { logger } from 'src/logger'
 
 export default async () => {
     const self = this as unknown as Command

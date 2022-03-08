@@ -1,4 +1,4 @@
-import parseTitleStrings from "./parseTitleStrings"
+const parseTitleStrings = require("./parseTitleStrings")
 import dotenv from 'dotenv';
 import { YoutubeSearchResult } from "./searchYT";
 import ytdl from "ytdl-core";

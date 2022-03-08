@@ -1,14 +1,14 @@
 import fetch from 'node-fetch'
 import crypto from 'crypto'
 import uuid from 'uuid'
-import { client as DiscordClient  } from '@src/main'
+import { client as DiscordClient  } from 'src/main'
 import { Db } from 'mongodb'
 import { Express } from 'express'
 
 import dotenv from 'dotenv'
-import { logger } from '@src/logger'
-import { BotdizSession } from '@server_src/types'
-import { makeImageUrl } from '@server_src/scripts/makeImageUrl'
+import { logger } from 'src/logger'
+import { BotdizSession } from 'server_src/types'
+import { makeImageUrl } from 'server_src/scripts/makeImageUrl'
 dotenv.config()
 
 export default async function playlists(app: Express, db: Db) {

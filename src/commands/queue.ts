@@ -1,7 +1,7 @@
 import { CommandInteraction } from 'discord.js';
 
-import { logger } from '@src/logger';
-import { Command } from '@src/modules/Command';
+import { logger } from 'src/logger';
+import { Command } from 'src/modules/Command';
 
 export default async () => {
     const self = this as unknown as Command;

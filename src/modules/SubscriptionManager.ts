@@ -3,7 +3,7 @@ import { DbGuildObject, DbSubscriptionContent } from '../../server_src/db/databa
 import {
     Db as MongoDb
 } from 'mongodb'
-import { logger } from "@src/logger"
+import { logger } from "src/logger"
 
 interface BotdizSubInfo extends DbSubscriptionContent {
     subscribed_channel: string;

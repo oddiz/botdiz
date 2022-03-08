@@ -10,7 +10,7 @@ const capitalize = function(string) {
     return string.charAt(0).toUpperCase() + this.slice(1);
 }
 
-module.exports= function parseTitleString(string) {
+module.exports = function parseTitleString(string) {
     try {
         var artist, title, credits = [];
         var string = string || '';

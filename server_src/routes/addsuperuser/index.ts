@@ -1,8 +1,8 @@
 import argon2 from 'argon2';
 import { Db } from 'mongodb';
 import { Express } from 'express';
-import { getToken } from '@server_src/scripts/getToken';
-import { DbDiscordSession, DbSession, DbUser } from '@server_src/db/databaseTypes';
+import { getToken } from 'server_src/scripts/getToken';
+import { DbDiscordSession, DbSession, DbUser } from 'server_src/db/databaseTypes';
 
 export default async function addsuperuser(app: Express, db: Db) {
 

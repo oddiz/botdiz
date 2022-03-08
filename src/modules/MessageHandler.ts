@@ -1,4 +1,4 @@
-import { logger } from '@src/logger'
+import { logger } from 'src/logger'
 import { Message } from 'discord.js'
 export class MsgHandler {
 

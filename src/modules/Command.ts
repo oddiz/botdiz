@@ -1,7 +1,7 @@
 import { logger } from "../logger";
 import { ApplicationCommandData, ApplicationCommandOptionData, CommandInteraction, InteractionReplyOptions, Message, MessageOptions, MessagePayload, ReplyMessageOptions } from "discord.js";
-import { Controller as BotdizController} from "@src/modules/Controller";
-import { PlayCommandOptions } from "@src/commands/play";
+import { Controller as BotdizController} from "src/modules/Controller";
+import { PlayCommandOptions } from "src/commands/play";
 
 interface BotdizCommandConfig {
     name: string;
@@ -19,6 +19,8 @@ export type replyOptions = {
     new?: boolean; 
     required?: boolean;
 }
+
+export type CommandFunction = (invokedMessage: CommandInteraction | null, options?: PlayCommandOptions | null ) => Promise<void>
 export class Command {
     /*
     config:

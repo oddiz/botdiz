@@ -1,5 +1,5 @@
-import { DbDiscordGuild } from '@server_src/db/databaseTypes';
-import { client as DiscordClient, GuildControllers } from '@src/main';
+import { DbDiscordGuild } from 'server_src/db/databaseTypes';
+import { client as DiscordClient, GuildControllers } from 'src/main';
 import { TextChannel } from 'discord.js';
 const failed = {
     status: 'failed',
