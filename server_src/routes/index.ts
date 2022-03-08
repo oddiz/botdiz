@@ -39,7 +39,7 @@ export class RouteManager {
         discordguild(this.app, this.db)
         botdizguild(this.app, this.db)
         botdizstats(this.app, this.db)
-        metrics(this.app, this.db)
+        metrics(this.app)
     }
 
 }

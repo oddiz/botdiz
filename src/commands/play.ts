@@ -17,7 +17,7 @@ export type PlayCommandOptions = {
     forceNext?: boolean;
 }
 export default async (
-    invokedMessage: CommandInteraction,
+    invokedMessage: CommandInteraction | null,
     options: PlayCommandOptions = { query: null, forceNext: false }
 ) => {
     const self = this as unknown as Command;

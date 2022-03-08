@@ -3,15 +3,29 @@ import fetch from 'node-fetch'
 import { Db } from 'mongodb'
 import { Express } from 'express'
 
-require('dotenv').config()
-module.exports = async function playlists(app: Express,db: Db) {
+import dotenv from 'dotenv'
+import { BotdizSession } from '@server_src/types'
+import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from '@server_src/db/databaseTypes'
+import { logger } from '@src/logger'
+import { getToken } from '@server_src/scripts/getToken'
+dotenv.config()
+
+const UNAUTH_RESPONSE = {
+    status: "failed",
+    message: "401 Not authorized",
+    isValidated: false
+}
+export default async function playlists(app: Express,db: Db) {
 
     //get playlists if it's available from the database
     app.get('/playlists', async (req, res) => {
         try {
-            const reqToken = req.session.token
+            
+            const reqToken = getToken(req)
             if(!reqToken) {
                 console.log("No session info in credentials")
+
+                res.status(401).send(UNAUTH_RESPONSE)
 
                 return
             }
@@ -19,6 +33,9 @@ module.exports = async function playlists(app: Express,db: Db) {
             const session = await db.collection('sessions').findOne( { token: reqToken  } )
             if(!session){
                 console.log("Session not found")
+
+                res.status(401).send(UNAUTH_RESPONSE)
+
                 return
             }
 
@@ -26,18 +43,19 @@ module.exports = async function playlists(app: Express,db: Db) {
             
             if (session.discord_session) {
                 dbUserCollectionName = "discord_users"
-                user = await db.collection(dbUserCollectionName).findOne( { discord_id: session.discord_id } )
+                user = await db.collection(dbUserCollectionName).findOne( { discord_id: session.discord_id } ) as DbDiscordUser | null
                 
             } else {
                 dbUserCollectionName = "users"
-                user = await db.collection(dbUserCollectionName).findOne( { username: session.username } )
+                user = await db.collection(dbUserCollectionName).findOne( { username: session.username } ) as DbUser | null
                 
             }
 
             
-            if (!user.data?.spotify?.playlists) {
+            if (!user?.data?.spotify?.playlists) {
                 res.send({
-                    savedPlaylists: null
+                    status: "success",
+                    savedPlaylists: null,
                 })
 
                 return
@@ -48,9 +66,10 @@ module.exports = async function playlists(app: Express,db: Db) {
             })
             
         } catch (error) {
-            console.log("Error while trying to get playlist")
+            logger.log("error", "Error while trying to get playlist: " + error)
             res.status(404).send({
-                message: "Couldn't find playlists"
+                status: "failed",
+                message: "Error while trying to get playlist"
             })
         }
     })
@@ -59,42 +78,52 @@ module.exports = async function playlists(app: Express,db: Db) {
     app.post('/playlists', async (req, res) => {
 
         try {
-            
-            const reqToken = req.session.token
+            const reqToken = getToken(req)
             if(!reqToken) {
                 console.log("No session info in credentials")
+
+                res.status(401).send(UNAUTH_RESPONSE)
 
                 return
             }
             //find username from token
-            const session = await db.collection('sessions').findOne( { token: reqToken  } )
+            const session = await db.collection('sessions').findOne( { token: reqToken  } ) as unknown as DbSession | DbDiscordSession | null
+
             if(!session){
-                console.log("Session not found")
+
+                res.status(401).send(UNAUTH_RESPONSE)
+                
                 return
             }
 
-            const reqUsername = session.username 
-            //find playlists from username
+            //find playlists from id
             let user, dbUserCollectionName
             
-            if (session.discord_session) {
+            if ("discord_session" in session) {
+                
                 dbUserCollectionName = "discord_users"
-                user = await db.collection(dbUserCollectionName).findOne( { discord_id: session.discord_id } )
+                user = await db.collection(dbUserCollectionName).findOne( { discord_id: session.discord_id } ) as DbDiscordUser | null
                 
             } else {
                 dbUserCollectionName = "users"
-                user = await db.collection(dbUserCollectionName).findOne( { username: session.username } )
+                user = await db.collection(dbUserCollectionName).findOne( { username: session.username } ) as DbUser | null
                 
             }
+
+            if (!user) {
+                res.status(401).send(UNAUTH_RESPONSE)
+
+                return
+            }
+
             //spotify auth
             
             const reqCode = req.body?.code
             const redirect_uri = req.body?.redirect_uri
             if (!(reqCode || redirect_uri)) {
-                res.status(401).send({
-                    status: "error",
-                    message: "Try again later, contact Oddiz if issue persists."
-                })
+
+                res.status(401).send(UNAUTH_RESPONSE)
+
                 return
             } 
             const botdizCredentials = {
@@ -108,20 +137,28 @@ module.exports = async function playlists(app: Express,db: Db) {
             // Retrieve an access token and a refresh token
             const spotifyAuthData = await spotifyApi.authorizationCodeGrant(reqCode)
             .catch(err => {
-                console.log("Error while accessing spotify api: ")
-
+                console.log("Error while accessing spotify api: ", err)
                 
-
-                return
             })
             
+            if (!spotifyAuthData) {
+                logger.log("error", "Error while trying to get spotify auth data")
+                res.status(403).send({
+                    message: "Error while trying to get spotify auth data. "
+                })
+                
+                return
+            }
+                
             // Set the access token on the API object to use it in later calls
             spotifyApi.setAccessToken(spotifyAuthData.body['access_token']);
             spotifyApi.setRefreshToken(spotifyAuthData.body['refresh_token']);
             // Set auth data on database
             
 
-            async function fetchSpotifyPlaylists(offset) {
+            async function fetchSpotifyPlaylists(offset: number) {
+                if (!spotifyAuthData) throw "No spotify auth data"
+
                 const response = await fetch("https://api.spotify.com/v1/me/playlists?limit=50&offset="+offset, {
                     method:"GET",
                     headers: {
@@ -149,14 +186,15 @@ module.exports = async function playlists(app: Express,db: Db) {
                 }
             }
             
-            const expiryTime = parseInt(spotifyAuthData.body['expires_in']) * 1000 + new Date().getTime()
+            const expiryTime = spotifyAuthData.body['expires_in'] * 1000 + new Date().getTime()
             const spotifyData = {
                 auth_token: spotifyAuthData.body['access_token'],
                 refresh_token: spotifyAuthData.body['refresh_token'],
                 expires: expiryTime,
                 playlists: playlistsResponse
             }
-            if (session.discord_session) {
+            if ("discord_session" in session && "discord_id" in user) {
+                
                 await db.collection(dbUserCollectionName).updateOne(
                     {
                         discord_id: user.discord_id
@@ -208,8 +246,8 @@ module.exports = async function playlists(app: Express,db: Db) {
                 
                 return
             }
-            //find username from token
-            const reqToken = req.session?.token
+
+            const reqToken = getToken(req)
 
             if(!reqToken) {
                 console.log("No session info in credentials")
@@ -226,11 +264,16 @@ module.exports = async function playlists(app: Express,db: Db) {
             //find playlists from username
             let user;
             if (session.discord_session) {
-                user = await db.collection('discord_users').findOne( { discord_id: session.discord_id })
+                user = await db.collection('discord_users').findOne( { discord_id: session.discord_id }) as DbDiscordUser | null
             } else {
-                user = await db.collection('users').findOne( { username: session.username } ) 
+                user = await db.collection('users').findOne( { username: session.username } ) as DbUser | null
             }
 
+            if (!user) {
+                res.status(401).send(UNAUTH_RESPONSE)
+
+                return
+            }
             
             if (!user.data?.spotify?.auth_token) {
                 console.log("No spotify data about user")
@@ -255,7 +298,7 @@ module.exports = async function playlists(app: Express,db: Db) {
                         
                         // Save the access token so that it's used in future calls
                         spotifyApi.setAccessToken(data.body['access_token']);
-                        const expiryTime = parseInt(data.body['expires_in']) * 1000 + new Date().getTime()
+                        const expiryTime = data.body['expires_in'] * 1000 + new Date().getTime()
                         if (session.discord_session) {
                             db.collection('discord_users').updateOne(
                                 { 
@@ -289,13 +332,13 @@ module.exports = async function playlists(app: Express,db: Db) {
                 );
             }
 
-            let playlist = await spotifyApi.getPlaylist(playlistId)
-            playlist = playlist.body
+            const playlist = await spotifyApi.getPlaylist(playlistId)
+            const playlistBody = playlist.body
 
             res.send(JSON.stringify({
                 status: "success",
                 playlistId: playlistId,
-                result: playlist.tracks.items
+                result: playlistBody.tracks.items
             }))
 
         } catch (error) {

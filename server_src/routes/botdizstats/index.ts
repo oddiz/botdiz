@@ -1,10 +1,13 @@
-const Botdiz = require('../../../src/main')
+import { getToken } from '@server_src/scripts/getToken'
+import { GuildControllers } from '@src/main'
+import { Express } from 'express'
+import { Db } from 'mongodb'
 
-module.exports = async function botdizstats(app,db) {
+export default async function botdizstats(app: Express, db: Db) {
 
     app.get('/botdizstats', async (req, res) => {
         
-        const token = req.session.token
+        const token = getToken(req)
 
         if(!token) {
             console.log("No token info in session (in /guildinfo)")
@@ -26,11 +29,11 @@ module.exports = async function botdizstats(app,db) {
         }
 
 
-        const totalGuilds = Botdiz.GuildControllers.length
+        const totalGuilds = GuildControllers.length
 
         let totalPlaying = 0
-        for (guild of Botdiz.GuildControllers){
-            if (guild.controller.MusicController.audioPlayerStatus === "playing") {
+        for (const guild of GuildControllers){
+            if (guild.controller.MusicController?.audioPlayerStatus === "PLAYING") {
                 totalPlaying ++;
             }
         }

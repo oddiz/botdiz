@@ -1,6 +1,7 @@
 import { logger } from "../logger";
 import { ApplicationCommandData, ApplicationCommandOptionData, CommandInteraction, InteractionReplyOptions, Message, MessageOptions, MessagePayload, ReplyMessageOptions } from "discord.js";
 import { Controller as BotdizController} from "@src/modules/Controller";
+import { PlayCommandOptions } from "@src/commands/play";
 
 interface BotdizCommandConfig {
     name: string;
@@ -46,7 +47,7 @@ export class Command {
     constructor(
         controller: BotdizController,
         config: BotdizCommandConfig,
-        func: (invokedMessage: CommandInteraction) => void
+        func: (invokedMessage: CommandInteraction | null, options?: PlayCommandOptions | null ) => void
     ) {
         this.controller = controller
 
@@ -67,13 +68,16 @@ export class Command {
         this.lastIsInteraction = null
     }
 
-    async execute(invokedMessage: CommandInteraction, isInteraction: boolean) {
-        this.lastInvokedMessage = invokedMessage
-        this.lastIsInteraction = isInteraction
+    async execute(invokedMessage: CommandInteraction | null, isInteraction: boolean, options?: PlayCommandOptions | null) {
+        if (invokedMessage) {
+            this.lastInvokedMessage = invokedMessage
+            this.lastIsInteraction = isInteraction
+        }
 
         if (
             isInteraction &&
-            this.lastInvokedMessage instanceof CommandInteraction
+            this.lastInvokedMessage instanceof CommandInteraction &&
+            !this.lastInvokedMessage.deferred
         ) {
             await this.lastInvokedMessage.deferReply({
                 ephemeral: this.ephemeral,
@@ -83,10 +87,11 @@ export class Command {
         try {
             if (!this.noBind) {
                 const boundFunc = this.func.bind(this)
-                boundFunc(invokedMessage)
+                boundFunc(invokedMessage, options)
             } else {
-                this.func(invokedMessage)
+                this.func(invokedMessage, options)
             }
+            
         } catch (error) {
             logger.log(
                 'error',

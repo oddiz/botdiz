@@ -21,7 +21,7 @@ import { updateEpicDeals } from './scripts/updateEpicDeals'
 import { Guild } from 'discord.js'
 import { Controller as BotdizController } from '.\\modules\\Controller.js'
 
-interface GuildController {
+export interface GuildController {
     guildId: string
     guildObj: Guild
     controller: BotdizController
@@ -154,8 +154,3 @@ async function main(): Promise<void> {
 }
 
 main()
-
-module.exports = {
-    client: client,
-    GuildControllers: GuildControllers,
-}

@@ -13,7 +13,8 @@ import { client as DiscordClient, GuildControllers } from '@src/main'
 import session from 'express-session';
 import https from 'https';
 import fs from 'fs';
-require('dotenv').config()
+import dotenv from 'dotenv'
+dotenv.config()
 
 
 Sentry.init({
@@ -121,7 +122,7 @@ async function init() {
     if (process.env.NODE_ENV === "development") {
         server = app.listen(8080, () => console.log("Api is running on port 8080"))
         
-        const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
+        const websocketManager = new WsManager(server, db, DiscordClient, GuildControllers, sessionParser)
 
     } else {
         const httpsServer = https.createServer({
@@ -131,7 +132,7 @@ async function init() {
     
         server = httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
         
-        const websocketManager = new WsManager(server, app, db, DiscordClient, GuildControllers, sessionParser)
+        const websocketManager = new WsManager(server, db, DiscordClient, GuildControllers, sessionParser)
     }
 
 

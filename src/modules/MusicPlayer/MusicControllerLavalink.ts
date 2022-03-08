@@ -328,7 +328,7 @@ export class MusicController {
         }
     }
 
-    addToQueue(song: QueueTrack, forceNext: boolean) {
+    addToQueue(song: QueueTrack, forceNext?: boolean) {
         /*
         {
         videoUrl: videoUrl,
@@ -432,6 +432,8 @@ export class MusicController {
         } catch (error) {
             this.queueLock = false;
             console.log('Error while trying to process queue: ', error);
+
+            return "failed"
         }
     }
 
@@ -662,13 +664,16 @@ export class MusicController {
         try {
             if (this.lastSeekEventTime + 1000 > Date.now()) {
                 console.log('too soon');
-                return;
+                return "failed";
             } else if (this.audioPlayer) {
                 this.audioPlayer.seekTo(timeInMs);
                 this.lastSeekEventTime = Date.now();
+                return "success"
             }
+            return "failed"
         } catch (error) {
             logger.log('error', 'Error while running seekTo() Error: ' + error);
+            return "failed"
         }
     }
 

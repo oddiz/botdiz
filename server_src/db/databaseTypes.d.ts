@@ -97,3 +97,20 @@ export interface BotdizDb {
     subscription_content: DbSubscriptionContent[];
     users: DbUser[];
 }
+
+export interface DbSession {
+    username: string;
+    createdAt: Date;
+    user_id: string;
+    username: string;
+    token: string;
+    moderator_session?: boolean;
+}
+
+export interface DbDiscordSession extends DbSession {
+    discord_session: true;
+    discord_id: string;
+    discord_auth_token: string;
+    discord_refresh_token: string;
+    discord_token_expiration: Date;
+}

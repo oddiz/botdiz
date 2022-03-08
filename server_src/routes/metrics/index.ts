@@ -1,7 +1,9 @@
+import { Express } from 'express'
+
 const { collectDefaultMetrics, register } = require('prom-client');
 collectDefaultMetrics()
 
-module.exports = async function metrics(app,db) {
+export default async function metrics(app: Express) {
     
     app.get('/prommetrics', async (_req, res) => {
         try {

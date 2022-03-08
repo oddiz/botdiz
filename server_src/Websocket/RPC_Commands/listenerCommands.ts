@@ -1,16 +1,18 @@
-const Botdiz = require('../../../src/main')
+import { Message, TextChannel } from "discord.js"
 
 
 module.exports={
-    RPC_listenTextChannel: function(id, websocket, guildId, channelId){
+    RPC_listenTextChannel: function(id: string, websocket: WebSocket, guildId: string, channelId: string){
 
-        return function(message) {
+        return function(message: Message) {
             const listenerID = id
             const guildID = guildId
             const channelID = channelId
 
+            const channel = message.channel as TextChannel
+
             //console.log(id, guildId, channelId)
-            if (guildID == message.channel.guild.id &&  channelID == message.channel.id){
+            if (guildID == channel.guild.id &&  channelID == channel.id){
                 
                 const replyMessage = JSON.stringify({
                     event: "new_message",
@@ -30,11 +32,12 @@ module.exports={
                 
         }
     },
-    RPC_listenVoiceChannels: function (id, websocket, guildId) {
-        return function(message) {
+    RPC_listenVoiceChannels: function (id: string, websocket: WebSocket, guildId: string) {
+        return function(message: Message) {
             const listenerID = id
             //console.log(id, guildId, channelId)
-            if(guildId === message.guild.id) {
+
+            if(guildId === message.guild?.id) {
                 const replyMessage = JSON.stringify({
                     event: "voicechannel_update",
                     listenerId: listenerID,

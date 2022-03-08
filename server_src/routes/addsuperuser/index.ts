@@ -1,7 +1,10 @@
-const { demuxProbe } = require('@discordjs/voice');
-const argon2 = require('argon2')
+import argon2 from 'argon2';
+import { Db } from 'mongodb';
+import { Express } from 'express';
+import { getToken } from '@server_src/scripts/getToken';
+import { DbDiscordSession, DbSession, DbUser } from '@server_src/db/databaseTypes';
 
-module.exports = async function addsuperuser(app, db) {
+export default async function addsuperuser(app: Express, db: Db) {
 
     app.post('/addsuperuser', async (req,res) => {
 
@@ -21,14 +24,14 @@ module.exports = async function addsuperuser(app, db) {
         }
 
 
-        async function hashPassword(password) {
+        async function hashPassword(password: string) {
             try {
                 const hash = await argon2.hash(password, {
                     type: argon2.argon2i,
                     memoryCost: 2 ** 16,
                     timeCost: 30,
-                    paralellism: 2,
-                    salt_length: 128,
+                    parallelism: 2,
+                    saltLength: 128,
                     hashLength: 128
                 })
     
@@ -46,7 +49,7 @@ module.exports = async function addsuperuser(app, db) {
 
 
         //find user from database
-        const reqToken = req.session.token
+        const reqToken = getToken(req)
         if(!reqToken) {
             console.log("No session info in credentials")
             res.status(401).send({
@@ -55,7 +58,8 @@ module.exports = async function addsuperuser(app, db) {
             return
         }
         //find username from token
-        const session = await db.collection('sessions').findOne( { token: reqToken  } )
+        const session = await db.collection('sessions').findOne( { token: reqToken  } ) as unknown as DbSession | DbDiscordSession | null
+
         if(!session){
             console.log("Session not found")
             res.status(401).send({
@@ -64,14 +68,13 @@ module.exports = async function addsuperuser(app, db) {
             return
         }
 
-        sessionUsername = session.username 
-        
         //find user from username
-        const user = await db.collection('users').findOne( { username: sessionUsername } )
+        const user = await db.collection('users').findOne( { username: session.username } ) as unknown as DbUser
 
         if (!user.is_admin) {
             console.log("You can't add users if you are not an admin.")
             res.status(401).send({
+                status: "failed",
                 message: "Failed to add user."
             })
             return
@@ -80,6 +83,7 @@ module.exports = async function addsuperuser(app, db) {
         if(reqPassword < 32) {
             console.log("Password too short.")
             res.status(401).send({
+                status: "failed",
                 message: "Failed to add user."
             })
             return 
@@ -110,13 +114,15 @@ module.exports = async function addsuperuser(app, db) {
         })
 
 
-        if(parseInt(dbResponse.insertedCount) === 1) {
+        if(dbResponse.acknowledged) {
             console.log("User added successfuly")
 
             res.send({
                 isSuccessful: true,
                 message: "User added successfuly"
             })
+
+            return
         }
 
     })

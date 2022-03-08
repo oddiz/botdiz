@@ -1,8 +1,9 @@
 import { CommandInteraction, GuildMember, Message, MessageEmbed, TextBasedChannel, User } from "discord.js"
-import { BotdizWebSocketMessage } from "@server_src/Websocket/types"
+import { BotdizWebSocketMessage } from "@server_src/types"
 
 import replyInterraction from '../../scripts/replyInterraction'
 import { BotdizShoukakuTrack, MusicController } from "./MusicControllerLavalink"
+import { ExecCommandResponse } from "@server_src/Websocket/RPC_Commands/execCommands";
 
 interface AddVoteStatus {
     voteAdded: boolean;
@@ -31,7 +32,7 @@ export class SkipHandler {
         userId: string,
         skipAmount: number,
         options = { forceSkip: false }
-    ): Promise<BotdizWebSocketMessage | undefined> {
+    ): Promise<ExecCommandResponse | undefined> {
         try {
             if (this.MusicController.skipVotingEnabled && !options.forceSkip) {
                 if (this.SkipVote) {
@@ -43,7 +44,7 @@ export class SkipHandler {
                     if (result.voteAdded) {
                         return {
                             status: 'success',
-                            event: 'add_skip_vote',
+                            command: 'add_skip_vote',
                             message: 'Vote Added',
                         }
                     } else {
@@ -51,14 +52,14 @@ export class SkipHandler {
                             //vote was not added because user already voted
                             return {
                                 status: 'failed',
-                                event: 'add_skip_vote',
+                                command: 'add_skip_vote',
                                 message: 'You already voted',
                             }
                         } else {
                             //vote was not added because user was not in voice channel
                             return {
                                 status: 'failed',
-                                event: 'add_skip_vote',
+                                command: 'add_skip_vote',
                                 message: 'You are not in voice channel',
                             }
                         }
@@ -68,7 +69,7 @@ export class SkipHandler {
 
                     return {
                         status: 'success',
-                        event: 'add_skip_vote',
+                        command: 'add_skip_vote',
                         message:
                             'Starting skip vote to skip ' +
                             skipAmount +
@@ -80,7 +81,7 @@ export class SkipHandler {
 
                 return {
                     status: 'success',
-                    event: 'add_skip_vote',
+                    command: 'add_skip_vote',
                     message: `Skipped ${skipAmount} songs.`,
                 }
             }
@@ -92,7 +93,7 @@ export class SkipHandler {
 
             return {
                 status: 'failed',
-                event: 'add_skip_vote',
+                command: 'add_skip_vote',
                 message: 'Unknown error occured',
             }
         }
