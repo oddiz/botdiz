@@ -1,12 +1,24 @@
-import { DbDiscordGuild } from '../../db/databaseTypes';
+import { AllowedGuild, DbDiscordGuild } from '../../db/databaseTypes';
 import { client as DiscordClient, GuildControllers } from '../../../src/main';
-import { TextChannel } from 'discord.js';
+import { GuildMember, TextChannel } from 'discord.js';
 const failed = {
     status: 'failed',
 };
+type unauthorizedResponse = {
+    status: 'unauthorized';
+}
+type getTextChannelsSuccess = {
+    status: 'success',
+    channels: { name: string, id: string }[];
+}
+type getTextChannelsFailed = {
+    status: 'failed',
+    command: 'RPC_getTextChannels'
+}
+type getTextChannelsReturn = getTextChannelsSuccess | getTextChannelsFailed | unauthorizedResponse
 
 module.exports = {
-    RPC_getGuilds: async function (allowedGuilds: DbDiscordGuild[] | 'ALL') {
+    RPC_getGuilds: async function (allowedGuilds: AllowedGuild[] | 'ALL') {
         
         try {
             const guilds = await DiscordClient.guilds.cache;
@@ -37,9 +49,9 @@ module.exports = {
     },
 
     RPC_getTextChannels: async function (
-        allowedGuilds: DbDiscordGuild[] | 'ALL',
+        allowedGuilds: AllowedGuild[] | 'ALL',
         activeGuildId: string
-    ) {
+    ): Promise<getTextChannelsReturn> {
         try {
             if (allowedGuilds !== 'ALL') {
                 let commandAllowed = false;
@@ -77,7 +89,10 @@ module.exports = {
                     return { name: channel.name, id: channel.id };
                 });
 
-            return textChannels;
+            return {
+                status: 'success',
+                channels: textChannels,
+            };
         } catch (error) {
             console.log('Exception in RPC_getTextChannels: ', error);
             return {
@@ -86,9 +101,9 @@ module.exports = {
             };
         }
     },
-
+    
     RPC_getTextChannelContent: async function (
-        allowedGuilds: DbDiscordGuild[] | 'ALL',
+        allowedGuilds: AllowedGuild[] | 'ALL',
         activeGuildId: string,
         channelId: string
     ) {
@@ -147,7 +162,11 @@ module.exports = {
                 };
             });
 
-            return parsedMessages;
+            return {
+                status: "success",
+                messages: parsedMessages,
+                command: "RPC_getTextChannelContent",
+            };
         } catch (error: any) {
             if (error.message.includes('Missing Access')) {
                 console.log('Not enough permission to see channel messages');
@@ -161,7 +180,7 @@ module.exports = {
             return failed;
         }
     },
-    RPC_getVoiceChannels: async function (allowedGuilds: DbDiscordGuild[] | 'ALL', activeGuildId: string) {
+    RPC_getVoiceChannels: async function (allowedGuilds: AllowedGuild[] | 'ALL', activeGuildId: string) {
         try {
             if (allowedGuilds !== 'ALL') {
                 let commandAllowed = false;
@@ -200,7 +219,10 @@ module.exports = {
                     };
                 });
 
-            return voiceChannels;
+            return {
+                status: "success",
+                voiceChannels: voiceChannels
+            };
         } catch (error) {
             console.log('Exception in RPC_getVoiceChannels: ', error);
             return failed;

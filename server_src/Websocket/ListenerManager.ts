@@ -56,7 +56,6 @@ export class ListenerManager {
 
     processVoiceChannelUpdate(state: VoiceState) {
         try {
-            console.log(state);
             for (const [id, listener] of this.voiceChannelListeners) {
                 listener(state);
             }

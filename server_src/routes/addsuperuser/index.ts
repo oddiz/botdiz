@@ -4,6 +4,10 @@ import { Express } from 'express';
 import { getToken } from '../../scripts/getToken';
 import { DbDiscordSession, DbSession, DbUser } from '../../db/databaseTypes';
 
+interface AddSuperUserReply {
+    status: 'success' | 'failed' |"unauthorized";
+    message: string;
+}
 export default async function addsuperuser(app: Express, db: Db) {
 
     app.post('/addsuperuser', async (req,res) => {
@@ -17,6 +21,7 @@ export default async function addsuperuser(app: Express, db: Db) {
         } catch (error) {
             console.log("Failed to parse username or password")
             res.status(401).send({
+                status: "unauthorized",
                 message: "Failed to add user."
             })
 
@@ -40,6 +45,7 @@ export default async function addsuperuser(app: Express, db: Db) {
             } catch (error) {
                 console.log("Error while trying to hash password.")
                 res.status(404).send({
+                    status: "failed",
                     message: "Failed to add user."
                 })
 
@@ -52,7 +58,8 @@ export default async function addsuperuser(app: Express, db: Db) {
         const reqToken = getToken(req)
         if(!reqToken) {
             console.log("No session info in credentials")
-            res.status(401).send({
+            res.status(403).send({
+                status: "unauthorized",
                 message: "Failed to add user."
             })
             return
@@ -62,7 +69,8 @@ export default async function addsuperuser(app: Express, db: Db) {
 
         if(!session){
             console.log("Session not found")
-            res.status(401).send({
+            res.status(403).send({
+                status: "unauthorized",
                 message: "Failed to add user."
             })
             return
@@ -100,7 +108,7 @@ export default async function addsuperuser(app: Express, db: Db) {
             console.log("User already exists")
 
             res.status(401).send({
-                isSuccessful: false,
+                status: "failed",
                 message: "Username already exists"
             })
 
@@ -118,7 +126,7 @@ export default async function addsuperuser(app: Express, db: Db) {
             console.log("User added successfuly")
 
             res.send({
-                isSuccessful: true,
+                status: "success",
                 message: "User added successfuly"
             })
 

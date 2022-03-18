@@ -15,6 +15,7 @@ interface BotdizGuild {
     name: string;
     iconUrl: string | null;
     administrator: boolean;
+    owner?: boolean;
     botdiz_guild: boolean;
 }
 
@@ -25,7 +26,8 @@ export default async function discordguild(app: Express, db: Db) {
 
             if (!reqToken) {
                 console.log('No token info in session (in /discordguilds)');
-                return;
+                
+                throw new Error('No token info in session');
             }
 
             const session = (await db
@@ -84,10 +86,10 @@ export default async function discordguild(app: Express, db: Db) {
 
             if (!(userGuilds && Array.isArray(userGuilds))) {
                 console.log(
-                    'userGuilds is undefined or not array. userGuilds: ' +
-                        userGuilds
+                    'userGuilds is undefined or not array. userGuilds: '
                 );
-                return;
+                console.log(userGuilds)
+                throw 'userGuilds is undefined or not array. userGuilds: ';
             }
 
             let allowedGuilds = [];
@@ -190,9 +192,9 @@ export default async function discordguild(app: Express, db: Db) {
         }
     });
 
-    app.post('/discordguild', async (req, res) => {
+    app.get('/discordguild/:guild_id', async (req, res) => {
         try {
-            const reqGuildId = req.body.guild_id;
+            const reqGuildId = req.params.guild_id;
             if (!reqGuildId) {
                 throw 'No guild Id supplied with request.';
             }

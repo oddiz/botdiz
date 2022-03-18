@@ -36,7 +36,7 @@ export const RPC_listenTextChannel = (
                 listenerId: guildID,
                 message: {
                     type: message.type,
-                    author: message.author.username,
+                        author: message.author.username,
                     content: message.content,
                 },
             });

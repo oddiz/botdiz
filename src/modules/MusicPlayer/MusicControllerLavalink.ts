@@ -73,7 +73,7 @@ export class MusicController {
 
     constructor(controller: BotdizGuildController, shoukaku: ShoukakuHandler) {
         this.controller = controller;
-        
+
         for (const command of this.controller.commands) {
             if (command.name === 'play') {
                 playCommand = command;
@@ -370,7 +370,6 @@ export class MusicController {
     async processQueue() {
         this.queueLock = false;
         try {
-            
             // If the queue is locked (already being processed), or the audio player is already playing something, return
             if (this.queueLock || this.audioPlayerStatus === 'PLAYING') {
                 //remove previous recommended songs
@@ -406,7 +405,7 @@ export class MusicController {
             this.queueLock = false;
             console.log('Error while trying to process queue: ', error);
 
-            return "failed"
+            return 'failed';
         }
     }
 
@@ -456,7 +455,7 @@ export class MusicController {
 
             console.log(nextSong.info);
             if (!this.audioPlayer) {
-                await this.init()
+                await this.init();
             }
             //console.log("Got resources")
             if (this.audioPlayer) {
@@ -571,7 +570,10 @@ export class MusicController {
         }
     }
 
-    async createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null) {
+    async createSongEmbed(
+        currentSong: BotdizShoukakuTrack,
+        invokedMessage?: CommandInteraction | null
+    ) {
         try {
             let botMessage;
             const botdizLinkButton = new MessageActionRow();
@@ -597,18 +599,19 @@ export class MusicController {
             }
 
             //await this.playCommand.reply( { content: "ヾ(⌒ー⌒)ノ", ephemeral: true }, {required: false})
-            if(invokedMessage) {
+            if (invokedMessage) {
                 this.playCommand.lastInvokedMessage = invokedMessage;
                 if (invokedMessage instanceof CommandInteraction) {
                     this.playCommand.lastIsInteraction = true;
                 }
-            } 
-            
+            }
+
             botMessage = await this.playCommand.reply(
                 { embeds: [embedMessage], components: [botdizLinkButton] },
                 { new: true, required: true }
             );
 
+            if(!botMessage) return
             if (botMessage instanceof Message) {
                 if (this.EmbedPlayer.quit) {
                     this.EmbedPlayer.start();
@@ -647,16 +650,16 @@ export class MusicController {
         try {
             if (this.lastSeekEventTime + 1000 > Date.now()) {
                 console.log('too soon');
-                return "failed";
+                return 'failed';
             } else if (this.audioPlayer) {
                 this.audioPlayer.seekTo(timeInMs);
                 this.lastSeekEventTime = Date.now();
-                return "success"
+                return 'success';
             }
-            return "failed"
+            return 'failed';
         } catch (error) {
             logger.log('error', 'Error while running seekTo() Error: ' + error);
-            return "failed"
+            return 'failed';
         }
     }
 

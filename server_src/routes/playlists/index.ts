@@ -62,6 +62,7 @@ export default async function playlists(app: Express,db: Db) {
             }            
             
             res.send({
+                status: "success",
                 savedPlaylists: user.data.spotify.playlists
             })
             

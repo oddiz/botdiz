@@ -2,7 +2,7 @@ import { GuildControllers } from '../../../src/main';
 import { Db } from 'mongodb';
 import { Express } from 'express';
 import { getToken } from '../../scripts/getToken';
-import { DbDiscordUser } from '../../db/databaseTypes';
+import { DbDiscordUser, DbGuildObject } from '../../db/databaseTypes';
 import { MessageEmbed, TextChannel } from 'discord.js';
 
 export default async function botdizguild(app: Express, db: Db) {
@@ -256,12 +256,12 @@ export default async function botdizguild(app: Express, db: Db) {
                 }
             }
 
-            let guildSubs = await db
+            let guildSubs: DbGuildObject['subscriptions'] = await db
                 .collection('guilds')
                 .findOne({
                     guild_id: reqGuildId,
                 })
-                .then((guild) => guild?.subscriptions);
+                .then((guild) => guild ? guild.subscriptions : []);
 
             if (!guildSubs) {
                 guildSubs = [];
@@ -278,6 +278,7 @@ export default async function botdizguild(app: Express, db: Db) {
             );
             res.status(401).send({
                 status: 'failed',
+                message: 'Error occured while trying to get guild subscriptions',
             });
         }
     });
@@ -403,7 +404,7 @@ export default async function botdizguild(app: Express, db: Db) {
                 dbSubs.push(req.body);
             }
 
-            db.collection('guilds').updateOne(
+            const result = await db.collection('guilds').updateOne(
                 {
                     guild_id: reqGuildId,
                 },
@@ -416,8 +417,21 @@ export default async function botdizguild(app: Express, db: Db) {
                     upsert: true,
                 }
             );
+
+            if (result.acknowledged && result.matchedCount > 0) {
+                res.send({
+                    status: 'success',
+                    message: 'Subscription updated',
+                });
+            } else {
+                throw "Couldn't find guild to update in DB "+ reqGuildId;
+            }
         } catch (error) {
             console.log('Error while trying to update guild subs: ', error);
+            res.status(401).send({
+                status: 'failed',
+                message: 'Error occured while trying to update guild subs',
+            });
         }
     });
 };

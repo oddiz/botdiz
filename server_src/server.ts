@@ -125,6 +125,8 @@ async function init() {
         server = app.listen(8080, () => console.log("Api is running on port 8080"))
         
         const websocketManager = new WsManager(server, db, DiscordClient, GuildControllers, sessionParser)
+        
+        websocketManager.init()
 
     } else {
         const httpsServer = https.createServer({
@@ -135,6 +137,8 @@ async function init() {
         server = httpsServer.listen(8080, () => console.log("Api is running on port 8080 with https"))
         
         const websocketManager = new WsManager(server, db, DiscordClient, GuildControllers, sessionParser)
+
+        websocketManager.init()
     }
 
 

@@ -309,10 +309,15 @@
     "@types/mime" "^1"
     "@types/node" "*"
 
-"@types/spotify-api@*", "@types/spotify-api@^0.0.13":
+"@types/spotify-api@*":
   version "0.0.13"
   resolved "https://registry.yarnpkg.com/@types/spotify-api/-/spotify-api-0.0.13.tgz#66adb9123ad1a7365b31408422bd171d0fedf60c"
   integrity sha512-rHmG4soR13N3jDCu0QL9cv6q3jMM/AU/0w5w7ukTt89e23rv5Vz86BNqXP/34wEzYWgiTNSG+f+xGT1rjABj4g==
+
+"@types/spotify-api@^0.0.14":
+  version "0.0.14"
+  resolved "https://registry.yarnpkg.com/@types/spotify-api/-/spotify-api-0.0.14.tgz#daaa5357d16163d290c52ae47bb0f4a7c8edb865"
+  integrity sha512-CxZsv+qHO0e0rfRKSKGpgQtDRBkam+kp0tCuo1t2HDW8dz2aU/AmR2/7ddIHfqdz9BW+wRQbadxkKhHXmZD/QA==
 
 "@types/spotify-web-api-node@^5.0.7":
   version "5.0.7"
@@ -3082,14 +3087,9 @@ uuid@^3.3.2:
   resolved "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz"
   integrity sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==
 
-uuid@^8.0.0:
+uuid@^8.0.0, uuid@^8.3.2:
   version "8.3.2"
   resolved "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz"
-  integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
-
-uuid@^8.3.2:
-  version "8.3.2"
-  resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
 v8-compile-cache-lib@^3.0.0:

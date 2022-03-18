@@ -58,7 +58,6 @@ export default class WebsocketManager {
 
         this.handleWsMessage = this.handleWsMessage.bind(this);
         this.init = this.init.bind(this);
-        this.init();
 
         console.log('Created websocket manager');
     }

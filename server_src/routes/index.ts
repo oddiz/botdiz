@@ -8,7 +8,7 @@ import addsuperuser from './addsuperuser'
 import discordlogin from './discordlogin'
 import discordguild from './discordguild'
 import botdizguild from './botdizguild'
-import botdizstats from './botdizstats'
+import botdizstats from './botdizguild/botdizstats'
 import metrics from './metrics'
 import dotenv from 'dotenv'
 
