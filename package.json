@@ -52,8 +52,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node ./server_src/server.ts",
-    "serve": "tsc && node ./build/server_src/server.js"
+    "dev": "ts-node ./server_src/server.ts",
+    "start": "tsc && node ./build/server_src/server.js"
   },
   "author": "oddiz",
   "license": "MIT"
