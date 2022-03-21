@@ -19,6 +19,7 @@
     "shoukaku": "https://github.com/Deivu/Shoukaku.git",
     "spotify-uri": "^2.2.0",
     "spotify-web-api-node": "^5.0.2",
+    "tiny-typed-emitter": "^2.1.0",
     "uuid": "^8.3.2",
     "winston": "^3.3.3",
     "winston-sentry-log": "^1.0.24",

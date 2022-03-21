@@ -1,9 +1,8 @@
-import uuid from 'uuid';
 import WebSocket, { RawData } from 'ws';
-import { ListenerManager } from './ListenerManager';
+import { ClientListenerManager } from './ClientListenerManager';
 import { Server } from 'http';
 import { Db } from 'mongodb';
-import { Express, Request, RequestHandler, Response } from 'express';
+import { Request, RequestHandler, Response } from 'express';
 import { Client } from 'discord.js';
 import { GuildController } from '../../src/main';
 import { ParamsDictionary } from 'express-serve-static-core';
@@ -11,12 +10,12 @@ import { ParsedQs } from 'qs';
 import { getToken } from '../scripts/getToken';
 import { logger } from '@sentry/utils';
 import { BotdizSession } from 'server_src/types';
-import { AllowedGuild, DbDiscordGuild, DbDiscordUser } from '../db/databaseTypes';
+import { AllowedGuild, DbDiscordUser } from '../db/databaseTypes';
 import execCommands from './RPC_Commands/execCommands';
 
 interface BotdizWebsocketClient {
     websocket: WebSocket;
-    clientListener: ListenerManager;
+    clientListener: ClientListenerManager;
 }
 
 export default class WebsocketManager {
@@ -115,18 +114,20 @@ export default class WebsocketManager {
         this.WebsocketServer.on('connection', async (ws: WebSocket, request) => {
             const self = this;
             const req = request as Request;
-            const session = req.session as BotdizSession;
             this.sessionParser(req, {} as Response, async () => {
+                const session = req.session as BotdizSession;
                 const userId = session?.userId;
+                
+                if (!userId) return
 
-                if (!userId || self.connectedClients.has(userId)) {
+                if (self.connectedClients.has(userId)) {
                     // ws.send(JSON.stringify({
                     //     status: "error",
                     //     message: "already connected"
                     // }))
                 }
 
-                const clientListener = new ListenerManager(ws);
+                const clientListener = new ClientListenerManager(ws);
 
                 const client: BotdizWebsocketClient = {
                     websocket: ws,
@@ -167,7 +168,7 @@ export default class WebsocketManager {
     async handleWsMessage(
         ws: WebSocket,
         msg: RawData,
-        clientListener: ListenerManager,
+        clientListener: ClientListenerManager,
         token: string
     ) {
 

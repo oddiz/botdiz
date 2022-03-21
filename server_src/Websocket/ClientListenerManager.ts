@@ -7,15 +7,15 @@ import {
 import {
     AllowedGuild,
 } from 'server_src/db/databaseTypes';
-import { MusicController } from '../../src/modules/MusicPlayer/MusicControllerLavalink';
+import { MusicController, MusicControllerEvents, MusicControllerEventsData } from '../modules/MusicPlayer/MusicControllerLavalink';
 import WebSocket from 'ws';
 
 
-export class ListenerManager {
+export class ClientListenerManager {
     public client: Client;
     public websocket: WebSocket | null;
     public textListeners;
-    public musicListenerGuildId: string | null;
+    public activeMusicListenerGuildId: string | null;
     public voiceChannelListeners;
     
     public listenMusicPlayer: boolean;
@@ -27,7 +27,7 @@ export class ListenerManager {
         this.textListeners = new Map();
         this.voiceChannelListeners = new Map();
 
-        this.musicListenerGuildId = null;
+        this.activeMusicListenerGuildId = null;
 
         this.addVoiceChannelListener = this.addVoiceChannelListener.bind(this);
         this.addTextListener = this.addTextListener.bind(this);
@@ -157,6 +157,34 @@ export class ListenerManager {
         }
     }
 
+    getMusicController(guildId: string) {
+        try {
+            const guildController = GuildControllers.find(
+                (element) => element.guildId === guildId
+            )?.controller;
+    
+            if (!guildController) {
+                console.log('Guild not found?? ID: ', guildId);
+                return;
+            }
+    
+            const MusicController = guildController?.MusicController;
+    
+            if (!MusicController)
+                throw new Error(
+                    'MusicController not found in startMusicPlayerListener'
+                );
+    
+            return MusicController
+            
+        } catch (error) {
+            console.log('Error while trying to get music controller: ', error);
+
+            return
+        }
+
+
+    }
     startMusicPlayerListener(
         allowedGuilds: AllowedGuild[] | 'ALL',
         guildId: string
@@ -181,91 +209,35 @@ export class ListenerManager {
                 }
             }
             const self = this;
-            this.musicListenerGuildId = guildId;
-            const guildController = GuildControllers.find(
-                (element) => element.guildId === guildId
-            )?.controller;
+            
+            const MusicController = this.getMusicController(guildId);
 
-            if (!guildController) {
-                console.log('Guild not found?? ID: ', guildId);
-                return;
-            }
-
-            const MusicController = guildController?.MusicController;
-
-            if (!MusicController)
-                throw new Error(
-                    'MusicController not found in startMusicPlayerListener'
-                );
-
-            this.listenMusicPlayer = true;
-
-            const runLoop = (
-                websocket: WebSocket,
-                MusicController: MusicController,
-                loopGuildId: string
-            ) => {
-                setTimeout(function () {
-                    if (
-                        !self.listenMusicPlayer ||
-                        self.musicListenerGuildId !== loopGuildId
-                    ) {
-                        return;
-                    }
-                    try {
-                        const currentSong = MusicController.currentSong;
-
-                        
-
-                        const queue = MusicController.queue;
-                        const currentTitle = currentSong?.info?.title || '';
-                        const streamTime =
-                            (MusicController.audioPlayer?.position || 0) / 1000;
-                        const videoLenght =
-                            (currentSong?.info?.length || 0) / 1000;
-                        const audioPlayerStatus =
-                            MusicController.audioPlayerStatus;
-                        const videoThumbnailUrl = currentSong?.thumbnail || '';
-                        //console.log(queue, currentTitle, streamTime, videoLength)
-                        const message = {
-                            guild: guildId,
-                            queue: queue,
-                            currentTitle: currentTitle,
-                            streamTime: streamTime,
-                            videoLength: videoLenght,
-                            audioPlayerStatus: audioPlayerStatus,
-                            videoThumbnailUrl: videoThumbnailUrl,
-                            skipVoteData:
-                                MusicController.SkipHandler.getSkipVoteData(),
-                        };
-
-                        const replyMessage = JSON.stringify({
-                            event: 'musicplayer_update',
-                            guild: loopGuildId,
-                            message: message,
-                        });
-
-                        websocket.send(replyMessage);
-                    } catch (error) {
-                        console.log(
-                            'Exception in music player listener loop: ',
-                            error
-                        );
-
-                        return;
-                    }
-                    runLoop(websocket, MusicController, loopGuildId);
-                }, 400);
-            };
-
+            if (!MusicController) return;
+            
             if (this.websocket) {
-                runLoop(this.websocket, MusicController, guildId);
+                const musicControllerEvents: (keyof MusicControllerEvents)[] = ["queueUpdate", "skipVoteUpdate", "currentSongUpdate", "playerStatusUpdate", "playerUpdate"]
+
+                for (const eventName of musicControllerEvents) {
+                    MusicController.on(eventName, self.handleMusicPlayerEvents)
+                }
+
+                MusicController.triggerUpdate()
+
+                this.activeMusicListenerGuildId = guildId;
+
             }
         } catch (error) {
             console.log(
                 'Error while trying to start music player listener:',
                 error
             );
+        }
+    }
+    handleMusicPlayerEvents = (data: MusicControllerEventsData) => {
+
+        
+        if(this.websocket) {
+            this.websocket.send(JSON.stringify(data));
         }
     }
 
@@ -285,7 +257,17 @@ export class ListenerManager {
             for (const [id, listener] of this.voiceChannelListeners) {
                 this.voiceChannelListeners.delete(id);
             }
-            this.listenMusicPlayer = false;
+            if(this.activeMusicListenerGuildId) {
+                const MusicController = this.getMusicController(this.activeMusicListenerGuildId);
+                if(MusicController) {
+                    const musicControllerEvents: (keyof MusicControllerEvents)[] = ["queueUpdate", "skipVoteUpdate", "currentSongUpdate", "playerStatusUpdate", "playerUpdate"]
+                    for (const eventName of musicControllerEvents) {
+                        MusicController.off(eventName, this.handleMusicPlayerEvents)
+                    }
+                    this.activeMusicListenerGuildId = null;
+                }
+            }
+            
         } catch (error) {
             console.log('Error while trying to clear listeners: ', error);
         }

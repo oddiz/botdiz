@@ -4,22 +4,19 @@ import {
     MessageEmbed,
     MessageActionRow,
     MessageButton,
-    ChannelResolvable,
     TextBasedChannel,
     VoiceBasedChannel,
     Message,
     CommandInteraction,
 } from 'discord.js';
+import { TypedEmitter } from "tiny-typed-emitter"
 
-//const ytdl = require("ytdl-core");
-//const prism = require('prism-media')
 import { EmbedPlayer } from './EmbedPlayer';
-import { SkipHandler } from './SkipHandler';
-import { botCommands } from '../../botCommands';
+import { SkipHandler, SkipVoteData } from './SkipHandler';
 import { Controller as BotdizGuildController } from '../../modules/Controller';
 import { Command as BotdizCommand } from '../../modules/Command';
 import { ShoukakuHandler } from '../../Shokaku/ShokakuHandler';
-import { ShoukakuPlayer, ShoukakuTrack } from 'shoukaku';
+import { PlayerUpdate, ShoukakuPlayer, ShoukakuTrack } from 'shoukaku';
 import { DbGuildSettings } from '../../../server_src/db/databaseTypes';
 
 let playCommand: BotdizCommand;
@@ -46,12 +43,48 @@ export interface BotdizShoukakuTrack extends ShoukakuTrack {
 
 export type QueueTrack = BotdizTrack | BotdizShoukakuTrack;
 
-export class MusicController {
+export type AudioPlayerStatus = 'PLAYING' | 'PAUSED' | 'STOPPED' | 'SKIPPING'
+
+export interface QueueUpdateEvent {
+    op: 'queueUpdate';
+    queue: QueueTrack[];
+    guildId: string;
+}
+export interface SkipVoteEvent {
+    op: 'skipVoteUpdate';
+    skipVoteData: SkipVoteData;
+    guildId: string;
+}
+export interface CurrentSongUpdateEvent {
+    op: 'currentSongUpdate';
+    currentSong: BotdizShoukakuTrack | null;
+    guildId: string;
+}
+export interface PlayerStatusUpdateEvent {
+    op: 'playerStatusUpdate';
+    status: AudioPlayerStatus;
+    guildId: string;
+}
+export interface CurrentSongUpdateEvent {
+    op: 'currentSongUpdate';
+    currentSong: BotdizShoukakuTrack | null;
+    guildId: string;
+}
+export type MusicControllerEventsData = QueueUpdateEvent | SkipVoteEvent | CurrentSongUpdateEvent | PlayerUpdate | PlayerStatusUpdateEvent;
+
+export interface MusicControllerEvents {
+    "playerUpdate": (data: PlayerUpdate) => void;
+    "queueUpdate": (data: QueueUpdateEvent) => void;
+    "skipVoteUpdate": (data: SkipVoteEvent) => void;
+    "currentSongUpdate": (data: CurrentSongUpdateEvent) => void;
+    "playerStatusUpdate": (data: PlayerStatusUpdateEvent) => void;
+}
+
+export class MusicController extends TypedEmitter<MusicControllerEvents> {
     public controller;
     public guild;
     private volume: number;
     private playCommand: BotdizCommand;
-    private readyLock: boolean;
     public UPDATE_INTERVAL: number;
     public EmbedPlayer;
     public SkipHandler;
@@ -68,10 +101,13 @@ export class MusicController {
     public currentSong: BotdizShoukakuTrack | null;
     public lastSeekEventTime: number;
     public activeVoiceChannel: VoiceBasedChannel | null;
-    public audioPlayerStatus: 'PLAYING' | 'PAUSED' | 'STOPPED' | 'SKIPPING';
+    public audioPlayerStatus: AudioPlayerStatus
     public repeat: 'ONE' | 'ALL' | 'NONE';
 
+    
+    
     constructor(controller: BotdizGuildController, shoukaku: ShoukakuHandler) {
+        super();
         this.controller = controller;
 
         for (const command of this.controller.commands) {
@@ -85,12 +121,12 @@ export class MusicController {
         this.guild = controller.guild;
         this.volume = 1;
         this.playCommand = playCommand;
-        this.readyLock = false;
         this.UPDATE_INTERVAL = 10000; // player stats update interval in ms
 
         this.EmbedPlayer = new EmbedPlayer(this);
 
         this.SkipHandler = new SkipHandler(this);
+
         this.skipVotingEnabled = defaultSettings.skipVotingEnabled;
         this.skipVotingPassPercentage =
             defaultSettings.skipVotingPassPercentage;
@@ -119,6 +155,7 @@ export class MusicController {
         try {
             //get audioPlayer from lavalink if available
             const node = await this.shoukaku.getNode();
+            if (!node) return
             this.audioPlayer = await node.players.get(this.controller.guild.id);
             return true;
         } catch (error) {
@@ -129,6 +166,14 @@ export class MusicController {
             );
             return false;
         }
+    }
+
+    triggerUpdate() {
+        this.emit('queueUpdate', this.getQueueEvent())
+        this.emit('currentSongUpdate', this.getCurrentSongUpdateEvent())
+        this.emit('playerStatusUpdate', this.getAudioPlayerStatusEvent())
+        this.SkipHandler.triggerSkipVoteEvent();
+        
     }
 
     applySettings(settings: DbGuildSettings) {
@@ -161,6 +206,20 @@ export class MusicController {
         }
     }
 
+    getAudioPlayerStatusEvent(): PlayerStatusUpdateEvent {
+        return {
+            op: 'playerStatusUpdate',
+            status: this.audioPlayerStatus,
+            guildId: this.guild.id,
+        };
+    
+    }
+
+    changeAudioPlayerStatus(status: AudioPlayerStatus) {
+        this.audioPlayerStatus = status;
+
+        this.emit('playerStatusUpdate', this.getAudioPlayerStatusEvent());
+    }
     async setVoiceConnection(channel: VoiceBasedChannel) {
         const node = this.shoukaku.getNode();
 
@@ -185,8 +244,7 @@ export class MusicController {
         this.activeVoiceChannel = channel;
 
         this.audioPlayer.on('start', (data) => {
-            if (this.repeat === 'ONE') return;
-            this.audioPlayerStatus = 'PLAYING';
+            this.changeAudioPlayerStatus('PLAYING');
 
             console.log('audioPlayer started');
         });
@@ -198,24 +256,26 @@ export class MusicController {
 
             //reason can be: "FINISHED" | "LOAD_FAILED" | "STOPPED" | "REPLACED" | "CLEANUP";
             const reason = data.reason;
-
+            console.log('audioplayer ended. Reason: ', reason);
+            
             if (this.audioPlayerStatus === 'SKIPPING') {
-                console.log("reason should be 'REPLACED' reason: " + reason);
-                this.audioPlayerStatus = 'STOPPED';
+                if (reason !== "REPLACED") {
+                    console.log("reason should be 'REPLACED' reason: " + reason);
+                }
+                this.changeAudioPlayerStatus('STOPPED');
                 return;
             }
-            this.audioPlayerStatus = 'STOPPED';
-            console.log('audioplayer ended. Reason: ', reason);
-
-            if (data.reason === 'LOAD_FAILED' || data.reason === 'FINISHED') {
+            this.changeAudioPlayerStatus('STOPPED');
+            
+            if (reason === 'LOAD_FAILED' || reason === 'FINISHED') {
                 this.playNext();
             }
 
-            if (data.reason === 'STOPPED') {
+            if (reason === 'STOPPED') {
                 this.stop();
             }
 
-            if (data.reason === 'CLEANUP') {
+            if (reason === 'CLEANUP') {
                 console.log(
                     "CLEANUP end event triggered. Don't know why this is happening"
                 );
@@ -231,11 +291,14 @@ export class MusicController {
                 guildId: '854409105431330836'
             }
             */
+
+            this.emit("playerUpdate", data);
+
         });
         this.audioPlayer.on('resumed', () => {
             console.log('Resumed event triggered: ');
 
-            this.audioPlayerStatus = 'PLAYING';
+            this.changeAudioPlayerStatus('PLAYING');
 
             /*
             data = 
@@ -296,16 +359,7 @@ export class MusicController {
             }
             */
         });
-        this.audioPlayer.on('closed', (data) => {
-            console.log('Player closed reason: ' + data);
-
-            /*
-            data = 
-            {
-                
-            }
-            */
-        });
+        
         this.audioPlayer.on('closed', (data) => {
             if (data instanceof Error || data instanceof Object)
                 logger.log('info', 'Audioplayer closed: ' + data);
@@ -367,40 +421,39 @@ export class MusicController {
         }
     }
 
+    removeRecommended() {
+        
+        for (const [index, ] of this.queue.entries()) {
+                this.queue.splice(index, 1);
+        }
+    }
     async processQueue() {
         this.queueLock = false;
         try {
-            // If the queue is locked (already being processed), or the audio player is already playing something, return
-            if (this.queueLock || this.audioPlayerStatus === 'PLAYING') {
-                //remove previous recommended songs
-                for (const [index, song] of this.queue.entries()) {
-                    if (song?.recommendedSong) {
-                        this.queue.splice(index, 1);
-                    }
-                }
-
+            
+            if (this.audioPlayerStatus !== 'STOPPED') {
+                // If the queue is locked (already being processed), or the audio player is already playing something
                 this.queueLock = false;
-                return 'success';
-
-                // If not playing
+                
+                //remove previous recommended songs
+                this.removeRecommended()
+    
+                
             } else {
+                // If not playing
                 this.queueLock = false;
 
                 //remove previous recommended songs
-                for (const [index, song] of this.queue.entries()) {
-                    if (song?.recommendedSong) {
-                        console.log(
-                            "this shouldn't trigger. music controller recommended remover."
-                        );
-                        this.queue.splice(index, 1);
-                    }
-                }
+                this.removeRecommended()
 
                 console.log('playing next');
                 this.playNext();
 
-                return 'success';
             }
+
+            this.emit('queueUpdate', this.getQueueEvent());
+            
+            return 'success';
         } catch (error) {
             this.queueLock = false;
             console.log('Error while trying to process queue: ', error);
@@ -409,18 +462,37 @@ export class MusicController {
         }
     }
 
+    getQueueEvent(): QueueUpdateEvent {
+        return {
+            op: 'queueUpdate',
+            queue: this.queue,
+            guildId: this.guild.id
+        }
+    }
+
     getCurrentSong() {
         try {
             return this.currentSong;
         } catch (error) {
-            //if there is no current song
             return null;
         }
     }
 
-    updateCurrentSong(song: BotdizShoukakuTrack) {
+    getCurrentSongUpdateEvent(): CurrentSongUpdateEvent {
+        return {
+            op: 'currentSongUpdate',
+            currentSong: this.currentSong,
+            guildId: this.guild.id
+        }
+    }
+    changeCurrentSong(song: BotdizShoukakuTrack | null) {
         try {
             this.currentSong = song;
+            this.emit('currentSongUpdate', this.getCurrentSongUpdateEvent());
+
+            //if current song changes queue always changes
+            this.emit('queueUpdate', this.getQueueEvent());
+
         } catch (error) {
             logger.log(
                 'error',
@@ -429,9 +501,24 @@ export class MusicController {
         }
     }
 
+    updateQueue(queue: QueueTrack[]) {
+        try {
+            this.queue = queue
+            this.emit('queueUpdate', this.getQueueEvent());
+    
+            return "success"
+            
+        } catch (error) {
+            console.log("Error while running updateQueue() Error: ", error);
+
+            return "failed"
+        }
+    }
+
     clearQueue() {
         try {
             this.queue = [];
+            this.emit('queueUpdate', this.getQueueEvent());
         } catch (error) {
             logger.log(
                 'error',
@@ -439,6 +526,7 @@ export class MusicController {
             );
         }
     }
+
 
     async playNext() {
         try {
@@ -459,7 +547,8 @@ export class MusicController {
             }
             //console.log("Got resources")
             if (this.audioPlayer) {
-                this.updateCurrentSong(nextSong);
+                this.changeCurrentSong(nextSong);
+                
                 await this.audioPlayer.playTrack(nextSong, {
                     noReplace: false,
                 });
@@ -664,13 +753,19 @@ export class MusicController {
     }
 
     async skip(skipAmount: number) {
-        this.audioPlayerStatus = 'SKIPPING';
+
+        if (this.audioPlayerStatus === "SKIPPING") {
+            logger.log("info", "Already skipping!")
+            return
+        }
+        
+        this.changeAudioPlayerStatus('SKIPPING');
         for (let i = 1; i < skipAmount; i++) {
             this.queue.shift();
         }
 
-        const result = await this.playNext();
         this.queueLock = false;
+        const result = await this.playNext();
         return result;
     }
 
@@ -686,6 +781,8 @@ export class MusicController {
                         this.queue[i],
                     ];
                 }
+
+                this.emit('queueUpdate', this.getQueueEvent());
                 return true;
             } else {
                 console.log('not enough songs in queue to shuffle');
@@ -699,10 +796,10 @@ export class MusicController {
 
     async stop() {
         try {
-            this.audioPlayerStatus = 'STOPPED';
+            this.changeAudioPlayerStatus('STOPPED');
 
             this.clearQueue();
-            this.currentSong = null;
+            this.changeCurrentSong(null);
             this.songHistory = [];
             //logger.log("info", "Queue cleared")
 
@@ -739,7 +836,7 @@ export class MusicController {
                 console.log('pausing player');
 
                 this.audioPlayer.setPaused(true);
-                this.audioPlayerStatus = 'PAUSED';
+                this.changeAudioPlayerStatus('PAUSED');
             } else {
                 logger.log('warn', 'no player to pause');
             }
@@ -753,7 +850,7 @@ export class MusicController {
                 console.log('resuming player');
 
                 this.audioPlayer.setPaused(false);
-                this.audioPlayerStatus = 'PLAYING';
+                this.changeAudioPlayerStatus('PLAYING');
             } else {
                 logger.log('warn', 'no player to resume');
             }

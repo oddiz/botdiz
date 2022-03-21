@@ -439,7 +439,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                 if (!guildMusicController)
                     throw 'Guild music controller not found for id: ' + guildId;
 
-                guildMusicController.queue = queue;
+                guildMusicController.updateQueue(queue);
 
                 return {
                     status: 'success',

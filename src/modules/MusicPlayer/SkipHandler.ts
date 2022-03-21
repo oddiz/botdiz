@@ -11,6 +11,7 @@ import replyInterraction from '../../scripts/replyInterraction';
 import {
     BotdizShoukakuTrack,
     MusicController,
+    SkipVoteEvent,
 } from './MusicControllerLavalink';
 import { ExecCommandResponse } from '../../../server_src/Websocket/RPC_Commands/execCommands';
 
@@ -19,7 +20,7 @@ interface AddVoteStatus {
     userInChannel: boolean;
 }
 
-interface SkipVoteData {
+export interface SkipVoteData {
     voteActive: boolean;
     userData: SkipVoteUserData | null;
     skipData: SkipData | null;
@@ -46,6 +47,7 @@ export class SkipHandler {
             if (this.MusicController.skipVotingEnabled && !options.forceSkip) {
                 if (this.SkipVote) {
                     const result = await this.SkipVote.addVote(userId);
+                    this.MusicController.emit("skipVoteUpdate", this.getSkipVoteEvent())
 
                     if (!result) {
                         throw new Error('addVote result is null');
@@ -75,7 +77,7 @@ export class SkipHandler {
                     }
                 } else {
                     this.startSkipVoteMessageless(userId, skipAmount);
-
+                    this.MusicController.emit("skipVoteUpdate", this.getSkipVoteEvent())
                     return {
                         status: 'success',
                         command: 'add_skip_vote',
@@ -87,19 +89,21 @@ export class SkipHandler {
                 }
             } else {
                 this.MusicController.skip(skipAmount);
-
                 return {
                     status: 'success',
                     command: 'add_skip_vote',
                     message: `Skipped ${skipAmount} songs.`,
                 };
             }
+
+            
         } catch (error) {
             console.log(
                 'Error while trying to handle interface exec command in skip handler: ',
                 error
             );
-
+            this.triggerSkipVoteEvent()
+            
             return {
                 status: 'failed',
                 command: 'add_skip_vote',
@@ -126,7 +130,7 @@ export class SkipHandler {
                 }
 
                 if (this.SkipVote) {
-                    // vote for current skip
+                    // there is a vote to skip active, try to vote for current skip
                     const result = await this.SkipVote.addVote(messageMemberId);
 
                     if (!result) {
@@ -151,6 +155,7 @@ export class SkipHandler {
                         }
                     }
                 } else {
+                    //No vote is active starting a new one
                     try {
                         if (!invokedMessage.member) {
                             throw new Error('Message member is undefined');
@@ -162,15 +167,26 @@ export class SkipHandler {
                             },
                             { ephemeral: true }
                         );
-                    } catch (error) {}
+                    } catch (error) {
+                        console.log(
+                            'Error while trying to start a new skip vote: ',
+                            error
+                        );
+                    }
                     //if skip voting is enabled start voting
                     this.startSkipVote(messageMember, skipAmount);
+
+                    
                 }
             } else {
+                // if vote to skip is disabled or forceSkip option is passed just skip
                 replyInterraction(invokedMessage, { content: 'Skipping...' });
 
                 this.MusicController.skip(skipAmount);
             }
+
+            this.triggerSkipVoteEvent()
+
         } catch (error) {
             console.log('Error while trying to handle skip message: ', error);
         }
@@ -194,6 +210,19 @@ export class SkipHandler {
         };
 
         return result;
+    }
+
+    getSkipVoteEvent(): SkipVoteEvent {
+
+        return {
+            op: "skipVoteUpdate",
+            skipVoteData: this.getSkipVoteData(),
+            guildId: this.MusicController.guild.id,
+        }
+    }
+
+    triggerSkipVoteEvent() {
+        this.MusicController.emit("skipVoteUpdate", this.getSkipVoteEvent())
     }
 
     setPassPercentage(float: number) {
@@ -261,10 +290,12 @@ export class SkipHandler {
 
     endVote() {
         this.SkipVote = null;
+        this.MusicController.emit("skipVoteUpdate", this.getSkipVoteEvent())
+
     }
 }
 
-interface SkipData {
+export interface SkipData {
     skipAmount: number;
     currentSong: BotdizShoukakuTrack | null;
     invokedUser: GuildMember;
@@ -309,6 +340,7 @@ class SkipVote {
         this.skipVoteUserData.voiceChannelMembers =
             await this.SkipHandler.getVoiceChannelMembers();
         this.addVote(this.invokedUser.id);
+        
     }
 
     async createEmbedMessage() {
