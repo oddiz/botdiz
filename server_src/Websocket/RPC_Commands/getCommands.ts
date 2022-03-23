@@ -1,30 +1,32 @@
 import { AllowedGuild, DbDiscordGuild } from '../../db/databaseTypes';
 import { client as DiscordClient, GuildControllers } from '../../../src/main';
 import { GuildMember, TextChannel } from 'discord.js';
+import cacheManager from '../../CacheManager';
 const failed = {
     status: 'failed',
 };
 type unauthorizedResponse = {
     status: 'unauthorized';
-}
+};
 type getTextChannelsSuccess = {
-    status: 'success',
-    channels: { name: string, id: string }[];
-}
+    status: 'success';
+    channels: { name: string; id: string }[];
+};
 type getTextChannelsFailed = {
-    status: 'failed',
-    command: 'RPC_getTextChannels'
-}
-type getTextChannelsReturn = getTextChannelsSuccess | getTextChannelsFailed | unauthorizedResponse
+    status: 'failed';
+    command: 'RPC_getTextChannels';
+};
+type getTextChannelsReturn =
+    | getTextChannelsSuccess
+    | getTextChannelsFailed
+    | unauthorizedResponse;
 
-module.exports = {
+const getCommands = {
     RPC_getGuilds: async function (allowedGuilds: AllowedGuild[] | 'ALL') {
-        
         try {
             const guilds = await DiscordClient.guilds.cache;
 
             //console.log(parsedGuilds)
-
             if (allowedGuilds === 'ALL') {
                 const parsedGuilds = guilds.map((guild) => {
                     return {
@@ -78,20 +80,21 @@ module.exports = {
                 throw 'Guild not found?? ID: ' + activeGuildId;
             }
 
-            const channels = await guild.channels.fetch();
+            const textChannels = await cacheManager.getTextChannels(
+                activeGuildId
+            );
 
-            const textChannels = channels
-                .filter(
-                    (channel) =>
-                        channel.type === 'GUILD_TEXT' && channel.viewable
-                )
-                .map((channel) => {
-                    return { name: channel.name, id: channel.id };
-                });
+            if (!textChannels) {
+                throw 'No text channels found??';
+            }
+
+            const result = textChannels.map((channel) => {
+                return { name: channel.name, id: channel.id };
+            });
 
             return {
                 status: 'success',
-                channels: textChannels,
+                channels: result,
             };
         } catch (error) {
             console.log('Exception in RPC_getTextChannels: ', error);
@@ -101,7 +104,7 @@ module.exports = {
             };
         }
     },
-    
+
     RPC_getTextChannelContent: async function (
         allowedGuilds: AllowedGuild[] | 'ALL',
         activeGuildId: string,
@@ -133,17 +136,26 @@ module.exports = {
                 //console.log("found guild")
                 console.log('Guild not found ID: ', activeGuildId);
                 return;
-            } 
+            }
             //const guildmembers = await guild.members.fetch("241939345290952704")
 
             //console.log(guildmembers.displayHexColor)
             //console.log(guild.members.cache.get("241939345290952704").displayHexColor)
 
-            const channel = await guild.channels.fetch(channelId) as TextChannel;
+            const channel = (await guild.channels.fetch(
+                channelId
+            )) as TextChannel;
 
             if (!channel) throw 'Channel not found ID: ' + channelId;
 
-            const messages = await channel.messages.fetch({ limit: 25 });
+            const messages = await channel.messages.fetch(
+                {
+                    limit: 25,
+                },
+                {
+                    cache: true,
+                }
+            );
 
             const parsedMessages = messages.map((message) => {
                 let color = guild.members.cache.get(
@@ -163,16 +175,16 @@ module.exports = {
             });
 
             return {
-                status: "success",
+                status: 'success',
                 messages: parsedMessages,
-                command: "RPC_getTextChannelContent",
+                command: 'RPC_getTextChannelContent',
             };
         } catch (error: any) {
             if (error.message.includes('Missing Access')) {
                 console.log('Not enough permission to see channel messages');
                 return {
                     status: 'failed',
-                    message: "Not enough permission to see channel messages",
+                    message: 'Not enough permission to see channel messages',
                     command: 'RPC_getTextChannelContent',
                 };
             }
@@ -180,7 +192,10 @@ module.exports = {
             return failed;
         }
     },
-    RPC_getVoiceChannels: async function (allowedGuilds: AllowedGuild[] | 'ALL', activeGuildId: string) {
+    RPC_getVoiceChannels: async function (
+        allowedGuilds: AllowedGuild[] | 'ALL',
+        activeGuildId: string
+    ) {
         try {
             if (allowedGuilds !== 'ALL') {
                 let commandAllowed = false;
@@ -205,23 +220,24 @@ module.exports = {
                 return failed;
             }
 
-            const channels = await guild.channels.fetch();
-            const voiceChannels = channels
-                .filter(
-                    (channel) =>
-                        channel.type === 'GUILD_VOICE' && channel.viewable
-                )
-                .map((channel) => {
-                    return {
-                        name: channel.name,
-                        id: channel.id,
-                        members: channel.members,
-                    };
-                });
+            const voiceChannels = await cacheManager.getVoiceChannels(
+                activeGuildId
+            );
+            if (!voiceChannels) {
+                throw 'Voice channels not found';
+            }
+
+            voiceChannels.map((channel) => {
+                return {
+                    name: channel.name,
+                    id: channel.id,
+                    members: channel.members,
+                };
+            });
 
             return {
-                status: "success",
-                voiceChannels: voiceChannels
+                status: 'success',
+                voiceChannels: voiceChannels,
             };
         } catch (error) {
             console.log('Exception in RPC_getVoiceChannels: ', error);
@@ -229,3 +245,5 @@ module.exports = {
         }
     },
 };
+
+export default getCommands;
