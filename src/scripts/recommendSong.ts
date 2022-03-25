@@ -58,7 +58,7 @@ export const getRecommended = async (queueItem: QueueTrack) => {
                     const recommendedYoutube = ytdlVideoInfo.related_videos;
 
                     const parsedForQueue: YoutubeRecommended[] = recommendedYoutube.map(
-                        (video: { title: any; thumbnails: { url: any }[] }) => {
+                        (video: { title?: any; thumbnails: { url: any }[] }) => {
                             return {
                                 info: {
                                     title: video.title,
@@ -66,6 +66,7 @@ export const getRecommended = async (queueItem: QueueTrack) => {
                                 isYoutubeRecommended: true,
                                 thumbnail: video.thumbnails[0].url,
                                 recommendedSong: true,
+                                isSpotify: false,
                             };
                         }
                     );
