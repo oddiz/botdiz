@@ -33,7 +33,7 @@ class CacheManager {
 
         this.needsChannelsUpdate = new Set();
 
-        this.debug = true;
+        this.debug = false;
         this.setupChannelUpdateListener();
     }
 
@@ -134,16 +134,17 @@ class CacheManager {
         await this.voiceChannelsCache.set(guildId, mappedVoiceChannels);
         await this.textChannelsCache.set(guildId, textChannels);
 
-        this.debug ? console.log(`Channels of ${guildId} updated`) : null;
-        console.log(
-            voiceChannels.map((channel) => {
-                return {
-                    name: channel.name,
-                    id: channel.id,
-                    members: channel.members,
-                };
-            })
-        );
+        this.debug && console.log(`Channels of ${guildId} updated`);
+        this.debug &&
+            console.log(
+                voiceChannels.map((channel) => {
+                    return {
+                        name: channel.name,
+                        id: channel.id,
+                        members: channel.members,
+                    };
+                })
+            );
     }
 }
 const cacheManager = new CacheManager();
