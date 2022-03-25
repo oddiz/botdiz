@@ -12,3 +12,4 @@ log
 src/Shokaku/lavalink-server.json
 
 *.log
+*.lock
