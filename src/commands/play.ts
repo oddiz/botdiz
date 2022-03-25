@@ -2,15 +2,14 @@ import { Command } from '../modules/Command';
 import { Controller } from '../modules/Controller';
 import { QueueTrack } from '../modules/MusicPlayer/MusicControllerLavalink';
 import { CommandInteraction, GuildMember } from 'discord.js';
-import spotifyUri, { Album, Track } from 'spotify-uri';
-
-import SpotifyWebApi from 'spotify-web-api-node';
+import spotifyUri, { Album, Playlist, Track } from 'spotify-uri';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
 import axios from 'axios';
 import { logger } from '../logger';
+import { spotifyApiManager } from '../modules/SpotifyApiHandler';
 
 export type PlayCommandOptions = {
     query?: string | null;
@@ -106,40 +105,25 @@ export default async function (
                     'Audio player is not found on the music controller, trying to initialize'
                 );
                 await musicController.init();
-                
             }
 
             if (!botVoiceChannel) {
-                logger.log(
-                    'info',
-                    'Bot is not in a voice channel, joining now.'
-                );
+                logger.log('info', 'Bot is not in a voice channel, joining now.');
 
                 musicController.setVoiceConnection(memberVoiceChannel);
             } else {
                 //bot is in a voice channel
 
                 if (memberVoiceChannel.id !== botVoiceChannel.id) {
-                    logger.log(
-                        'info',
-                        "Bot is in a voice channel but not in same member's"
-                    );
+                    logger.log('info', "Bot is in a voice channel but not in same member's");
                     if (musicController.audioPlayerStatus === 'PLAYING') {
-                        logger.log(
-                            'info',
-                            "Bot is already playing. Won't switch to new channel"
-                        );
+                        logger.log('info', "Bot is already playing. Won't switch to new channel");
 
-                        self.reply(
-                            'Bot is already playing in another channel ❗'
-                        );
+                        self.reply('Bot is already playing in another channel ❗');
 
                         return;
                     } else {
-                        logger.log(
-                            'info',
-                            'Bot is not playing. Switching to new channel.'
-                        );
+                        logger.log('info', 'Bot is not playing. Switching to new channel.');
 
                         // let voiceConnection = await joinVoiceChannel({
                         //     channelId: memberVoiceChannel.id,
@@ -153,7 +137,10 @@ export default async function (
                     }
                 } else if (!musicController.activeVoiceChannel) {
                     //bot is in same voice channel but it doesn't have a voice connection
-
+                    logger.log(
+                        'error',
+                        "Bot is in same voice channel but doesn't have a voice connection, shouldn't happen."
+                    );
                     //shouldn't happen with the new lavalink system
 
                     // let voiceConnection = await joinVoiceChannel({
@@ -212,10 +199,7 @@ export default async function (
             const track = searchResult.tracks.shift();
             if (track) {
                 self.reply(`\`Added ${track.info.title} to queue!\``);
-                musicController.addToQueue(
-                    track,
-                    optionsDefault.forceNext || false
-                );
+                musicController.addToQueue(track, optionsDefault.forceNext || false);
 
                 musicController.processQueue();
 
@@ -237,331 +221,122 @@ export default async function (
 
             //if url is not recognized by lavalink
             if (type === 'LOAD_FAILED') {
+                //could be spotify link
                 if (videoUrl.host.includes('spotify.com')) {
                     try {
-                        let spotifyAccessToken = '';
-
                         const parsed = spotifyUri.parse(videoUrl.href);
                         // credentials are optional
-                        const spotifyApi = new SpotifyWebApi({
-                            clientId: process.env.SPOTIFY_CLIENTID,
-                            clientSecret: process.env.SPOTIFY_CLIENTSECRET,
-                        });
+                        const spotifyApi = await spotifyApiManager.getSpotifyApi();
 
-                        if (
-                            parsed.type === 'playlist' ||
-                            parsed.type === 'album'
-                        ) {
-                            const albumOrPlaylistParsed = parsed as Album;
+                        if (parsed.type === 'playlist' || parsed.type === 'album') {
+                            const albumOrPlaylistParsed = parsed as Album | Playlist;
                             const spotifyId = albumOrPlaylistParsed.id;
 
-                            spotifyApi
-                                .clientCredentialsGrant()
-                                .then(function (result: {
-                                    body: { access_token: string };
-                                }) {
-                                    logger.log(
-                                        'info',
-                                        'Spotify Api Auth worked!'
-                                    );
-                                    spotifyAccessToken =
-                                        result.body.access_token;
+                            if (parsed.type === 'album') {
+                                const albumReply = await spotifyApi.getAlbumTracks(spotifyId);
+                                const albumData = albumReply.body;
+                                console.log(albumData.items);
 
-                                    spotifyApi.setAccessToken(
-                                        spotifyAccessToken
-                                    );
-
-                                    if (parsed.type === 'album') {
-                                        spotifyApi
-                                            .getAlbumTracks(spotifyId)
-                                            .then(
-                                                (data: {
-                                                    body: {
-                                                        items: string | any[];
-                                                    };
-                                                }) => {
-                                                    console.log(
-                                                        data.body.items
-                                                    );
-                                                    if (
-                                                        data.body.items.length >
-                                                        0
-                                                    ) {
-                                                        for (const item of data
-                                                            .body.items) {
-                                                            const videoName =
-                                                                item.name;
-                                                            const videoArtist =
-                                                                item.artists[0]
-                                                                    .name;
-                                                            const videoTitle =
-                                                                videoArtist +
-                                                                ' - ' +
-                                                                videoName;
-                                                            const botdizSong: QueueTrack =
-                                                                {
-                                                                    info: {
-                                                                        artist: videoArtist,
-                                                                        trackName:
-                                                                            videoName,
-                                                                        title: videoTitle,
-                                                                    },
-                                                                    isSpotify:
-                                                                        true,
-                                                                };
-                                                            musicController.addToQueue(
-                                                                botdizSong,
-                                                                optionsDefault.forceNext ||
-                                                                    false
-                                                            );
-                                                        }
-                                                        self.reply(
-                                                            '`Album added to queue 👍`'
-                                                        );
-                                                        musicController.queueLock =
-                                                            false;
-                                                        musicController.processQueue();
-
-                                                        return;
-                                                    } else {
-                                                        musicController.queueLock =
-                                                            false;
-
-                                                        self.reply(
-                                                            '`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`'
-                                                        );
-
-                                                        return;
-                                                    }
-                                                }
-                                            )
-                                            .catch((err: any) => {
-                                                logger.log(
-                                                    'error',
-                                                    'Error while trying to parse spotify album: ',
-                                                    err
-                                                );
-                                                musicController.queueLock =
-                                                    false;
-
-                                                self.reply(
-                                                    '`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`'
-                                                );
-
-                                                return;
-                                            });
-                                    } else if (parsed.type === 'playlist') {
-                                        spotifyApi
-                                            .getPlaylist(spotifyId)
-                                            .then(function (data) {
-                                                for (const item of data.body
-                                                    .tracks.items) {
-                                                    const videoName =
-                                                        item.track.name;
-                                                    const videoArtist =
-                                                        item.track.artists[0]
-                                                            .name;
-                                                    const videoTitle =
-                                                        videoArtist +
-                                                        ' - ' +
-                                                        videoName;
-                                                    const botdizSong: QueueTrack =
-                                                        {
-                                                            info: {
-                                                                artist: videoArtist,
-                                                                trackName:
-                                                                    videoName,
-                                                                title: videoTitle,
-                                                            },
-                                                            isSpotify: true,
-                                                        };
-                                                    musicController.addToQueue(
-                                                        botdizSong,
-                                                        optionsDefault.forceNext ||
-                                                            false
-                                                    );
-                                                }
-                                                self.reply(
-                                                    'Playlist added to queue 👍'
-                                                );
-                                                musicController.queueLock =
-                                                    false;
-                                                musicController.processQueue();
-
-                                                return;
-                                            })
-                                            .catch(function (err: any) {
-                                                logger.log(
-                                                    'error',
-                                                    'Something went wrong when trying to play spotify playlist!',
-                                                    err
-                                                );
-                                                musicController.queueLock =
-                                                    false;
-
-                                                self.reply(
-                                                    '`Error while trying to add spotify playlist... Check spotify link again, if issue persists contact oddiz 😟`'
-                                                );
-
-                                                return;
-                                            });
-                                    }
-                                })
-                                .catch((err: any) => {
-                                    logger.log(
-                                        'error',
-                                        'Error trying to get info from spotify api@play.js/spotifyApi() Error: ' +
-                                            err
-                                    );
-
-                                    self.reply(
-                                        '`Error while trying to add spotify playlist... Contact oddiz 😟`'
-                                    );
+                                if ((albumData.items.length = 0)) {
                                     musicController.queueLock = false;
 
+                                    self.reply(
+                                        '`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`'
+                                    );
+
                                     return;
-                                });
+                                }
+
+                                for (const item of albumData.items) {
+                                    const videoName = item.name;
+                                    const videoArtist = item.artists[0].name;
+                                    const videoTitle = videoArtist + ' - ' + videoName;
+                                    const botdizSong: QueueTrack = {
+                                        info: {
+                                            artist: videoArtist,
+                                            trackName: videoName,
+                                            title: videoTitle,
+                                            artistId: item.artists[0].id,
+                                            trackId: item.id,
+                                        },
+                                        isSpotify: true,
+                                    };
+                                    musicController.addToQueue(
+                                        botdizSong,
+                                        optionsDefault.forceNext || false
+                                    );
+                                }
+
+                                self.reply('`Album added to queue 👍`');
+                                musicController.queueLock = false;
+                                musicController.processQueue();
+
+                                return;
+                            } else if (parsed.type === 'playlist') {
+                                const playlistReply = await spotifyApi.getPlaylistTracks(spotifyId);
+                                const playlistData = playlistReply.body;
+
+                                for (const item of playlistData.items) {
+                                    const videoName = item.track.name;
+                                    const videoArtist = item.track.artists[0].name;
+                                    const videoTitle = videoArtist + ' - ' + videoName;
+                                    const botdizSong: QueueTrack = {
+                                        info: {
+                                            artist: videoArtist,
+                                            trackName: videoName,
+                                            title: videoTitle,
+                                            artistId: item.track.artists[0].id,
+                                            trackId: item.track.id,
+                                        },
+                                        isSpotify: true,
+                                    };
+                                    musicController.addToQueue(
+                                        botdizSong,
+                                        optionsDefault.forceNext || false
+                                    );
+                                }
+                                self.reply('Playlist added to queue 👍');
+                                musicController.queueLock = false;
+                                musicController.processQueue();
+
+                                return;
+                            }
                         } else if (parsed.type === 'track') {
                             const trackParsed = parsed as Track;
                             const trackId = trackParsed.id;
 
-                            await spotifyApi
-                                .clientCredentialsGrant()
-                                .then(function (result: {
-                                    body: { access_token: string };
-                                }) {
-                                    logger.log(
-                                        'info',
-                                        'Spotify Api Auth worked! Your access token is: ' +
-                                            result.body.access_token
-                                    );
-                                    spotifyAccessToken =
-                                        result.body.access_token;
-                                    spotifyApi.setAccessToken(
-                                        spotifyAccessToken
-                                    );
+                            const getTrackResponse = await spotifyApi.getTrack(trackId);
+                            const trackData = getTrackResponse.body;
 
-                                    spotifyApi
-                                        .getAudioFeaturesForTrack(trackId)
-                                        .then(
-                                            function (data: any) {
-                                                const spotifyApiTrackUrl =
-                                                    'https://api.spotify.com/v1/tracks/';
-                                                const songId = trackId;
-                                                const searchApiUrl =
-                                                    spotifyApiTrackUrl + songId;
-                                                //console.log(searchApiUrl)
-                                                axios
-                                                    .get(searchApiUrl, {
-                                                        headers: {
-                                                            Accept: 'application/json',
-                                                            'Content-Type':
-                                                                'application/json',
-                                                            Authorization:
-                                                                'Bearer ' +
-                                                                spotifyAccessToken,
-                                                        },
-                                                    })
-                                                    .then(
-                                                        (result: {
-                                                            data: {
-                                                                artists: {
-                                                                    name: any;
-                                                                }[];
-                                                                name: any;
-                                                            };
-                                                        }) => {
-                                                            const artistName =
-                                                                result.data
-                                                                    .artists[0]
-                                                                    .name;
-                                                            //console.log("artist name:", artistName)
-                                                            const songName =
-                                                                result.data
-                                                                    .name;
-                                                            //console.log("songName: ", songName )
-                                                            const isSpotify =
-                                                                true;
+                            const artistName = trackData.artists[0].name;
+                            //console.log("artist name:", artistName)
+                            const songName = trackData.name;
+                            //console.log("songName: ", songName )
+                            const isSpotify = true;
 
-                                                            const botdizSong: QueueTrack =
-                                                                {
-                                                                    info: {
-                                                                        trackName:
-                                                                            songName,
-                                                                        artist: artistName,
-                                                                        title:
-                                                                            artistName +
-                                                                            ' - ' +
-                                                                            songName,
-                                                                    },
-                                                                    isSpotify:
-                                                                        isSpotify,
-                                                                };
-                                                            musicController.addToQueue(
-                                                                botdizSong,
-                                                                optionsDefault.forceNext ||
-                                                                    false
-                                                            );
-                                                            self.reply(
-                                                                `Added \`${songName}\``
-                                                            );
-                                                            musicController.queueLock =
-                                                                false;
-                                                            musicController.processQueue();
-                                                            /*     
-                                                //
-                                                //    videoId: "123", 
-                                                //    videoUrl: "http:...com/..",
-                                                //    videoTitle: xxtenacion 
-                                                //     
-                                            */
-                                                            return;
-                                                        }
-                                                    )
-                                                    .catch((error: string) => {
-                                                        logger.log(
-                                                            'error',
-                                                            'Error while using spotify AI. Error : ' +
-                                                                error
-                                                        );
-
-                                                        self.reply(
-                                                            '`Error while trying to add song... Check spotify link again, if issue persists contact oddiz 😟`'
-                                                        );
-                                                        musicController.queueLock =
-                                                            false;
-                                                        return;
-                                                    });
-                                            },
-                                            function (err: any) {
-                                                logger.log('error', err);
-                                                musicController.queueLock =
-                                                    false;
-                                                return;
-                                            }
-                                        );
-                                })
-                                .catch(function (err: any) {
-                                    logger.log(
-                                        'error',
-                                        'If this is printed, it probably means that you used invalid ' +
-                                            'clientId and clientSecret values. Please check!'
-                                    );
-                                    logger.log('error', 'Hint: ');
-                                    logger.log('error', err);
-                                    musicController.queueLock = false;
-                                });
+                            const botdizSong: QueueTrack = {
+                                info: {
+                                    trackName: songName,
+                                    artist: artistName,
+                                    title: artistName + ' - ' + songName,
+                                    artistId: trackData.artists[0].id,
+                                    trackId: trackData.id,
+                                },
+                                isSpotify: isSpotify,
+                            };
+                            musicController.addToQueue(
+                                botdizSong,
+                                optionsDefault.forceNext || false
+                            );
+                            self.reply(`Added \`${songName}\``);
+                            musicController.queueLock = false;
+                            musicController.processQueue();
 
                             return;
                         }
                     } catch (error) {
-                        logger.log(
-                            'Error while trying to play spotify link: ',
-                            error
-                        );
-                        self.reply(
-                            '`Error while trying to play spotify link, contact oddiz.`'
-                        );
+                        logger.log('Error while trying to play spotify link: ', error);
+                        self.reply('`Error while trying to play spotify link, contact oddiz.`');
                         return;
                     }
                 } else {
@@ -580,26 +355,14 @@ export default async function (
 
                     if (isPlaylist) {
                         for (const track of tracks) {
-                            musicController.addToQueue(
-                                track,
-                                optionsDefault.forceNext || false
-                            );
+                            musicController.addToQueue(track, optionsDefault.forceNext || false);
                         }
-                        self.reply(
-                            '`' +
-                                (playlistName || 'Playlist') +
-                                ' added to queue 👍`'
-                        );
+                        self.reply('`' + (playlistName || 'Playlist') + ' added to queue 👍`');
                     } else if (isTrack) {
                         const track = tracks.shift();
                         if (track) {
-                            musicController.addToQueue(
-                                track,
-                                optionsDefault.forceNext || false
-                            );
-                            self.reply(
-                                `\`${track.info.title} added to queue 👍\``
-                            );
+                            musicController.addToQueue(track, optionsDefault.forceNext || false);
+                            self.reply(`\`${track.info.title} added to queue 👍\``);
                         }
                     }
 
@@ -614,17 +377,12 @@ export default async function (
                             JSON.stringify(result, null, 2)
                     );
                     musicController.queueLock = false;
-                    self.reply(
-                        '`Error trying to process command, contact oddiz.`'
-                    );
+                    self.reply('`Error trying to process command, contact oddiz.`');
 
                     //if there is no song in queue stop the music controller to prevent lockdown.
                     if (musicController.queue.length > 0) {
                         musicController.stop();
-                        logger.log(
-                            'info',
-                            'Stopping music controller- to prevent lockdown.'
-                        );
+                        logger.log('info', 'Stopping music controller- to prevent lockdown.');
                     }
                 }
             }

@@ -1,51 +1,179 @@
-const parseTitleStrings = require("./parseTitleStrings")
+const parseTitleStrings = require('./parseTitleStrings');
 import dotenv from 'dotenv';
-import { YoutubeSearchResult } from "./searchYT";
-import ytdl from "ytdl-core";
+import { ShoukakuTrack } from 'shoukaku';
+import {
+    BotdizTrack,
+    QueueTrack,
+    YoutubeRecommended,
+} from '../modules/MusicPlayer/MusicControllerLavalink';
+import { spotifyApiManager } from '../modules/SpotifyApiHandler';
+
+//@ts-ignore
+import ytdl from 'ytdl-core';
+import fetch from 'node-fetch';
+
 dotenv.config();
 
-export default async (ytdlVideoInfo: ytdl.videoInfo) => {
-
+export const getRecommended = async (queueItem: QueueTrack) => {
     try {
-        
-        let track, artist
-        const videoTitle = ytdlVideoInfo.videoDetails?.title
-        
-        const ytMediaInfo = ytdlVideoInfo.videoDetails?.media
-        if(
-            ytMediaInfo &&
-            ytMediaInfo?.category === 'Music' &&
-            ytMediaInfo?.song &&
-            ytMediaInfo?.artist
-        ) {
-            track = ytMediaInfo.song
-            artist = ytMediaInfo.artist 
-        } else {
+        if (queueItem instanceof ShoukakuTrack) {
+            //song is from lavalink player
 
-            //try to parse the title
-            const result = parseTitleStrings(videoTitle)
+            const songUri = queueItem.info.uri;
+            if (songUri) {
+                const ytdlVideoInfo = await ytdl.getInfo(songUri);
 
-            if(result) {
-                if(result.title === result.artist) {
-                    //couldn't parse the title correctly
-                    track = null
-                    artist= null
+                let track, artist;
+                const videoTitle = ytdlVideoInfo.videoDetails?.title;
+
+                const ytMediaInfo = ytdlVideoInfo.videoDetails?.media;
+                if (
+                    ytMediaInfo &&
+                    ytMediaInfo.category === 'Music' &&
+                    ytMediaInfo.song &&
+                    ytMediaInfo.artist
+                ) {
+                    track = ytMediaInfo.song;
+                    artist = ytMediaInfo.artist;
+                } else {
+                    //try to parse the title
+                    const result = parseTitleStrings(videoTitle);
+
+                    if (result) {
+                        if (result.title === result.artist) {
+                            //couldn't parse the title correctly
+                            track = null;
+                            artist = null;
+                        }
+                        track = result.title;
+                        artist = result.artist;
+                    }
                 }
-                track = result.title
-                artist = result.artist
+
+                if (!(track && artist)) return null;
+
+                const lastFmRecommendedSongs = await lastFmRecommend(track, artist);
+
+                if (!lastFmRecommendedSongs || lastFmRecommendedSongs.length === 0) {
+                    const recommendedYoutube = ytdlVideoInfo.related_videos;
+
+                    const parsedForQueue: YoutubeRecommended[] = recommendedYoutube.map(
+                        (video: { title: any; thumbnails: { url: any }[] }) => {
+                            return {
+                                info: {
+                                    title: video.title,
+                                },
+                                isYoutubeRecommended: true,
+                                thumbnail: video.thumbnails[0].url,
+                                recommendedSong: true,
+                            };
+                        }
+                    );
+
+                    return parsedForQueue;
+                }
+
+                const parsedRecommended: BotdizTrack[] = lastFmRecommendedSongs.map((song) => {
+                    return {
+                        info: {
+                            trackName: song.name,
+                            artist: song.artist.name,
+                            title: song.artist.name + ' - ' + song.name,
+                        },
+                        isSpotify: false,
+                        recommendedSong: true,
+                    };
+                });
+
+                return parsedRecommended;
             }
 
+            return null;
+        } else if ((queueItem as BotdizTrack) && queueItem.isSpotify) {
+            //song is from spotify
+
+            if (!(queueItem.info.trackId && queueItem.info.artistId)) return null;
+
+            const recommended = await spotifyRecommend(
+                queueItem.info.trackId,
+                queueItem.info.artistId
+            );
+
+            if (!recommended) return null;
+
+            const parsedRecommended: BotdizTrack[] = recommended.map((song) => {
+                return {
+                    info: {
+                        trackId: song.id,
+                        artistId: song.artists[0].id,
+                        trackName: song.name,
+                        artist: song.artists[0].name,
+                        title: song.artists[0].name + ' - ' + song.name,
+                    },
+                    isSpotify: true,
+                    recommendedSong: true,
+                };
+            });
+
+            return parsedRecommended;
+        } else {
+            //if the song is from previous youtube recommended don't recommend anything
+            return null;
         }
-
-
-        if (track && artist) {
-            const livefmApiKey = process.env.LIVEFM_API_KEY
-
-            const livefmRecommendedUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}&autocorrect=1&api_key=${livefmApiKey}&format=json`
-            
-        }
-
     } catch (error) {
-        console.log("Error while trying to recommend song")
+        console.log('Error while trying to recommend song: ' + error);
+
+        return null;
+    }
+};
+
+type LastFMSong = {
+    name: string;
+    match: number;
+    url: string;
+    duration: number;
+    artist: {
+        name: string;
+        mbid: string;
+        url: string;
+    };
+    image: {
+        '#text': string;
+        size: string;
+    }[];
+};
+async function lastFmRecommend(trackName: string, artist: string) {
+    const livefmApiKey = process.env.LIVEFM_API_KEY;
+
+    const livefmRecommendedUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
+        artist
+    )}&track=${encodeURIComponent(trackName)}&autocorrect=1&api_key=${livefmApiKey}&format=json`;
+
+    const result = await fetch(livefmRecommendedUrl).then((res) => res.json());
+
+    try {
+        const songs: LastFMSong[] = result.similartracks.track;
+
+        return songs;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function spotifyRecommend(trackId: string, artistId: string) {
+    const spotifyApi = await spotifyApiManager.getSpotifyApi();
+
+    const recommendedReply = await spotifyApi.getRecommendations({
+        seed_tracks: [trackId],
+        seed_artists: [artistId],
+        limit: 15,
+    });
+
+    try {
+        const songs = recommendedReply.body.tracks;
+
+        return songs;
+    } catch (error) {
+        return null;
     }
 }

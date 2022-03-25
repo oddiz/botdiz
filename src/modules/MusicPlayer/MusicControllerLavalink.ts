@@ -18,6 +18,9 @@ import { Command as BotdizCommand } from '../../modules/Command';
 import { ShoukakuHandler } from '../../Shokaku/ShokakuHandler';
 import { PlayerUpdate, ShoukakuPlayer, ShoukakuTrack } from 'shoukaku';
 import { DbGuildSettings } from '../../../server_src/db/databaseTypes';
+import SpotifyWebApi from 'spotify-web-api-node';
+import { getRecommended } from '../../scripts/recommendSong';
+import { timestampWithMs } from '@sentry/utils';
 
 let playCommand: BotdizCommand;
 
@@ -32,6 +35,8 @@ export interface BotdizTrack {
         artist: string;
         trackName: string;
         title: string;
+        trackId?: string;
+        artistId?: string;
     };
     isSpotify: boolean;
     recommendedSong?: boolean;
@@ -41,7 +46,17 @@ export interface BotdizShoukakuTrack extends ShoukakuTrack {
     thumbnail?: string;
 }
 
-export type QueueTrack = BotdizTrack | BotdizShoukakuTrack;
+export interface YoutubeRecommended {
+    info: {
+        title: string;
+    };
+    isYoutubeRecommended: boolean;
+    recommendedSong: true;
+    thumbnail: string;
+    isSpotify: false;
+}
+
+export type QueueTrack = BotdizTrack | BotdizShoukakuTrack | YoutubeRecommended;
 
 export type AudioPlayerStatus = 'PLAYING' | 'PAUSED' | 'STOPPED' | 'SKIPPING';
 
@@ -131,8 +146,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
         this.SkipHandler = new SkipHandler(this);
 
         this.skipVotingEnabled = defaultSettings.skipVotingEnabled;
-        this.skipVotingPassPercentage =
-            defaultSettings.skipVotingPassPercentage;
+        this.skipVotingPassPercentage = defaultSettings.skipVotingPassPercentage;
 
         this.shoukaku = shoukaku;
         this.audioPlayer = undefined;
@@ -162,20 +176,38 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             this.audioPlayer = await node.players.get(this.controller.guild.id);
             return true;
         } catch (error) {
-            logger.log(
-                'error',
-                'Error while initializing MusicController: ',
-                error
-            );
+            logger.log('error', 'Error while initializing MusicController: ', error);
             return false;
         }
     }
 
-    triggerUpdate() {
-        this.emit('queueUpdate', this.getQueueEvent());
-        this.emit('currentSongUpdate', this.getCurrentSongUpdateEvent());
-        this.emit('playerStatusUpdate', this.getAudioPlayerStatusEvent());
-        this.SkipHandler.triggerSkipVoteEvent();
+    triggerUpdate(
+        updateType?: 'queueUpdate' | 'currentSongUpdate' | 'playerStatusUpdate' | 'skipVoteUpdate'
+    ) {
+        switch (updateType) {
+            case 'queueUpdate':
+                this.emit('queueUpdate', this.getQueueEvent());
+
+                break;
+            case 'currentSongUpdate':
+                this.emit('currentSongUpdate', this.getCurrentSongUpdateEvent());
+
+                break;
+            case 'playerStatusUpdate':
+                this.emit('playerStatusUpdate', this.getAudioPlayerStatusEvent());
+
+                break;
+            case 'skipVoteUpdate':
+                this.SkipHandler.triggerSkipVoteEvent();
+
+                break;
+            default:
+                this.emit('queueUpdate', this.getQueueEvent());
+                this.emit('currentSongUpdate', this.getCurrentSongUpdateEvent());
+                this.emit('playerStatusUpdate', this.getAudioPlayerStatusEvent());
+                this.SkipHandler.triggerSkipVoteEvent();
+                break;
+        }
     }
 
     applySettings(settings: DbGuildSettings) {
@@ -191,8 +223,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     const passPercentage =
                         settings.skipVotingPassPercentage ||
                         defaultSettings.skipVotingPassPercentage;
-                    const result =
-                        this.SkipHandler.setPassPercentage(passPercentage);
+                    const result = this.SkipHandler.setPassPercentage(passPercentage);
                     if (result) {
                         this.skipVotingPassPercentage = passPercentage;
                     }
@@ -201,10 +232,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 //returns true if successful
             }
         } catch (error) {
-            console.log(
-                'Error while trying to apply settings to Music Controller: ',
-                error
-            );
+            console.log('Error while trying to apply settings to Music Controller: ', error);
         }
     }
 
@@ -221,6 +249,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
         this.emit('playerStatusUpdate', this.getAudioPlayerStatusEvent());
     }
+
     async setVoiceConnection(channel: VoiceBasedChannel) {
         const node = this.shoukaku.getNode();
 
@@ -261,9 +290,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
             if (this.audioPlayerStatus === 'SKIPPING') {
                 if (reason !== 'REPLACED') {
-                    console.log(
-                        "reason should be 'REPLACED' reason: " + reason
-                    );
+                    console.log("reason should be 'REPLACED' reason: " + reason);
                 }
                 this.changeAudioPlayerStatus('STOPPED');
                 return;
@@ -279,9 +306,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             }
 
             if (reason === 'CLEANUP') {
-                console.log(
-                    "CLEANUP end event triggered. Don't know why this is happening"
-                );
+                console.log("CLEANUP end event triggered. Don't know why this is happening");
             }
         });
 
@@ -311,11 +336,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
         });
         this.audioPlayer.on('exception', (data) => {
             try {
-                logger.log(
-                    'error',
-                    'Exception triggered in audioPlayer: ',
-                    data
-                );
+                logger.log('error', 'Exception triggered in audioPlayer: ', data);
                 if (this.currentSong) {
                     this.playCommand.reply(
                         '```js\n//Error while processing song.\nname: "' +
@@ -340,11 +361,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     this.playNext();
                 }
             } catch (error) {
-                logger.log(
-                    'error',
-                    'Error while executing exception event: ',
-                    error
-                );
+                logger.log('error', 'Error while executing exception event: ', error);
             }
             /*
             data = {
@@ -378,14 +395,11 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             node.leaveChannel(this.controller.guild.id);
             this.activeVoiceChannel = null;
         } catch (error) {
-            console.log(
-                'Error while executing disconnectFromVoiceChannel: ',
-                error
-            );
+            console.log('Error while executing disconnectFromVoiceChannel: ', error);
         }
     }
 
-    addToQueue(song: QueueTrack, forceNext?: boolean) {
+    addToQueue(song: QueueTrack | QueueTrack[], forceNext?: boolean) {
         /*
         {
         videoUrl: videoUrl,
@@ -396,40 +410,57 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
         } 
         */
         if (forceNext) {
-            this.queue.unshift(song);
+            if (Array.isArray(song)) {
+                this.queue.unshift(...song);
+            } else {
+                this.queue.unshift(song);
+            }
         } else {
-            this.queue.push(song);
+            if (Array.isArray(song)) {
+                this.queue.push(...song);
+            } else {
+                this.queue.push(song);
+            }
         }
     }
 
     async setYoutubeCookies() {
         try {
             //get cookie for reccomendations
-            const cookies = await fetch('https://www.youtube.com').then(
-                (res) => {
-                    return res.headers.get('set-cookie');
-                }
-            );
+            const cookies = await fetch('https://www.youtube.com').then((res) => {
+                return res.headers.get('set-cookie');
+            });
 
             this.youtubeCookies = cookies;
 
             return cookies;
         } catch (error) {
-            logger.log(
-                'error',
-                'Error while trying to get youtube cookies: ',
-                error
-            );
+            logger.log('error', 'Error while trying to get youtube cookies: ', error);
         }
     }
 
-    removeRecommended() {
-        for (const [index] of this.queue.entries()) {
-            if (this.queue[index].recommendedSong) {
-                this.queue.splice(index, 1);
-            }
-        }
+    findRecommended(song: BotdizTrack) {
+        try {
+            const trackName = song.info.trackName;
+            const artist = song.info.artist;
+
+            if (!(trackName && artist))
+                return logger.log('warn', "Can't recommend song - track name or artist is missing");
+
+            const spotifyApi = new SpotifyWebApi({
+                clientId: process.env.SPOTIFY_CLIENTID,
+                clientSecret: process.env.SPOTIFY_CLIENTSECRET,
+            });
+        } catch (error) {}
     }
+
+    removeRecommended() {
+        const newArray = this.queue.filter((song) => !song.recommendedSong);
+        console.log(newArray);
+
+        this.updateQueue(newArray);
+    }
+
     async processQueue() {
         this.queueLock = false;
         try {
@@ -492,10 +523,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             //if current song changes queue always changes
             this.emit('queueUpdate', this.getQueueEvent());
         } catch (error) {
-            logger.log(
-                'error',
-                'Error while running updateCurrentSong() Error: ' + error
-            );
+            logger.log('error', 'Error while running updateCurrentSong() Error: ' + error);
         }
     }
 
@@ -517,10 +545,19 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             this.queue = [];
             this.emit('queueUpdate', this.getQueueEvent());
         } catch (error) {
-            logger.log(
-                'error',
-                'Error while running clearQueue() Error: ' + error
-            );
+            logger.log('error', 'Error while running clearQueue() Error: ' + error);
+        }
+    }
+
+    deleteQueueItem(index: number) {
+        try {
+            this.queue.splice(index, 1);
+            this.emit('queueUpdate', this.getQueueEvent());
+
+            return true;
+        } catch (error) {
+            logger.log('error', 'Error while running deleteQueueItem() Error: ' + error);
+            return false;
         }
     }
 
@@ -549,10 +586,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     noReplace: false,
                 });
             } else {
-                logger.log(
-                    'error',
-                    'No audio player available /MusicController/playNext()'
-                );
+                logger.log('error', 'No audio player available /MusicController/playNext()');
 
                 this.stop();
 
@@ -565,11 +599,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             await this.createSongEmbed(nextSong);
             return 'success';
         } catch (error) {
-            logger.log(
-                'error',
-                'Error occured while trying to create Audio Resource.',
-                error
-            );
+            logger.log('error', 'Error occured while trying to create Audio Resource.', error);
             //console.log("trying next")
             //this.playNext()
             return;
@@ -578,6 +608,16 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async processNextSong(): Promise<BotdizShoukakuTrack | null> {
         try {
+            if (this.queue.length === 1) {
+                //last queue song time to recommend song
+                console.log('this is the last song');
+                const lastSong = this.queue[0];
+                const recommendedList = await getRecommended(lastSong);
+
+                if (recommendedList) {
+                    this.addToQueue(recommendedList);
+                }
+            }
             let nextInQueue = this.queue.shift();
             let processedSong;
 
@@ -586,6 +626,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             }
 
             const nextIsBotdizTrack = nextInQueue as BotdizTrack;
+            const nextIsYoutubeRecommended = nextInQueue as YoutubeRecommended;
             if (nextIsBotdizTrack.isSpotify) {
                 //if came from spotify link
                 //only videoArtist, videoTitle, isSpotify present
@@ -604,6 +645,18 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 processedSong = result.tracks.shift() as BotdizShoukakuTrack;
             } else if (nextInQueue instanceof ShoukakuTrack) {
                 processedSong = nextInQueue;
+            } else if (nextIsYoutubeRecommended.isYoutubeRecommended) {
+                const query = nextIsYoutubeRecommended.info.title;
+                const node = this.shoukaku.getNode();
+
+                const result = await node.rest.resolve(query, 'youtube');
+
+                if (!result.tracks.length) {
+                    //couldn't find song from spotify song
+                    return null;
+                }
+
+                processedSong = result.tracks.shift() as BotdizShoukakuTrack;
             } else {
                 console.log(
                     "Couldn't figure out how to process next song. FIX ME!! Might be a ShoukakuTrack also, who knows..."
@@ -624,10 +677,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                         .then((res) => res.json())
                         .then((parsedRes) => parsedRes.thumbnail_url)
                         .catch((err) => {
-                            console.log(
-                                'Error while fetching oEmbed. error: ',
-                                err
-                            );
+                            console.log('Error while fetching oEmbed. error: ', err);
                             return null;
                         });
 
@@ -640,8 +690,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             } else {
                 logger.log(
                     'error',
-                    'Error while trying to process next song. processSong is ' +
-                        processedSong
+                    'Error while trying to process next song. processSong is ' + processedSong
                 );
 
                 return null;
@@ -667,10 +716,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     ? 'http://localhost:3000/app'
                     : 'https://botdiz.kaansarkaya.com/app';
             botdizLinkButton.addComponents(
-                new MessageButton()
-                    .setLabel('Botdiz Interface')
-                    .setStyle('LINK')
-                    .setURL(botdizLink)
+                new MessageButton().setLabel('Botdiz Interface').setStyle('LINK').setURL(botdizLink)
             );
             let embedMessage = new MessageEmbed();
 
@@ -707,9 +753,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
                 return true;
             } else {
-                throw new Error(
-                    'Unexpected type for botMessage: ' + botMessage
-                );
+                throw new Error('Unexpected type for botMessage: ' + botMessage);
             }
 
             /* 
@@ -771,10 +815,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
                 for (let i = this.queue.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [this.queue[i], this.queue[j]] = [
-                        this.queue[j],
-                        this.queue[i],
-                    ];
+                    [this.queue[i], this.queue[j]] = [this.queue[j], this.queue[i]];
                 }
 
                 this.emit('queueUpdate', this.getQueueEvent());
@@ -818,11 +859,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
             //logger.log("info", "Stopped music player and destroyed MusicController")
         } catch (error) {
-            logger.log(
-                'error',
-                'Error while running MusicController.stop(): ',
-                error
-            );
+            logger.log('error', 'Error while running MusicController.stop(): ', error);
         }
     }
     pause() {

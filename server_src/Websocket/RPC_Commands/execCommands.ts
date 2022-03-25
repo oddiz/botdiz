@@ -7,11 +7,12 @@ export type ExecCommandResponse = {
     status: 'success' | 'failed';
     message?: string;
     command: string;
-}
-
+};
 
 export default execCommands();
-function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) => Promise<ExecCommandResponse> } {
+function execCommands(): {
+    [key: string]: (user: DbDiscordUser, ...args: any[]) => Promise<ExecCommandResponse>;
+} {
     return {
         RPC_sendMessage: async function (
             user: DbDiscordUser,
@@ -19,22 +20,17 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
             channelId: string,
             message: string
         ): Promise<ExecCommandResponse> {
-
             try {
-                const guild = await GuildControllers.find(
-                    (element) => element.guildId === guildId
-                )?.guildObj;
+                const guild = await GuildControllers.find((element) => element.guildId === guildId)
+                    ?.guildObj;
 
                 if (!guild) {
                     throw 'Guild not found. ID: ' + guildId;
                 }
 
-                const channel = (await guild.channels.fetch(
-                    channelId
-                )) as TextChannel;
+                const channel = (await guild.channels.fetch(channelId)) as TextChannel;
 
-                if (!channel)
-                    throw 'Channel not found. ID: ' + channelId;
+                if (!channel) throw 'Channel not found. ID: ' + channelId;
 
                 await channel.send({ content: message });
 
@@ -44,10 +40,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     message: 'Message sent.',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_sendMessage :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_sendMessage :', error);
 
                 const parsedUser = {
                     discord_id: user.discord_id,
@@ -62,17 +55,17 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
             }
         },
 
-        RPC_pausePlayer: async function (user: DbDiscordUser, guildId: string): Promise<ExecCommandResponse> {
+        RPC_pausePlayer: async function (
+            user: DbDiscordUser,
+            guildId: string
+        ): Promise<ExecCommandResponse> {
             try {
                 const guildMusicController = await GuildControllers.find(
                     (element) => element.guildId === guildId
                 )?.controller.MusicController;
 
                 if (!guildMusicController)
-                    throw (
-                        'Guild music controller not found in RPC_pausePlayer. ID: ' +
-                        guildId
-                    );
+                    throw 'Guild music controller not found in RPC_pausePlayer. ID: ' + guildId;
 
                 await guildMusicController.pause();
 
@@ -82,10 +75,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     message: 'Paused player',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_pausePlayer :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_pausePlayer :', error);
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -99,7 +89,10 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
             }
         },
 
-        RPC_resumePlayer: async function (user: DbDiscordUser, guildId: string): Promise<ExecCommandResponse> {
+        RPC_resumePlayer: async function (
+            user: DbDiscordUser,
+            guildId: string
+        ): Promise<ExecCommandResponse> {
             try {
                 const guildMusicController = await GuildControllers.find(
                     (element) => element.guildId === guildId
@@ -115,10 +108,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     message: 'Resumed player',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_resumePlayer :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_resumePlayer :', error);
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -158,15 +148,11 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                         skipAmount
                     );
 
-                    if (!result)
-                        throw "No result returned from handleInterface";
-
+                    if (!result) throw 'No result returned from handleInterface';
 
                     return result;
                 }
-                console.log(
-                    "Can't execute skip song command. User doesn't have a discord id."
-                );
+                console.log("Can't execute skip song command. User doesn't have a discord id.");
 
                 return {
                     status: 'failed',
@@ -180,7 +166,10 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                 };
             }
         },
-        RPC_stopPlayer: async function (user: DbDiscordUser, guildId: string): Promise<ExecCommandResponse> {
+        RPC_stopPlayer: async function (
+            user: DbDiscordUser,
+            guildId: string
+        ): Promise<ExecCommandResponse> {
             try {
                 const guildMusicController = await GuildControllers.find(
                     (element) => element.guildId === guildId
@@ -197,10 +186,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     message: 'Stopped player',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_stopPlayer :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_stopPlayer :', error);
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -226,7 +212,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                 if (!guildMusicController)
                     throw 'Guild music controller not found for id: ' + guildId;
 
-                guildMusicController.queue.splice(songIndex, 1);
+                guildMusicController.deleteQueueItem(songIndex);
 
                 return {
                     status: 'success',
@@ -234,10 +220,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     message: `Deleted ${songIndex}. song.`,
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_deleteQueueSong :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_deleteQueueSong :', error);
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -259,17 +242,13 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     (element) => element.guildId === guildId
                 )?.controller;
 
-                if (!guildController)
-                    throw 'Guild controller not found for id: ' + guildId;
+                if (!guildController) throw 'Guild controller not found for id: ' + guildId;
 
-                const playCommand = guildController.commands.find(
-                    ({ name }) => name === 'play'
-                );
+                const playCommand = guildController.commands.find(({ name }) => name === 'play');
 
-                if (!playCommand)
-                    throw 'Play command not found for guild: ' + guildId;
+                if (!playCommand) throw 'Play command not found for guild: ' + guildId;
 
-                console.log("Play command executed from interface with query: " + queryArg);
+                console.log('Play command executed from interface with query: ' + queryArg);
                 playCommand.execute(null, false, { query: queryArg });
 
                 return {
@@ -278,10 +257,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     command: 'RPC_playCommand',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_playCommand: ',
-                    error
-                );
+                console.log('Error while trying to execute RPC_playCommand: ', error);
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -324,6 +300,8 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                             artist: videoArtist,
                             trackName: videoName,
                             title: videoTitle,
+                            trackId: item.track.id,
+                            artistId: item.track.artists[0].id,
                         },
                         isSpotify: true,
                     };
@@ -337,7 +315,6 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     status: result,
                     command: 'RPC_addSpotifyPlaylist',
                 };
-
             } catch (error) {
                 console.log('Error while trying to add spotify playlist');
                 const parsedUser = {
@@ -352,21 +329,21 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     )?.controller;
                     if (!guildController?.MusicController) {
                         return {
-                            status: "failed",
-                            command: "RPC_addSpotifyPlaylist",
+                            status: 'failed',
+                            command: 'RPC_addSpotifyPlaylist',
                         };
                     }
 
                     guildController.MusicController.queueLock = false;
                     return {
-                        status: "failed",
-                        command: "RPC_addSpotifyPlaylist",
+                        status: 'failed',
+                        command: 'RPC_addSpotifyPlaylist',
                     };
                 } catch (error) {
                     //fail silently
                     return {
-                        status: "failed",
-                        command: "RPC_addSpotifyPlaylist",
+                        status: 'failed',
+                        command: 'RPC_addSpotifyPlaylist',
                     };
                 }
             }
@@ -382,32 +359,23 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     (element) => element.guildId === guildId
                 );
 
-                if (!guildController)
-                    throw 'Guild controller not found for id: ' + guildId;
+                if (!guildController) throw 'Guild controller not found for id: ' + guildId;
 
-                const channel = await guildController.guildObj.channels.fetch(
-                    channelId
-                );
-                if (!channel)
-                    throw 'Channel not found for id: ' + channelId;
+                const channel = await guildController.guildObj.channels.fetch(channelId);
+                if (!channel) throw 'Channel not found for id: ' + channelId;
 
-                if (!(channel instanceof VoiceChannel))
-                    throw 'Channel is not a voice channel';
+                if (!(channel instanceof VoiceChannel)) throw 'Channel is not a voice channel';
 
                 const musicController = guildController.controller.MusicController;
 
-                if (!musicController)
-                    throw 'Guild music controller not found for id: ' + guildId;
+                if (!musicController) throw 'Guild music controller not found for id: ' + guildId;
 
-                guildController.controller.MusicController?.setVoiceConnection(
-                    channel
-                );
+                guildController.controller.MusicController?.setVoiceConnection(channel);
 
                 return {
                     status: 'success',
                     command: 'RPC_joinVoiceChannel',
                 };
-
             } catch (error) {
                 console.log(
                     error,
@@ -446,10 +414,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     command: 'RPC_updateQueue',
                 };
             } catch (error) {
-                console.log(
-                    error,
-                    '<-- Error while trying to execute RPC_updateQueue'
-                );
+                console.log(error, '<-- Error while trying to execute RPC_updateQueue');
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -474,8 +439,8 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                 if (guildMusicController.queue.length === 0) {
                     guildMusicController.stop();
                     return {
-                        status: "failed",
-                        command: "RPC_shuffleQueue",
+                        status: 'failed',
+                        command: 'RPC_shuffleQueue',
                     };
                 }
                 const result = await guildMusicController.shuffleQueue();
@@ -493,10 +458,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     command: 'RPC_shuffleQueue',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_shuffleQueue :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_shuffleQueue :', error);
 
                 const parsedUser = {
                     discord_id: user.discord_id,
@@ -530,10 +492,7 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
                     command: 'RPC_seekTo',
                 };
             } catch (error) {
-                console.log(
-                    'Error while trying to execute RPC_deleteQueueSong :',
-                    error
-                );
+                console.log('Error while trying to execute RPC_deleteQueueSong :', error);
                 const parsedUser = {
                     discord_id: user.discord_id,
                     username: user.username,
@@ -547,4 +506,3 @@ function execCommands(): { [key: string]: (user: DbDiscordUser, ...args: any[]) 
         },
     };
 }
-
