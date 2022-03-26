@@ -335,8 +335,10 @@ export default async function (
                             return;
                         }
                     } catch (error) {
-                        logger.log('Error while trying to play spotify link: ', error);
+                        logger.log('error', 'Error while trying to play spotify link: ', error);
                         self.reply('`Error while trying to play spotify link, contact oddiz.`');
+
+                        musicController.queueLock = false;
                         return;
                     }
                 } else {
