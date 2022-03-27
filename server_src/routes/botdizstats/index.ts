@@ -1,5 +1,5 @@
 import { getToken } from '../../scripts/getToken';
-import { GuildControllers } from '../../main';
+import { GuildControllers } from '../../../src/main';
 import { Express } from 'express';
 import { Db } from 'mongodb';
 
