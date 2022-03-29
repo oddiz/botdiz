@@ -10,9 +10,10 @@ import { ParsedQs } from 'qs';
 import { getToken } from '../scripts/getToken';
 import { logger } from '@sentry/utils';
 import { BotdizSession } from 'server_src/types';
-import { AllowedGuild, DbDiscordUser } from '../db/databaseTypes';
+import { AllowedGuild, DbDiscordSession, DbDiscordUser, DbSession } from '../db/databaseTypes';
 import execCommands from './RPC_Commands/execCommands';
 import getCommands from './RPC_Commands/getCommands';
+import RateLimiter from '../RateLimiter';
 
 interface BotdizWebsocketClient {
     websocket: WebSocket;
@@ -30,13 +31,7 @@ export default class WebsocketManager {
     public db: Db;
     public client: Client;
     public GuildControllers: GuildController[];
-    public sessionParser: RequestHandler<
-        ParamsDictionary,
-        any,
-        any,
-        ParsedQs,
-        Record<string, any>
-    >;
+    public sessionParser: RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>;
     public connectedClients: Map<string, BotdizWebsocketClient>;
     public WebsocketServer: WebSocket.Server | null;
 
@@ -45,13 +40,7 @@ export default class WebsocketManager {
         db: Db,
         DiscordClient: Client,
         GuildControllers: GuildController[],
-        sessionParser: RequestHandler<
-            ParamsDictionary,
-            any,
-            any,
-            ParsedQs,
-            Record<string, any>
-        >
+        sessionParser: RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>
     ) {
         this.server = server;
 
@@ -109,68 +98,58 @@ export default class WebsocketManager {
             });
         });
 
-        this.WebsocketServer.on(
-            'connection',
-            async (ws: WebSocket, request) => {
-                const self = this;
-                const req = request as Request;
-                this.sessionParser(req, {} as Response, async () => {
-                    const session = req.session as BotdizSession;
-                    const userId = session?.userId;
+        this.WebsocketServer.on('connection', async (ws: WebSocket, request) => {
+            const self = this;
+            const req = request as Request;
+            this.sessionParser(req, {} as Response, async () => {
+                const session = req.session as BotdizSession;
+                const userId = session?.userId;
 
-                    if (!userId) return;
+                if (!userId) return;
 
-                    if (self.connectedClients.has(userId)) {
-                        // ws.send(JSON.stringify({
-                        //     status: "error",
-                        //     message: "already connected"
-                        // }))
+                if (self.connectedClients.has(userId)) {
+                    // ws.send(JSON.stringify({
+                    //     status: "error",
+                    //     message: "already connected"
+                    // }))
+                    self.connectedClients?.get(userId)?.clientListener.terminate();
+
+                    self.connectedClients.delete(userId);
+                }
+
+                const clientListener = new ClientListenerManager(ws);
+
+                const client: BotdizWebsocketClient = {
+                    websocket: ws,
+                    clientListener: clientListener,
+                };
+
+                self.connectedClients.set(userId, client);
+
+                ws.on('message', (msg) => {
+                    try {
+                        const token = getToken(req);
+                        if (!token) {
+                            logger.log('error', 'No token found in request');
+                            return;
+                        }
+                        self.handleWsMessage(ws, msg, clientListener, token);
+                    } catch (error) {
+                        console.log('error in websocket message handler');
                     }
-
-                    const clientListener = new ClientListenerManager(ws);
-
-                    const client: BotdizWebsocketClient = {
-                        websocket: ws,
-                        clientListener: clientListener,
-                    };
-
-                    self.connectedClients.set(userId, client);
-
-                    ws.on('message', (msg) => {
-                        try {
-                            const token = getToken(req);
-                            if (!token) {
-                                logger.log(
-                                    'error',
-                                    'No token found in request'
-                                );
-                                return;
-                            }
-                            self.handleWsMessage(
-                                ws,
-                                msg,
-                                clientListener,
-                                token
-                            );
-                        } catch (error) {
-                            console.log('error in websocket message handler');
-                        }
-                    });
-
-                    ws.on('close', () => {
-                        try {
-                            self.connectedClients
-                                ?.get(userId)
-                                ?.clientListener.terminate();
-
-                            self.connectedClients.delete(userId);
-                        } catch (error) {
-                            console.log('error closing websocket', error);
-                        }
-                    });
                 });
-            }
-        );
+
+                ws.on('close', () => {
+                    try {
+                        self.connectedClients?.get(userId)?.clientListener.terminate();
+
+                        self.connectedClients.delete(userId);
+                    } catch (error) {
+                        console.log('error while closing websocket', error);
+                    }
+                });
+            });
+        });
     }
 
     async handleWsMessage(
@@ -180,14 +159,16 @@ export default class WebsocketManager {
         token: string
     ) {
         try {
-            const session = await this.db
+            const session = (await this.db
                 .collection('sessions')
-                .findOne({ token: token });
+                .findOne({ token: token })) as unknown as DbDiscordSession | DbSession | null;
 
             if (!session) {
                 console.log('Session not validated');
                 return;
             }
+
+            const userId = session.user_id;
 
             let allowedGuilds, user;
             if ('discord_session' in session) {
@@ -207,15 +188,6 @@ export default class WebsocketManager {
             }
 
             const message = JSON.parse(msg as unknown as string);
-
-            /**
-             * msg structure:
-             *  type
-             *  userId
-             *  token
-             *  command
-             *  params
-             */
 
             if (message.type === 'ping') {
                 ws.send(
@@ -292,6 +264,16 @@ export default class WebsocketManager {
             }
 
             if (message.type === 'exec') {
+                if (!RateLimiter.isUserAllowed(userId)) {
+                    ws.send(
+                        JSON.stringify({
+                            result: 'rate_limited',
+                            message: 'You are being rate limited',
+                        })
+                    );
+
+                    return;
+                }
                 const adminExecCommands = ['RPC_sendMessage'];
                 let result;
                 try {
@@ -302,15 +284,13 @@ export default class WebsocketManager {
                     if (allowedGuilds === 'ALL') {
                         commandAllowed = true;
                     } else {
-                        const allowedGuildsArray =
-                            allowedGuilds as AllowedGuild[];
+                        const allowedGuildsArray = allowedGuilds as AllowedGuild[];
                         for (const allowedGuild of allowedGuildsArray) {
                             //if command is an admin command check if the user is owner or admin of the guild
                             if (adminExecCommands.includes(message.command)) {
                                 if (
                                     allowedGuild.id === execGuildId &&
-                                    (allowedGuild.owner ||
-                                        allowedGuild.administrator)
+                                    (allowedGuild.owner || allowedGuild.administrator)
                                 ) {
                                     commandAllowed = true;
                                     break;
@@ -325,10 +305,7 @@ export default class WebsocketManager {
                     if (commandAllowed) {
                         if (!user) throw 'user is null';
 
-                        result = await execCommands[message.command](
-                            user,
-                            ...message.params
-                        );
+                        result = await execCommands[message.command](user, ...message.params);
                     } else {
                         console.log(
                             `Unauthorized command execution for guildId: ${execGuildId}\nAllowed guilds: ${allowedGuilds}\nSession: ${JSON.stringify(

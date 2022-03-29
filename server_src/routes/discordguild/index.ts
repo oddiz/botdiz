@@ -26,16 +26,13 @@ export default async function discordguild(app: Express, db: Db) {
 
             if (!reqToken) {
                 console.log('No token info in session (in /discordguilds)');
-                
+
                 throw new Error('No token info in session');
             }
 
             const session = (await db
                 .collection('sessions')
-                .findOne({ token: reqToken })) as unknown as
-                | DbSession
-                | DbDiscordSession
-                | null;
+                .findOne({ token: reqToken })) as unknown as DbSession | DbDiscordSession | null;
 
             if (!session) {
                 throw 'Session not found with token: ' + reqToken;
@@ -67,17 +64,14 @@ export default async function discordguild(app: Express, db: Db) {
 
                 return;
             }
-            
+
             const discordSession = session as DbDiscordSession;
 
-            const userGuilds = await fetch(
-                'https://discord.com/api/users/@me/guilds',
-                {
-                    headers: {
-                        authorization: `Bearer ${authToken}`,
-                    },
-                }
-            )
+            const userGuilds = await fetch('https://discord.com/api/users/@me/guilds', {
+                headers: {
+                    authorization: `Bearer ${authToken}`,
+                },
+            })
                 .then((response) => response.json())
                 .catch((err) => {
                     console.log('Error while trying to get user Guilds :', err);
@@ -85,10 +79,8 @@ export default async function discordguild(app: Express, db: Db) {
                 });
 
             if (!(userGuilds && Array.isArray(userGuilds))) {
-                console.log(
-                    'userGuilds is undefined or not array. userGuilds: '
-                );
-                console.log(userGuilds)
+                console.log('userGuilds is undefined or not array. userGuilds: ');
+                console.log(userGuilds);
                 throw 'userGuilds is undefined or not array. userGuilds: ';
             }
 
@@ -110,38 +102,22 @@ export default async function discordguild(app: Express, db: Db) {
                         allowedGuilds.push(guild);
                     } else {
                         let djAccess = false;
-                        const botdizGuildOptions = await db
-                            .collection('guilds')
-                            .findOne({
-                                guild_id: guild.id,
-                            }) as unknown as DbGuildObject | null;
+                        const botdizGuildOptions = (await db.collection('guilds').findOne({
+                            guild_id: guild.id,
+                        })) as unknown as DbGuildObject | null;
 
                         if (botdizGuildOptions) {
                             const allowedDjRoles = botdizGuildOptions.dj_roles;
 
                             if (allowedDjRoles.length > 0) {
-                                const discordGuildMemberRoles =
-                                    await DiscordClient.guilds
-                                        .fetch({ guild: guild.id })
-                                        .then((guild) =>
-                                            guild.members.fetch(
-                                                discordSession.discord_id
-                                            )
-                                        )
-                                        .then(
-                                            (guildMember) => guildMember.roles
-                                        )
-                                        .then(
-                                            (guildMemberRoles) =>
-                                                guildMemberRoles.cache
-                                        );
+                                const discordGuildMemberRoles = await DiscordClient.guilds
+                                    .fetch({ guild: guild.id })
+                                    .then((guild) => guild.members.fetch(discordSession.discord_id))
+                                    .then((guildMember) => guildMember.roles)
+                                    .then((guildMemberRoles) => guildMemberRoles.cache);
 
                                 for (const allowedDjRole of allowedDjRoles) {
-                                    if (
-                                        discordGuildMemberRoles.has(
-                                            allowedDjRole
-                                        )
-                                    ) {
+                                    if (discordGuildMemberRoles.has(allowedDjRole)) {
                                         djAccess = true;
                                         guild.dj_access = true;
                                         guild.administrator = false;
@@ -305,12 +281,7 @@ export default async function discordguild(app: Express, db: Db) {
                     clientSecret = process.env.DISCORD_TESTBOT_CLIENT_SECRET;
                     redirectUri = 'http://localhost:3000/discordlogin';
                 } else {
-                    if (
-                        !(
-                            process.env.DISCORD_CLIENT_ID &&
-                            process.env.DISCORD_CLIENT_SECRET
-                        )
-                    ) {
+                    if (!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET)) {
                         throw 'DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET are not defined.';
                     }
 
@@ -318,33 +289,24 @@ export default async function discordguild(app: Express, db: Db) {
                     clientSecret = process.env.DISCORD_CLIENT_SECRET;
                     redirectUri = 'https://botdiz.kaansarkaya.com/discordlogin';
                 }
-                const oAuthResult = await fetch(
-                    'https://discord.com/api/oauth2/token',
-                    {
-                        method: 'POST',
-                        body: new URLSearchParams({
-                            client_id: clientId,
-                            client_secret: clientSecret,
-                            grant_type: 'refresh_token',
-                            refresh_token: session.discord_refresh_token,
-                        }),
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                    }
-                )
+                const oAuthResult = await fetch('https://discord.com/api/oauth2/token', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        client_id: clientId,
+                        client_secret: clientSecret,
+                        grant_type: 'refresh_token',
+                        refresh_token: session.discord_refresh_token,
+                    }),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                })
                     .then((response) => response.json())
                     .catch((err) => {
-                        console.log(
-                            'Error while recieving refresh token ',
-                            err
-                        );
+                        console.log('Error while recieving refresh token ', err);
                     });
 
-                console.log(
-                    'Discord token refreshed oAuthResult: ',
-                    oAuthResult
-                );
+                console.log('Discord token refreshed oAuthResult: ', oAuthResult);
 
                 db.collection('sessions').updateOne(
                     {
@@ -354,8 +316,7 @@ export default async function discordguild(app: Express, db: Db) {
                         discord_auth_token: oAuthResult.access_token,
                         discord_refresh_token: oAuthResult.refresh_token,
                         discord_token_expiration:
-                            new Date().getTime() +
-                            oAuthResult.expires_in * 1000,
+                            new Date().getTime() + oAuthResult.expires_in * 1000,
                     }
                 );
                 return oAuthResult.access_token;
