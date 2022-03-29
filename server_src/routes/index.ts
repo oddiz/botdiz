@@ -12,8 +12,34 @@ import botdizstats from './botdizstats';
 import metrics from './metrics';
 import dotenv from 'dotenv';
 
-import { Express } from 'express';
+import RateLimiter from '../RateLimiter';
+import { Express, RequestHandler } from 'express';
+import { BotdizSession } from 'server_src/types';
 dotenv.config();
+
+const rateLimiter: RequestHandler = (req, res, next) => {
+    const session = req.session as BotdizSession;
+
+    const whitelistedRoutes = ['/login', '/discordlogin', '/validate'];
+
+    if (whitelistedRoutes.includes(req.path)) {
+        next();
+    } else if (session.userId) {
+        if (
+            RateLimiter.isUserAllowed(session.userId) ||
+            req.path === '/discordlogin' ||
+            req.path === '/login'
+        ) {
+            next();
+        } else {
+            console.log('Rate limited user: ' + session.userId + '\nPath: ' + req.path);
+            res.status(401).send({ status: 'rate_limited' });
+        }
+    } else {
+        console.log('No user id in session. Path: ' + req.path);
+        res.status(401).send({ status: 'rate_limited' });
+    }
+};
 
 export class RouteManager {
     private app: Express;
@@ -25,6 +51,7 @@ export class RouteManager {
     }
 
     run() {
+        this.app.use(rateLimiter);
         login(this.app, this.db);
         validate(this.app, this.db);
         logout(this.app, this.db);

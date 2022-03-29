@@ -267,7 +267,7 @@ export default class WebsocketManager {
                 if (!RateLimiter.isUserAllowed(userId)) {
                     ws.send(
                         JSON.stringify({
-                            result: 'rate_limited',
+                            status: 'rate_limited',
                             message: 'You are being rate limited',
                         })
                     );
