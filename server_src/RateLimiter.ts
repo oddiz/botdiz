@@ -3,7 +3,7 @@ import LRU from 'lru-cache';
 type UserId = string;
 type LastRequestTime = number;
 
-export class RateLimiter {
+class RateLimiter {
     clients: LRU<UserId, LastRequestTime>;
 
     RATE_LIMIT_IN_MILLISECOND = 500;
@@ -31,5 +31,5 @@ export class RateLimiter {
     }
 }
 
-const rateLimiter = new RateLimiter();
-export default rateLimiter;
+export const webSocketRateLimiter = new RateLimiter();
+export const APIRateLimiter = new RateLimiter();

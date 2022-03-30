@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import LRU from 'lru-cache';
 import { client, GuildControllers } from '../src/main';
+import { logger } from '../src/logger';
 
 const LRUOptions = {
     max: 100,
@@ -20,10 +21,7 @@ type BotdizVoiceChannel = {
 };
 class CacheManager {
     private voiceChannelsCache: LRU<string, BotdizVoiceChannel[]>;
-    private textChannelsCache: LRU<
-        string,
-        Collection<string, NonThreadGuildBasedChannel>
-    >;
+    private textChannelsCache: LRU<string, Collection<string, NonThreadGuildBasedChannel>>;
     private needsChannelsUpdate: Set<string>;
     private debug = true;
 
@@ -38,24 +36,18 @@ class CacheManager {
     }
 
     setupChannelUpdateListener() {
-        const channelEvents = [
-            'channelCreate',
-            'channelDelete',
-            'channelUpdate',
-        ];
+        const channelEvents = ['channelCreate', 'channelDelete', 'channelUpdate'];
 
         for (const event of channelEvents) {
             client.on('voiceStateUpdate', (oldState) => {
                 this.needsChannelsUpdate.add(oldState.guild.id);
             });
             client.on(event, async (channel) => {
-                if (
-                    channel.type === 'GUILD_TEXT' ||
-                    channel.type === 'GUILD_VOICE'
-                ) {
+                if (channel.type === 'GUILD_TEXT' || channel.type === 'GUILD_VOICE') {
                     this.needsChannelsUpdate.add(channel.guild.id);
                     this.debug
-                        ? console.log(
+                        ? logger.log(
+                              'info',
                               `Channels of ${channel.guild.name} needs to be updated`
                           )
                         : null;
@@ -68,10 +60,7 @@ class CacheManager {
         guildId: string
     ): Promise<Collection<string, NonThreadGuildBasedChannel> | null> {
         try {
-            if (
-                this.needsChannelsUpdate.has(guildId) ||
-                !this.textChannelsCache.has(guildId)
-            ) {
+            if (this.needsChannelsUpdate.has(guildId) || !this.textChannelsCache.has(guildId)) {
                 await this.updateGuildChannels(guildId);
             }
 
@@ -80,19 +69,14 @@ class CacheManager {
 
             return result;
         } catch (error) {
-            console.log('Exception in cacheManager.getTextChannels: ', error);
+            logger.log('error', 'Exception in cacheManager.getTextChannels: ', error);
             return null;
         }
     }
 
-    async getVoiceChannels(
-        guildId: string
-    ): Promise<BotdizVoiceChannel[] | null> {
+    async getVoiceChannels(guildId: string): Promise<BotdizVoiceChannel[] | null> {
         try {
-            if (
-                this.needsChannelsUpdate.has(guildId) ||
-                !this.voiceChannelsCache.has(guildId)
-            ) {
+            if (this.needsChannelsUpdate.has(guildId) || !this.voiceChannelsCache.has(guildId)) {
                 await this.updateGuildChannels(guildId);
             }
 
@@ -101,26 +85,21 @@ class CacheManager {
 
             return result;
         } catch (error) {
-            console.log('Exception in cacheManager.getVoiceChannels: ', error);
+            logger.log('error', 'Exception in cacheManager.getVoiceChannels: ' + error);
             return null;
         }
     }
 
     async updateGuildChannels(guildId: string) {
-        const guild = await GuildControllers.find(
-            (element) => element.guildId === guildId
-        )?.guildObj;
+        const guild = await GuildControllers.find((element) => element.guildId === guildId)
+            ?.guildObj;
 
         if (!guild) return;
 
         const guildChannels = await guild.channels.fetch();
 
-        const textChannels = guildChannels.filter(
-            (c) => c.type === 'GUILD_TEXT' && c.viewable
-        );
-        const voiceChannels = guildChannels.filter(
-            (c) => c.type === 'GUILD_VOICE' && c.viewable
-        );
+        const textChannels = guildChannels.filter((c) => c.type === 'GUILD_TEXT' && c.viewable);
+        const voiceChannels = guildChannels.filter((c) => c.type === 'GUILD_VOICE' && c.viewable);
 
         const mappedVoiceChannels = voiceChannels.map((channel) => {
             return {
@@ -134,9 +113,10 @@ class CacheManager {
         await this.voiceChannelsCache.set(guildId, mappedVoiceChannels);
         await this.textChannelsCache.set(guildId, textChannels);
 
-        this.debug && console.log(`Channels of ${guildId} updated`);
+        this.debug && logger.log('info', `Channels of ${guildId} updated`);
         this.debug &&
-            console.log(
+            logger.log(
+                'info',
                 voiceChannels.map((channel) => {
                     return {
                         name: channel.name,

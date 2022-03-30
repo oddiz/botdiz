@@ -456,7 +456,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     removeRecommended() {
         const newArray = this.queue.filter((song) => !song.recommendedSong);
-        console.log(newArray);
 
         this.updateQueue(newArray);
     }
@@ -574,7 +573,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 return false;
             }
 
-            console.log(nextSong.info);
             if (!this.audioPlayer) {
                 await this.init();
             }

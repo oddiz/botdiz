@@ -12,9 +12,10 @@ import botdizstats from './botdizstats';
 import metrics from './metrics';
 import dotenv from 'dotenv';
 
-import RateLimiter from '../RateLimiter';
+import { APIRateLimiter } from '../RateLimiter';
 import { Express, RequestHandler } from 'express';
 import { BotdizSession } from 'server_src/types';
+import { logger } from '../../src/logger';
 dotenv.config();
 
 const rateLimiter: RequestHandler = (req, res, next) => {
@@ -26,17 +27,17 @@ const rateLimiter: RequestHandler = (req, res, next) => {
         next();
     } else if (session.userId) {
         if (
-            RateLimiter.isUserAllowed(session.userId) ||
+            APIRateLimiter.isUserAllowed(session.userId) ||
             req.path === '/discordlogin' ||
             req.path === '/login'
         ) {
             next();
         } else {
-            console.log('Rate limited user: ' + session.userId + '\nPath: ' + req.path);
+            logger.log('warn', 'Rate limited user: ' + session.userId + '\nPath: ' + req.path);
             res.status(401).send({ status: 'rate_limited' });
         }
     } else {
-        console.log('No user id in session. Path: ' + req.path);
+        logger.log('warn', 'No user id in session. Path: ' + req.path);
         res.status(401).send({ status: 'rate_limited' });
     }
 };

@@ -13,7 +13,7 @@ import { BotdizSession } from 'server_src/types';
 import { AllowedGuild, DbDiscordSession, DbDiscordUser, DbSession } from '../db/databaseTypes';
 import execCommands from './RPC_Commands/execCommands';
 import getCommands from './RPC_Commands/getCommands';
-import RateLimiter from '../RateLimiter';
+import { webSocketRateLimiter } from '../RateLimiter';
 
 interface BotdizWebsocketClient {
     websocket: WebSocket;
@@ -264,7 +264,7 @@ export default class WebsocketManager {
             }
 
             if (message.type === 'exec') {
-                if (!RateLimiter.isUserAllowed(userId)) {
+                if (!webSocketRateLimiter.isUserAllowed(userId)) {
                     ws.send(
                         JSON.stringify({
                             status: 'rate_limited',

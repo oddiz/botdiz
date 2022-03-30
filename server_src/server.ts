@@ -16,6 +16,7 @@ import session from 'express-session';
 import https from 'https';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { logger } from '../src/logger';
 dotenv.config();
 
 Sentry.init({
@@ -96,16 +97,10 @@ const sessionParser = session(sessionParserOptions);
 async function init() {
     app.use(sessionParser);
     //setup database
-    console.log('Setting up database.');
+    logger.log('info', 'Setting up database.');
 
     const DbManager = new DatabaseManager();
     const db = await DbManager.connect();
-
-    // db.listCollections().toArray(function(err, collInfos) {
-    //     // collInfos is an array of collection info objects that look like:
-    //     // { name: 'test', options: {} }
-    //    console.log(collInfos)
-    // });
 
     if (!db) {
         console.error('Unable to connect to db. Botdiz server cannot run!');
@@ -113,16 +108,14 @@ async function init() {
     }
 
     //serup routes
-    console.log('Initilizing Route Manager.');
+    logger.log('info', 'Initilizing Route Manager.');
     const RouteMngr = new RouteManager(app, db);
     RouteMngr.run();
     app.use(Sentry.Handlers.errorHandler());
 
     let server;
     if (process.env.NODE_ENV === 'development') {
-        server = app.listen(8080, () =>
-            console.log('Api is running on port 8080')
-        );
+        server = app.listen(8080, () => logger.log('info', 'Api is running on port 8080'));
 
         const websocketManager = new WsManager(
             server,
@@ -136,18 +129,14 @@ async function init() {
     } else {
         const httpsServer = https.createServer(
             {
-                key: fs.readFileSync(
-                    '/etc/letsencrypt/live/api.kaansarkaya.com/privkey.pem'
-                ),
-                cert: fs.readFileSync(
-                    '/etc/letsencrypt/live/api.kaansarkaya.com/fullchain.pem'
-                ),
+                key: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/privkey.pem'),
+                cert: fs.readFileSync('/etc/letsencrypt/live/api.kaansarkaya.com/fullchain.pem'),
             },
             app
         );
 
         server = httpsServer.listen(8080, () =>
-            console.log('Api is running on port 8080 with https')
+            logger.log('info', 'Api is running on port 8080 with https')
         );
 
         const websocketManager = new WsManager(
