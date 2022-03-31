@@ -74,14 +74,18 @@ export default class WebsocketManager {
                 return;
             }
             const req = request as Request;
+            const token = getToken(req);
+
+            if (!token) {
+                socket.destroy();
+
+                return;
+            }
             this.sessionParser(req, {} as Response, async () => {
-                const session = await this.db
-                    .collection('sessions')
-                    .findOne({ token: getToken(req) });
+                const session = await this.db.collection('sessions').findOne({ token: token });
 
                 if (!session) {
                     console.log('Unauthorized websocket request');
-                    socket.write('HTTP/1.1 401 Unauthorized\n\r\n');
                     socket.destroy();
                     return;
                 }
