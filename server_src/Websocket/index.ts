@@ -58,7 +58,7 @@ export default class WebsocketManager {
     }
 
     async init() {
-        this.WebsocketServer = await new WebSocket.Server({
+        this.WebsocketServer = new WebSocket.Server({
             noServer: true,
         });
 
@@ -74,31 +74,32 @@ export default class WebsocketManager {
                 return;
             }
             const req = request as Request;
-            const token = getToken(req);
 
-            if (!token) {
-                socket.destroy();
-
-                return;
-            }
-            this.sessionParser(req, {} as Response, async () => {
-                const session = await this.db.collection('sessions').findOne({ token: token });
-
-                if (!session) {
-                    console.log('Unauthorized websocket request');
-                    socket.destroy();
-                    return;
-                }
-            });
-
-            //check for token, if valid allow connection
+            let token: string | null, session: DbDiscordSession | null;
 
             this.WebsocketServer.handleUpgrade(request, socket, head, (ws) => {
-                if (!this.WebsocketServer) {
-                    logger.log('error', 'No websocket server.');
-                    return;
-                }
-                this.WebsocketServer.emit('connection', ws, request);
+                //check for token, if valid allow connection
+
+                this.sessionParser(req, {} as Response, async () => {
+                    if (!this.WebsocketServer) {
+                        logger.log('error', 'No websocket server.');
+                        return;
+                    }
+                    if (!req.session) return;
+                    const sessionData = req.session as BotdizSession;
+                    token = sessionData.token;
+
+                    if (token) {
+                        session = (await this.db
+                            .collection('sessions')
+                            .findOne({ token: token })) as unknown as DbDiscordSession | null;
+                    }
+                    if (token && session) {
+                        this.WebsocketServer.emit('connection', ws, request);
+                    } else {
+                        socket.destroy();
+                    }
+                });
             });
         });
 
@@ -137,6 +138,7 @@ export default class WebsocketManager {
                             logger.log('error', 'No token found in request');
                             return;
                         }
+                        //@ts-ignore
                         self.handleWsMessage(ws, msg, clientListener, token);
                     } catch (error) {
                         console.log('error in websocket message handler');
@@ -158,7 +160,7 @@ export default class WebsocketManager {
 
     async handleWsMessage(
         ws: WebSocket,
-        msg: RawData,
+        msg: WebSocket.MessageEvent,
         clientListener: ClientListenerManager,
         token: string
     ) {
