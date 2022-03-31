@@ -17,6 +17,9 @@ import https from 'https';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { logger } from '../src/logger';
+import session_store from 'session-file-store';
+
+const SessionFileStore = session_store(session);
 dotenv.config();
 
 Sentry.init({
@@ -69,6 +72,7 @@ if (!process.env.SESSION_SECRET) {
 
 if (process.env.NODE_ENV === 'development') {
     sessionParserOptions = {
+        store: new SessionFileStore({ ttl: 1 }),
         saveUninitialized: false,
         secret: process.env.SESSION_SECRET,
         resave: true,
@@ -80,6 +84,7 @@ if (process.env.NODE_ENV === 'development') {
     };
 } else {
     sessionParserOptions = {
+        store: new SessionFileStore({ ttl: 60 * 60 * 24 * 7 }),
         saveUninitialized: false,
         secret: process.env.SESSION_SECRET,
         resave: true,
@@ -92,9 +97,9 @@ if (process.env.NODE_ENV === 'development') {
     };
 }
 
-const sessionParser = session(sessionParserOptions);
-
 async function init() {
+    const sessionParser = session(sessionParserOptions);
+
     app.use(sessionParser);
     //setup database
     logger.log('info', 'Setting up database.');

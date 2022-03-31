@@ -8,6 +8,8 @@ log
 /node_modules
 /temp
 /build
+/sessions
+
 .vscode/settings.json
 src/Shokaku/lavalink-server.json
 
