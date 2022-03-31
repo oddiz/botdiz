@@ -72,7 +72,7 @@ if (!process.env.SESSION_SECRET) {
 
 if (process.env.NODE_ENV === 'development') {
     sessionParserOptions = {
-        store: new SessionFileStore({ ttl: 1 }),
+        store: new SessionFileStore({ ttl: 60 * 60 * 24 * 7 }),
         saveUninitialized: false,
         secret: process.env.SESSION_SECRET,
         resave: true,
