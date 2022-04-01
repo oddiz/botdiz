@@ -7,6 +7,7 @@ import { Express } from 'express';
 import { getToken } from '../../scripts/getToken';
 import { Guild } from 'discord.js';
 import { DbDiscordSession, DbGuildObject, DbSession } from '../../db/databaseTypes';
+import { withAuth } from '../middlewares';
 dotenv.config();
 
 interface BotdizGuild {
@@ -20,25 +21,12 @@ interface BotdizGuild {
 }
 
 export default async function discordguild(app: Express, db: Db) {
-    app.get('/discordguilds', async (req, res) => {
+
+    
+    app.get('/discordguilds', withAuth, async (req, res) => {
         try {
-            const reqToken = getToken(req);
-
-            if (!reqToken) {
-                console.log('No token info in session (in /discordguilds)');
-
-                throw new Error('No token info in session');
-            }
-
-            const session = (await db
-                .collection('sessions')
-                .findOne({ token: reqToken })) as unknown as DbSession | DbDiscordSession | null;
-
-            if (!session) {
-                throw 'Session not found with token: ' + reqToken;
-            }
-
-            const authToken = await getUserDiscordAuth(session);
+            const session = req.dbSession;
+            const authToken = await getUserDiscordAuthToken(session);
 
             const botdizGuilds = await DiscordClient.guilds.cache;
 
@@ -168,37 +156,17 @@ export default async function discordguild(app: Express, db: Db) {
         }
     });
 
-    app.get('/discordguild/:guild_id', async (req, res) => {
+    app.get('/discordguild/:guild_id', withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guild_id;
             if (!reqGuildId) {
                 throw 'No guild Id supplied with request.';
             }
-            const token = getToken(req);
 
-            const session = await db.collection('sessions').findOne({
-                token: token,
-            });
+            const session = req.dbSession;
 
-            if (!session) {
-                console.log('Session not found');
-
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return;
-            }
-
-            if ('discord_session' in session) {
-                const user = await db
-                    .collection('discord_users')
-                    .findOne({ discord_id: session.discord_id });
-
-                if (!user) throw 'User session not found';
-
-                const allowedGuilds = user.allowed_guilds;
+            if ('discord_session' in session && 'discord_id' in req.user) {
+                const allowedGuilds = req.user.allowed_guilds;
 
                 let allowed = false;
                 for (const guild of allowedGuilds) {
@@ -255,7 +223,7 @@ export default async function discordguild(app: Express, db: Db) {
             });
         }
     });
-    async function getUserDiscordAuth(
+    async function getUserDiscordAuthToken(
         session: DbDiscordSession | DbSession
     ): Promise<string | void> {
         try {

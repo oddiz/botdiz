@@ -24,20 +24,16 @@ export default function validate(app: Express, db: Db) {
         const reqSession = req.session as Session & { token: string };
         const reqToken = reqSession.token;
         //check db and if token checks out
-        const session = await db
-            .collection('sessions')
-            .findOne({ token: reqToken });
+        const session = await db.collection('sessions').findOne({ token: reqToken });
 
         if (session) {
             let user;
             let responsePayload: ValidateUserData | null = null;
 
             if (session.discord_session) {
-                user = (await db
-                    .collection('discord_users')
-                    .findOne({
-                        discord_id: session.discord_id,
-                    })) as unknown as DbDiscordUser | null;
+                user = (await db.collection('discord_users').findOne({
+                    discord_id: session.discord_id,
+                })) as unknown as DbDiscordUser | null;
 
                 if (user) {
                     responsePayload = {
@@ -48,11 +44,9 @@ export default function validate(app: Express, db: Db) {
                     };
                 }
             } else {
-                user = (await db
-                    .collection('users')
-                    .findOne({
-                        username: session.username,
-                    })) as unknown as DbUserData | null;
+                user = (await db.collection('users').findOne({
+                    username: session.username,
+                })) as unknown as DbUserData | null;
 
                 if (user) {
                     responsePayload = {

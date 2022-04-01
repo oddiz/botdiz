@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import { logger } from '../../../src/logger';
 import { BotdizSession } from '../../types';
 import { makeImageUrl } from '../../scripts/makeImageUrl';
+import { DbGuildObject } from 'server_src/db/databaseTypes';
 dotenv.config();
 
 export default async function playlists(app: Express, db: Db) {
@@ -146,46 +147,14 @@ export default async function playlists(app: Express, db: Db) {
                         guild.administrator = true;
                         allowedGuilds.push(guild);
                     } else {
-                        const botdizGuildOptions = await db.collection('guilds').findOne({
+                        const botdizGuildOptions = (await db.collection('guilds').findOne({
                             guild_id: guild.id,
-                        });
+                        })) as unknown as DbGuildObject;
 
                         if (botdizGuildOptions) {
-                            /*
-                            allowedDjRoles = [
-                                {
-                                    role_id: "555555555",
-                                    role_name: "test role"
-                                },
-                                {
-                                    ...
-                                }
-                            ]
-                            
-                            */
                             const allowedDjRoles = botdizGuildOptions.dj_roles;
 
                             if (allowedDjRoles.length > 0) {
-                                /* 
-                                discordGuildMemberRoles = Collection [Map] {
-                                    '854409105431330836'(role id) => Role {
-                                        guild: Guild object,
-                                        id: '854409105431330836
-                                        name: '@everyone',
-                                        color: 0,
-                                        hoist: false,
-                                        rawPosition: 0,
-                                        permissions: Permissions { bitfield: 247064940097n },
-                                        managed: false,
-                                        mentionable: false,
-                                        deleted: false,
-                                        tags: null
-                                    },
-                                    ....
-                                }
-                                    
-                                
-                                */
                                 const discordGuildMemberRoles = await DiscordClient.guilds
                                     .fetch({ guild: guild.id })
                                     .then((guild) => guild.members.fetch(userResult.id))

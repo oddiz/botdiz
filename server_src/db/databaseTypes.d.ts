@@ -1,5 +1,5 @@
-import {ListOfUsersPlaylistsResponse} from "spotify-api"
-import { Guild } from "discord.js";
+import { ListOfUsersPlaylistsResponse } from 'spotify-api';
+import { Guild } from 'discord.js';
 
 export interface DbGuildSubscriptions {
     type: string;
@@ -26,24 +26,22 @@ export interface AllowedGuild {
     permissions_new: string;
     iconUrl?: string;
     administrator?: boolean;
-    dj_access: boolean
+    dj_access: boolean;
 }
 
 export type DbGuildSettings = {
     autoplay: boolean;
     skipVotingEnabled: boolean;
     skipVotingPassPercentage: number;
-}
+};
 export interface DbGuildObject {
     guild_id: string;
     guild_name: string;
     owner_id: string;
     dj_roles: string[];
-    subscriptions?: DbGuildSubscriptions[]
-    settings?: DbGuildSettings
-
+    subscriptions?: DbGuildSubscriptions[];
+    settings?: DbGuildSettings;
 }
-
 
 export interface DbSpotifyData {
     auth_token: string;
@@ -57,7 +55,7 @@ export interface DbSpotifyData {
         previous: null;
         total: number;
         items: ListOfUsersPlaylistsResponse[];
-    }
+    };
 }
 
 export interface DbUserData {
@@ -67,7 +65,7 @@ export interface DbUserData {
     data: DbUserData;
     is_admin?: boolean;
 }
-export interface DbDiscordUser extends DbUserData {
+export interface DbDiscordUser extends DbUser {
     discord_id: string;
     auth_token?: string;
     avatar: string | null;
@@ -75,14 +73,12 @@ export interface DbDiscordUser extends DbUserData {
 
     all_guilds: AllowedGuild[];
     allowed_guilds: AllowedGuild[] | [];
-
-
 }
 
 export interface DbUser {
     username: string;
     password: string;
-    avatarUrl: string;
+    avatarURL: string;
     is_admin: boolean;
     data: DbUserData;
 }
@@ -96,7 +92,7 @@ export interface DbEpicGameContent {
 }
 export interface DbSubscriptionContent {
     type: string;
-    current_content: DbEpicGameContent[]
+    current_content: DbEpicGameContent[];
     current_content_hash: string;
     next_update_time: number | null;
 }

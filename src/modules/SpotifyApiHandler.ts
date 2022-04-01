@@ -67,6 +67,14 @@ class SpotifyApiManager {
 
         return this.spotifyApi;
     }
+    async getSpotifyToken() {
+        const isTokenRefreshNeeded = this.tokenRefreshNeeded();
+        if (isTokenRefreshNeeded) {
+            await this.refreshToken();
+        }
+
+        return this.access_token;
+    }
 }
 
 export const spotifyApiManager = new SpotifyApiManager();

@@ -2,30 +2,10 @@ import { getToken } from '../../scripts/getToken';
 import { GuildControllers } from '../../../src/main';
 import { Express } from 'express';
 import { Db } from 'mongodb';
+import { withAuth } from '../middlewares';
 
 export default async function botdizstats(app: Express, db: Db) {
-    app.get('/botdizstats', async (req, res) => {
-        const token = getToken(req);
-
-        if (!token) {
-            console.log('No token info in session (in /guildinfo)');
-            res.status(401).send({
-                status: 'failed',
-                message: '401 Unauthorized',
-            });
-
-            return;
-        }
-
-        const session = await db.collection('sessions').findOne({ token: token });
-
-        if (!session) {
-            res.status(401).send({
-                status: 'failed',
-                message: '401 Unauthorized',
-            });
-        }
-
+    app.get('/botdizstats', withAuth, async (req, res) => {
         const totalGuilds = GuildControllers.length;
 
         let totalPlaying = 0;

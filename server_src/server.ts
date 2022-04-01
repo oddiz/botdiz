@@ -9,7 +9,7 @@ import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 
 import WsManager from './Websocket';
-import { DatabaseManager } from './db/DatabaseManager';
+import { DatabaseManager, dbManager } from './db/DatabaseManager';
 import { RouteManager } from './routes';
 import { client as DiscordClient, GuildControllers } from '../src/main';
 import session from 'express-session';
@@ -104,8 +104,7 @@ async function init() {
     //setup database
     logger.log('info', 'Setting up database.');
 
-    const DbManager = new DatabaseManager();
-    const db = await DbManager.connect();
+    const db = await dbManager.connect();
 
     if (!db) {
         console.error('Unable to connect to db. Botdiz server cannot run!');

@@ -4,9 +4,10 @@ import { Express } from 'express';
 import { getToken } from '../../scripts/getToken';
 import { DbDiscordUser, DbGuildObject } from '../../db/databaseTypes';
 import { MessageEmbed, TextChannel } from 'discord.js';
+import { withAuth } from '../middlewares';
 
 export default async function botdizguild(app: Express, db: Db) {
-    app.get('/botdizguild/:guildId', async (req, res) => {
+    app.get('/botdizguild/:guildId', withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guildId;
 
@@ -19,10 +20,9 @@ export default async function botdizguild(app: Express, db: Db) {
                 return;
             }
 
-            const token = getToken(req);
+            const session = req.dbSession;
 
-            if (!token) {
-                console.log('No token info in session (in /guildinfo)');
+            if (!session) {
                 res.status(401).send({
                     status: 'failed',
                     message: '401 Unauthorized',
@@ -31,24 +31,9 @@ export default async function botdizguild(app: Express, db: Db) {
                 return;
             }
 
-            const session = await db
-                .collection('sessions')
-                .findOne({ token: token });
+            const user = req.user;
 
-            if (!session) {
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return
-            }
-
-            if ("discord_session" in session) {
-                const user = await db
-                    .collection('discord_users')
-                    .findOne({ discord_id: session.discord_id }) as unknown as DbDiscordUser;
-
+            if ('discord_session' in session && 'discord_id' in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
@@ -71,9 +56,8 @@ export default async function botdizguild(app: Express, db: Db) {
                 }
             }
 
-            let replyGuild = await db
-                .collection('guilds')
-                .findOne({ guild_id: reqGuildId }) || {};
+            let replyGuild =
+                (await db.collection('guilds').findOne({ guild_id: reqGuildId })) || {};
 
             res.send({
                 status: 'success',
@@ -84,7 +68,9 @@ export default async function botdizguild(app: Express, db: Db) {
         }
     });
 
-    app.post('/botdizguild/:guildId', async (req, res) => {
+    app.post('/botdizguild/:guildId', withAuth, async (req, res) => {
+        //used for updating guild info only guild admins and owners can do this
+        //updates dj roles
         try {
             const reqGuildId = req.params.guildId;
 
@@ -97,45 +83,16 @@ export default async function botdizguild(app: Express, db: Db) {
                 return;
             }
 
-            const token = getToken(req);
+            const session = req.dbSession;
 
-            if (!token) {
-                console.log('No token info in session (in /guildinfo)');
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return;
-            }
-
-            const session = await db
-                .collection('sessions')
-                .findOne({ token: token });
-
-            if (!session) {
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return
-            }
-
-            if ("discord_session" in session) {
-                const user = await db
-                    .collection('discord_users')
-                    .findOne({ discord_id: session.discord_id }) as unknown as DbDiscordUser;
-
+            const user = req.user;
+            if ('discord_session' in session && 'discord_id' in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
 
                 for (const guild of allowedGuilds) {
-                    if (
-                        guild.id === reqGuildId &&
-                        (guild.administrator || guild.owner)
-                    ) {
+                    if (guild.id === reqGuildId && (guild.administrator || guild.owner)) {
                         commandAllowed = true;
 
                         break;
@@ -174,21 +131,21 @@ export default async function botdizguild(app: Express, db: Db) {
                     message: 'Updated allowed DJ roles.',
                 });
 
-                return
+                return;
             } else {
                 res.status(404).send({
                     status: 'failed',
                     message: '404 Guild not found',
                 });
 
-                return
+                return;
             }
         } catch (error) {
             console.log('Error while updating guild: ', error);
         }
     });
 
-    app.get('/botdizguild/subscriptions/:guildId', async (req, res) => {
+    app.get('/botdizguild/subscriptions/:guildId', withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guildId;
 
@@ -201,45 +158,16 @@ export default async function botdizguild(app: Express, db: Db) {
                 return;
             }
 
-            const token = getToken(req);
+            const session = req.dbSession;
 
-            if (!token) {
-                console.log('No token info in session (in /guildinfo)');
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return;
-            }
-
-            const session = await db
-                .collection('sessions')
-                .findOne({ token: token });
-
-            if (!session) {
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return
-            }
-
-            if ("discord_session" in session) {
-                const user = await db
-                    .collection('discord_users')
-                    .findOne({ discord_id: session.discord_id }) as unknown as DbDiscordUser;
-
+            const user = req.user;
+            if ('discord_session' in session && 'discord_id' in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
 
                 for (const guild of allowedGuilds) {
-                    if (
-                        guild.id === reqGuildId &&
-                        (guild.administrator || guild.owner)
-                    ) {
+                    if (guild.id === reqGuildId && (guild.administrator || guild.owner)) {
                         commandAllowed = true;
 
                         break;
@@ -261,7 +189,7 @@ export default async function botdizguild(app: Express, db: Db) {
                 .findOne({
                     guild_id: reqGuildId,
                 })
-                .then((guild) => guild ? guild.subscriptions : []);
+                .then((guild) => (guild ? guild.subscriptions : []));
 
             if (!guildSubs) {
                 guildSubs = [];
@@ -272,10 +200,7 @@ export default async function botdizguild(app: Express, db: Db) {
                 result: guildSubs,
             });
         } catch (error) {
-            console.log(
-                'Error while trying to get guild subscriptions: ',
-                error
-            );
+            console.log('Error while trying to get guild subscriptions: ', error);
             res.status(401).send({
                 status: 'failed',
                 message: 'Error occured while trying to get guild subscriptions',
@@ -283,7 +208,7 @@ export default async function botdizguild(app: Express, db: Db) {
         }
     });
 
-    app.post('/botdizguild/subscriptions/:guildId', async (req, res) => {
+    app.post('/botdizguild/subscriptions/:guildId', withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guildId;
 
@@ -296,45 +221,17 @@ export default async function botdizguild(app: Express, db: Db) {
                 return;
             }
 
-            const token = getToken(req);
+            const session = req.dbSession;
 
-            if (!token) {
-                console.log('No token info in session (in /guildinfo)');
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
+            const user = req.user;
 
-                return;
-            }
-
-            const session = await db
-                .collection('sessions')
-                .findOne({ token: token });
-
-            if (!session) {
-                res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
-                });
-
-                return
-            }
-
-            if ("discord_session" in session) {
-                const user = await db
-                    .collection('discord_users')
-                    .findOne({ discord_id: session.discord_id }) as unknown as DbDiscordUser;
-
+            if ('discord_session' in session && 'discord_id' in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
 
                 for (const guild of allowedGuilds) {
-                    if (
-                        guild.id === reqGuildId &&
-                        (guild.administrator || guild.owner)
-                    ) {
+                    if (guild.id === reqGuildId && (guild.administrator || guild.owner)) {
                         commandAllowed = true;
 
                         break;
@@ -369,26 +266,22 @@ export default async function botdizguild(app: Express, db: Db) {
 
                     let subbedChannel;
                     if (guild) {
-                        subbedChannel = await guild.channels.fetch(
+                        subbedChannel = (await guild.channels.fetch(
                             req.body.subscribed_channel
-                        ) as TextChannel;
+                        )) as TextChannel;
                     }
 
                     if (subbedChannel) {
-
                         let embedMessage = new MessageEmbed();
 
                         if (
                             (!sub.active && req.body.active) ||
                             (req.body.active &&
-                                sub.subscribed_channel !==
-                                    req.body.subscribed_channel)
+                                sub.subscribed_channel !== req.body.subscribed_channel)
                         ) {
                             embedMessage
                                 .setColor('#0FF28F')
-                                .setTitle(
-                                    'This channel is now subscribed to epic deals'
-                                )
+                                .setTitle('This channel is now subscribed to epic deals')
                                 .setTimestamp();
                             subbedChannel.send({ embeds: [embedMessage] });
                         }
@@ -424,7 +317,7 @@ export default async function botdizguild(app: Express, db: Db) {
                     message: 'Subscription updated',
                 });
             } else {
-                throw "Couldn't find guild to update in DB "+ reqGuildId;
+                throw "Couldn't find guild to update in DB " + reqGuildId;
             }
         } catch (error) {
             console.log('Error while trying to update guild subs: ', error);
@@ -434,4 +327,4 @@ export default async function botdizguild(app: Express, db: Db) {
             });
         }
     });
-};
+}

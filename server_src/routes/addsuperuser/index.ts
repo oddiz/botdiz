@@ -3,31 +3,29 @@ import { Db } from 'mongodb';
 import { Express } from 'express';
 import { getToken } from '../../scripts/getToken';
 import { DbDiscordSession, DbSession, DbUser } from '../../db/databaseTypes';
+import { withAuth } from '../middlewares';
 
 interface AddSuperUserReply {
-    status: 'success' | 'failed' |"unauthorized";
+    status: 'success' | 'failed' | 'unauthorized';
     message: string;
 }
 export default async function addsuperuser(app: Express, db: Db) {
+    app.post('/addsuperuser', withAuth, async (req, res) => {
+        let reqUsername, reqPassword, reqAvatarURL;
 
-    app.post('/addsuperuser', async (req,res) => {
-
-        let reqUsername, reqPassword, reqAvatarURL
-        
         try {
             reqUsername = req.body.username;
             reqPassword = req.body.password;
-            reqAvatarURL = req.body.avatarURL
+            reqAvatarURL = req.body.avatarURL;
         } catch (error) {
-            console.log("Failed to parse username or password")
+            console.log('Failed to parse username or password');
             res.status(401).send({
-                status: "unauthorized",
-                message: "Failed to add user."
-            })
+                status: 'unauthorized',
+                message: 'Failed to add user.',
+            });
 
-            return 
+            return;
         }
-
 
         async function hashPassword(password: string) {
             try {
@@ -37,101 +35,101 @@ export default async function addsuperuser(app: Express, db: Db) {
                     timeCost: 30,
                     parallelism: 2,
                     saltLength: 128,
-                    hashLength: 128
-                })
-    
-                return hash
-                
-            } catch (error) {
-                console.log("Error while trying to hash password.")
-                res.status(404).send({
-                    status: "failed",
-                    message: "Failed to add user."
-                })
+                    hashLength: 128,
+                });
 
-                return
+                return hash;
+            } catch (error) {
+                console.log('Error while trying to hash password.');
+                res.status(404).send({
+                    status: 'failed',
+                    message: 'Failed to add user.',
+                });
+
+                return;
             }
         }
 
-
         //find user from database
-        const reqToken = getToken(req)
-        if(!reqToken) {
-            console.log("No session info in credentials")
+        const reqToken = getToken(req);
+        if (!reqToken) {
+            console.log('No session info in credentials');
             res.status(403).send({
-                status: "unauthorized",
-                message: "Failed to add user."
-            })
-            return
+                status: 'unauthorized',
+                message: 'Failed to add user.',
+            });
+            return;
         }
         //find username from token
-        const session = await db.collection('sessions').findOne( { token: reqToken  } ) as unknown as DbSession | DbDiscordSession | null
+        const session = (await db
+            .collection('sessions')
+            .findOne({ token: reqToken })) as unknown as DbSession | DbDiscordSession | null;
 
-        if(!session){
-            console.log("Session not found")
+        if (!session) {
+            console.log('Session not found');
             res.status(403).send({
-                status: "unauthorized",
-                message: "Failed to add user."
-            })
-            return
+                status: 'unauthorized',
+                message: 'Failed to add user.',
+            });
+            return;
         }
 
         //find user from username
-        const user = await db.collection('users').findOne( { username: session.username } ) as unknown as DbUser
+        const user = (await db
+            .collection('users')
+            .findOne({ username: session.username })) as unknown as DbUser;
 
         if (!user.is_admin) {
-            console.log("You can't add users if you are not an admin.")
+            console.log("You can't add users if you are not an admin.");
             res.status(401).send({
-                status: "failed",
-                message: "Failed to add user."
-            })
-            return
+                status: 'failed',
+                message: 'Failed to add user.',
+            });
+            return;
         }
 
-        if(reqPassword < 32) {
-            console.log("Password too short.")
+        if (reqPassword < 32) {
+            console.log('Password too short.');
             res.status(401).send({
-                status: "failed",
-                message: "Failed to add user."
-            })
-            return 
+                status: 'failed',
+                message: 'Failed to add user.',
+            });
+            return;
         }
 
-        const hash = await hashPassword(reqPassword) 
+        const hash = await hashPassword(reqPassword);
 
-        console.log(reqUsername, hash, reqAvatarURL)
+        console.log(reqUsername, hash, reqAvatarURL);
 
         //find dublicate
-        const duplicateFound = await db.collection('users').findOne({username: reqUsername})
+        const duplicateFound = await db.collection('users').findOne({ username: reqUsername });
 
-        if(duplicateFound) {
-            console.log("User already exists")
+        if (duplicateFound) {
+            console.log('User already exists');
 
             res.status(401).send({
-                status: "failed",
-                message: "Username already exists"
-            })
+                status: 'failed',
+                message: 'Username already exists',
+            });
 
-            return
+            return;
         }
 
         const dbResponse = await db.collection('users').insertOne({
             username: reqUsername,
             password: hash,
-            avatarURL: reqAvatarURL
-        })
+            avatarURL: reqAvatarURL,
+        });
 
-
-        if(dbResponse.acknowledged) {
-            console.log("User added successfuly")
+        if (dbResponse.acknowledged) {
+            console.log('User added successfuly');
 
             res.send({
-                status: "success",
-                message: "User added successfuly"
-            })
+                status: 'success',
+                message: 'User added successfuly',
+            });
 
-            return
+            return;
         }
-
-    })
+    });
 }
