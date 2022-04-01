@@ -4,6 +4,7 @@ class SpotifyApiManager {
     private spotifyApi: SpotifyWebApi;
     private access_token: string;
     private access_token_expiration: number;
+    debug = false;
     constructor() {
         this.spotifyApi = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENTID,
@@ -12,8 +13,6 @@ class SpotifyApiManager {
 
         this.access_token = '';
         this.access_token_expiration = 0;
-
-        this.init();
     }
 
     init() {
@@ -22,13 +21,13 @@ class SpotifyApiManager {
 
     private async refreshToken() {
         const date = new Date();
-        this.spotifyApi
+        await this.spotifyApi
             .clientCredentialsGrant()
             .then((data) => {
                 this.access_token = data.body['access_token'];
                 this.access_token_expiration = date.getTime() + data.body['expires_in'] * 1000;
 
-                console.log('Got new spotify access token.');
+                if (this.debug) console.log('Got new spotify access token.');
                 this.spotifyApi.setAccessToken(this.access_token);
             })
             .catch((err) => {
@@ -39,31 +38,30 @@ class SpotifyApiManager {
     private tokenRefreshNeeded() {
         const date = new Date();
 
-        console.log('Checking if token refresh needed');
+        if (this.debug) console.log('Checking if token refresh needed');
 
         if (this.access_token_expiration < date.getTime()) {
-            console.log('Yes, token is expired');
+            if (this.debug) console.log('Yes, token is expired');
             return true;
         }
 
         if (!this.access_token) {
-            console.log('Yes, token is empty');
+            if (this.debug) console.log('Yes, token is empty');
             return true;
         }
 
-        if (this.access_token_expiration === 0) {
-            console.log('Yes, token expiration is 0');
-            return true;
+        if (this.debug) {
+            console.log('No, token is not expired');
+            console.log(
+                'expiry  :' + this.access_token_expiration + '\ncurrent :' + date.getTime()
+            );
         }
-
-        console.log('No, token is not expired');
-        console.log('expiry  :' + this.access_token_expiration + '\ncurrent :' + date.getTime());
-
         return false;
     }
 
     async getSpotifyApi() {
-        if (this.tokenRefreshNeeded()) {
+        const isTokenRefreshNeeded = this.tokenRefreshNeeded();
+        if (isTokenRefreshNeeded) {
             await this.refreshToken();
         }
 
