@@ -370,8 +370,11 @@ function execCommands(): {
 
                 if (!musicController) throw 'Guild music controller not found for id: ' + guildId;
 
-                guildController.controller.MusicController?.setVoiceConnection(channel);
+                const result = await guildController.controller.MusicController?.setVoiceConnection(
+                    channel
+                );
 
+                if (!result) throw 'Failed to join voice channel';
                 return {
                     status: 'success',
                     command: 'RPC_joinVoiceChannel',

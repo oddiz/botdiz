@@ -110,7 +110,19 @@ export default async function (
             if (!botVoiceChannel) {
                 logger.log('info', 'Bot is not in a voice channel, joining now.');
 
-                musicController.setVoiceConnection(memberVoiceChannel);
+                const res = await musicController.setVoiceConnection(memberVoiceChannel);
+
+                if (!res) {
+                    //try again
+                    const retryres = await musicController.setVoiceConnection(memberVoiceChannel);
+                    if (!retryres) {
+                        self.reply('I could not join your voice channel.');
+                        throw (
+                            'Could not join voice channel, memberVoiceChannel: ' +
+                            JSON.stringify(memberVoiceChannel)
+                        );
+                    }
+                }
             } else {
                 //bot is in a voice channel
 

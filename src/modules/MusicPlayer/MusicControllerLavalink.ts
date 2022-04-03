@@ -251,141 +251,148 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     }
 
     async setVoiceConnection(channel: VoiceBasedChannel) {
-        const node = this.shoukaku.getNode();
+        try {
+            const node = this.shoukaku.getNode();
 
-        if (channel.id === this.activeVoiceChannel?.id) {
-            //already in same channel
-            return;
-        }
-
-        await this.stop();
-
-        if (this.audioPlayer) {
-            await node.leaveChannel(this.controller.guild.id);
-        }
-        //If there is audioplayer present we are already connected to voice channel
-
-        this.audioPlayer = await node.joinChannel({
-            guildId: this.controller.guild.id,
-            channelId: channel.id,
-            shardId: this.controller.guild.shardId,
-        });
-
-        this.activeVoiceChannel = channel;
-
-        this.audioPlayer.on('start', (data) => {
-            this.changeAudioPlayerStatus('PLAYING');
-
-            console.log('audioPlayer started');
-        });
-        this.audioPlayer.on('end', (data) => {
-            if (this.currentSong) {
-                if (this.repeat === 'ONE') this.queue.unshift(this.currentSong);
-                if (this.repeat === 'ALL') this.queue.push(this.currentSong);
+            if (channel.id === this.activeVoiceChannel?.id) {
+                //already in same channel
+                return false;
             }
 
-            //reason can be: "FINISHED" | "LOAD_FAILED" | "STOPPED" | "REPLACED" | "CLEANUP";
-            const reason = data.reason;
-            console.log('audioplayer ended. Reason: ', reason);
+            await this.stop();
 
-            if (this.audioPlayerStatus === 'SKIPPING') {
-                if (reason !== 'REPLACED') {
-                    console.log("reason should be 'REPLACED' reason: " + reason);
+            if (this.audioPlayer) {
+                await node.leaveChannel(this.controller.guild.id);
+            }
+            //If there is audioplayer present we are already connected to voice channel
+
+            this.audioPlayer = await node.joinChannel({
+                guildId: this.controller.guild.id,
+                channelId: channel.id,
+                shardId: this.controller.guild.shardId,
+            });
+
+            this.activeVoiceChannel = channel;
+
+            this.audioPlayer.on('start', (data) => {
+                this.changeAudioPlayerStatus('PLAYING');
+
+                console.log('audioPlayer started');
+            });
+            this.audioPlayer.on('end', (data) => {
+                if (this.currentSong) {
+                    if (this.repeat === 'ONE') this.queue.unshift(this.currentSong);
+                    if (this.repeat === 'ALL') this.queue.push(this.currentSong);
+                }
+
+                //reason can be: "FINISHED" | "LOAD_FAILED" | "STOPPED" | "REPLACED" | "CLEANUP";
+                const reason = data.reason;
+                console.log('audioplayer ended. Reason: ', reason);
+
+                if (this.audioPlayerStatus === 'SKIPPING') {
+                    if (reason !== 'REPLACED') {
+                        console.log("reason should be 'REPLACED' reason: " + reason);
+                    }
+                    this.changeAudioPlayerStatus('STOPPED');
+                    return;
                 }
                 this.changeAudioPlayerStatus('STOPPED');
-                return;
-            }
-            this.changeAudioPlayerStatus('STOPPED');
 
-            if (reason === 'LOAD_FAILED' || reason === 'FINISHED') {
-                this.playNext();
-            }
-
-            if (reason === 'STOPPED') {
-                this.stop();
-            }
-
-            if (reason === 'CLEANUP') {
-                console.log("CLEANUP end event triggered. Don't know why this is happening");
-            }
-        });
-
-        this.audioPlayer.on('update', (data) => {
-            /*
-            data = 
-            {
-                op: 'playerUpdate',
-                state: { connected: true, position: 45800, time: 1630211312429 },
-                guildId: '854409105431330836'
-            }
-            */
-
-            this.emit('playerUpdate', data);
-        });
-        this.audioPlayer.on('resumed', () => {
-            console.log('Resumed event triggered: ');
-
-            this.changeAudioPlayerStatus('PLAYING');
-
-            /*
-            data = 
-            {
-          
-            }
-            */
-        });
-        this.audioPlayer.on('exception', (data) => {
-            try {
-                logger.log('error', 'Exception triggered in audioPlayer: ', data);
-                if (this.currentSong) {
-                    this.playCommand.reply(
-                        '```js\n//Error while processing song.\nname: "' +
-                            this.currentSong.info.title +
-                            '"\nurl: "' +
-                            this.currentSong.info.uri +
-                            '"\ntrack_identifier: "' +
-                            this.currentSong.info.identifier +
-                            '"\nerror: "' +
-                            data.exception?.message +
-                            '",' +
-                            '\ncause: "' +
-                            data.exception?.cause +
-                            '"' +
-                            '```',
-                        { required: true }
-                    );
-                }
-
-                this.EmbedPlayer.stop();
-                if (this.audioPlayerStatus !== 'STOPPED') {
+                if (reason === 'LOAD_FAILED' || reason === 'FINISHED') {
                     this.playNext();
                 }
-            } catch (error) {
-                logger.log('error', 'Error while executing exception event: ', error);
-            }
-            /*
-            data = {
-                error: 'Something broke when playing the track.',
-                exception: {
-                    severity: 'FAULT', 
-                    cause: 'java.io.IOException: Invalid status code for video info response: 410', 
-                    message: 'Something broke when playing the track.'
-                },
-                guildId: '861409127225229363',
-                op: 'event',
-                track: 'QAAAigIAHkR5RSAtIEZhbnRhc3kgLSBPZmZpY2lhbCBWaWRlbwASVGlnZXJzdXNoaSBSZWNvcmRzAAAAAAADR9gACzZRRndvNTdXS3dnAAEAK2h0dHBzOi8vd3d3LnlvdXR1YmUuY29tL3dhdGNoP3Y9NlFGd281N1dLd2cAB3lvdXR1YmUAAAAAAAAAAA==',
-                type: 'TrackExceptionEvent'
-            }
-            */
-        });
 
-        this.audioPlayer.on('closed', (data) => {
-            if (data instanceof Error || data instanceof Object)
-                logger.log('info', 'Audioplayer closed: ' + data);
+                if (reason === 'STOPPED') {
+                    this.stop();
+                }
 
-            this.queue.length = 0;
-            this.stop();
-        });
+                if (reason === 'CLEANUP') {
+                    console.log("CLEANUP end event triggered. Don't know why this is happening");
+                }
+            });
+
+            this.audioPlayer.on('update', (data) => {
+                /*
+                data = 
+                {
+                    op: 'playerUpdate',
+                    state: { connected: true, position: 45800, time: 1630211312429 },
+                    guildId: '854409105431330836'
+                }
+                */
+
+                this.emit('playerUpdate', data);
+            });
+            this.audioPlayer.on('resumed', () => {
+                console.log('Resumed event triggered: ');
+
+                this.changeAudioPlayerStatus('PLAYING');
+
+                /*
+                data = 
+                {
+              
+                }
+                */
+            });
+            this.audioPlayer.on('exception', (data) => {
+                try {
+                    logger.log('error', 'Exception triggered in audioPlayer: ', data);
+                    if (this.currentSong) {
+                        this.playCommand.reply(
+                            '```js\n//Error while processing song.\nname: "' +
+                                this.currentSong.info.title +
+                                '"\nurl: "' +
+                                this.currentSong.info.uri +
+                                '"\ntrack_identifier: "' +
+                                this.currentSong.info.identifier +
+                                '"\nerror: "' +
+                                data.exception?.message +
+                                '",' +
+                                '\ncause: "' +
+                                data.exception?.cause +
+                                '"' +
+                                '```',
+                            { required: true }
+                        );
+                    }
+
+                    this.EmbedPlayer.stop();
+                    if (this.audioPlayerStatus !== 'STOPPED') {
+                        this.playNext();
+                    }
+                } catch (error) {
+                    logger.log('error', 'Error while executing exception event: ', error);
+                }
+                /*
+                data = {
+                    error: 'Something broke when playing the track.',
+                    exception: {
+                        severity: 'FAULT', 
+                        cause: 'java.io.IOException: Invalid status code for video info response: 410', 
+                        message: 'Something broke when playing the track.'
+                    },
+                    guildId: '861409127225229363',
+                    op: 'event',
+                    track: 'QAAAigIAHkR5RSAtIEZhbnRhc3kgLSBPZmZpY2lhbCBWaWRlbwASVGlnZXJzdXNoaSBSZWNvcmRzAAAAAAADR9gACzZRRndvNTdXS3dnAAEAK2h0dHBzOi8vd3d3LnlvdXR1YmUuY29tL3dhdGNoP3Y9NlFGd281N1dLd2cAB3lvdXR1YmUAAAAAAAAAAA==',
+                    type: 'TrackExceptionEvent'
+                }
+                */
+            });
+
+            this.audioPlayer.on('closed', (data) => {
+                if (data instanceof Error || data instanceof Object)
+                    logger.log('info', 'Audioplayer closed: ' + data);
+
+                this.queue.length = 0;
+                this.stop();
+            });
+
+            return true;
+        } catch (error) {
+            logger.log('error', 'Error while setting voice connection: ' + error);
+            return false;
+        }
     }
 
     async disconnectFromVoiceChannel() {
