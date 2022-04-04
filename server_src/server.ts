@@ -84,7 +84,7 @@ if (process.env.NODE_ENV === 'development') {
     };
 } else {
     sessionParserOptions = {
-        store: new SessionFileStore({ ttl: 60 * 60 * 24 * 7 }),
+        store: new SessionFileStore({ ttl: 60 * 60 * 24 * 7, logFn: () => {} }),
         saveUninitialized: false,
         secret: process.env.SESSION_SECRET,
         resave: true,
