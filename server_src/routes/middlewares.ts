@@ -63,8 +63,9 @@ export async function withAuth(req: Request, res: Response, next: NextFunction) 
 
         next();
     } catch (error) {
+        console.log('error withAuth: ' + JSON.stringify(error));
         res.status(401).send({
-            status: 'error',
+            status: 'failed',
             message: error,
         });
     }

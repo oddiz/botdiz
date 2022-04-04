@@ -33,7 +33,7 @@ const rateLimiter: RequestHandler = (req, res, next) => {
         ) {
             next();
         } else {
-            logger.log('warn', 'Rate limited user: ' + session.userId + '\nPath: ' + req.path);
+            //logger.log('warn', 'Rate limited user: ' + session.userId + '\nPath: ' + req.path);
             res.status(401).send({ status: 'rate_limited' });
         }
     } else {
@@ -52,15 +52,16 @@ export class RouteManager {
     }
 
     run() {
+        validate(this.app, this.db);
+        discordlogin(this.app, this.db);
+        botdizguild(this.app, this.db);
+
         this.app.use(rateLimiter);
         login(this.app, this.db);
-        validate(this.app, this.db);
         logout(this.app, this.db);
         playlists(this.app, this.db);
         addsuperuser(this.app, this.db);
-        discordlogin(this.app, this.db);
         discordguild(this.app, this.db);
-        botdizguild(this.app, this.db);
         botdizstats(this.app, this.db);
         metrics(this.app);
     }
