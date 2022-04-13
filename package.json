@@ -1,7 +1,5 @@
 {
   "dependencies": {
-    "@sentry/node": "^6.17.9",
-    "@sentry/tracing": "^6.17.9",
     "argon2": "^0.28.2",
     "axios": "^0.21.1",
     "cors": "^2.8.5",

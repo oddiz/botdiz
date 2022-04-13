@@ -148,7 +148,7 @@
     "@sentry/types" "6.18.1"
     tslib "^1.9.3"
 
-"@sentry/node@^6.13.2", "@sentry/node@^6.17.9":
+"@sentry/node@^6.13.2":
   version "6.18.1"
   resolved "https://registry.npmjs.org/@sentry/node/-/node-6.18.1.tgz"
   integrity sha512-aTb2gwfZUq0lGDRGH5zNOYDfFMOQZu6E0QcAsvH2ZBcEj3rUWZz3r25COFrHmfzHLUV1KcF2AmnWo1QU1jmm0g==
@@ -163,7 +163,7 @@
     lru_map "^0.3.3"
     tslib "^1.9.3"
 
-"@sentry/tracing@6.18.1", "@sentry/tracing@^6.17.9":
+"@sentry/tracing@6.18.1":
   version "6.18.1"
   resolved "https://registry.npmjs.org/@sentry/tracing/-/tracing-6.18.1.tgz"
   integrity sha512-OxozmSfxGx246Ae1XhO01I7ZWxO3briwMBh55E5KyjQb8fuS9gVE7Uy8ZRs5hhNjDutFAU7nMtC0zipfVxP6fg==
