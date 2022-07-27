@@ -16,6 +16,7 @@ import { APIRateLimiter } from '../RateLimiter';
 import { Express, RequestHandler } from 'express';
 import { BotdizSession } from 'server_src/types';
 import { logger } from '../../src/logger';
+import { appengine } from 'googleapis/build/src/apis/appengine';
 dotenv.config();
 
 const rateLimiter: RequestHandler = (req, res, next) => {
