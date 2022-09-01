@@ -1,16 +1,16 @@
-import argon2 from 'argon2';
-import { Db } from 'mongodb';
-import { Express } from 'express';
-import { getToken } from '../../scripts/getToken';
-import { DbDiscordSession, DbSession, DbUser } from '../../db/databaseTypes';
-import { withAuth } from '../middlewares';
+import argon2 from "argon2";
+import { Db } from "mongodb";
+import { Express } from "express";
+import { getToken } from "../../scripts/getToken";
+import { DbDiscordSession, DbSession, DbUser } from "../../db/databaseTypes";
+import { withAuth } from "../middlewares";
 
 interface AddSuperUserReply {
-    status: 'success' | 'failed' | 'unauthorized';
+    status: "success" | "failed" | "unauthorized";
     message: string;
 }
 export default async function addsuperuser(app: Express, db: Db) {
-    app.post('/addsuperuser', withAuth, async (req, res) => {
+    app.post("/addsuperuser", withAuth, async (req, res) => {
         let reqUsername, reqPassword, reqAvatarURL;
 
         try {
@@ -18,10 +18,10 @@ export default async function addsuperuser(app: Express, db: Db) {
             reqPassword = req.body.password;
             reqAvatarURL = req.body.avatarURL;
         } catch (error) {
-            console.log('Failed to parse username or password');
+            console.log("Failed to parse username or password");
             res.status(401).send({
-                status: 'unauthorized',
-                message: 'Failed to add user.',
+                status: "unauthorized",
+                message: "Failed to add user.",
             });
 
             return;
@@ -40,10 +40,10 @@ export default async function addsuperuser(app: Express, db: Db) {
 
                 return hash;
             } catch (error) {
-                console.log('Error while trying to hash password.');
+                console.log("Error while trying to hash password.");
                 res.status(404).send({
-                    status: 'failed',
-                    message: 'Failed to add user.',
+                    status: "failed",
+                    message: "Failed to add user.",
                 });
 
                 return;
@@ -53,80 +53,77 @@ export default async function addsuperuser(app: Express, db: Db) {
         //find user from database
         const reqToken = getToken(req);
         if (!reqToken) {
-            console.log('No session info in credentials');
+            console.log("No session info in credentials");
             res.status(403).send({
-                status: 'unauthorized',
-                message: 'Failed to add user.',
+                status: "unauthorized",
+                message: "Failed to add user.",
             });
             return;
         }
         //find username from token
-        const session = (await db
-            .collection('sessions')
-            .findOne({ token: reqToken })) as unknown as DbSession | DbDiscordSession | null;
+        const session = (await db.collection("sessions").findOne({ token: reqToken })) as unknown as
+            | DbSession
+            | DbDiscordSession
+            | null;
 
         if (!session) {
-            console.log('Session not found');
+            console.log("Session not found");
             res.status(403).send({
-                status: 'unauthorized',
-                message: 'Failed to add user.',
+                status: "unauthorized",
+                message: "Failed to add user.",
             });
             return;
         }
 
         //find user from username
-        const user = (await db
-            .collection('users')
-            .findOne({ username: session.username })) as unknown as DbUser;
+        const user = (await db.collection("users").findOne({ username: session.username })) as unknown as DbUser;
 
         if (!user.is_admin) {
             console.log("You can't add users if you are not an admin.");
             res.status(401).send({
-                status: 'failed',
-                message: 'Failed to add user.',
+                status: "failed",
+                message: "Failed to add user.",
             });
             return;
         }
 
         if (reqPassword < 32) {
-            console.log('Password too short.');
+            console.log("Password too short.");
             res.status(401).send({
-                status: 'failed',
-                message: 'Failed to add user.',
+                status: "failed",
+                message: "Failed to add user.",
             });
             return;
         }
 
         const hash = await hashPassword(reqPassword);
 
-        console.log(reqUsername, hash, reqAvatarURL);
-
         //find dublicate
-        const duplicateFound = await db.collection('users').findOne({ username: reqUsername });
+        const duplicateFound = await db.collection("users").findOne({ username: reqUsername });
 
         if (duplicateFound) {
-            console.log('User already exists');
+            console.log("User already exists");
 
             res.status(401).send({
-                status: 'failed',
-                message: 'Username already exists',
+                status: "failed",
+                message: "Username already exists",
             });
 
             return;
         }
 
-        const dbResponse = await db.collection('users').insertOne({
+        const dbResponse = await db.collection("users").insertOne({
             username: reqUsername,
             password: hash,
             avatarURL: reqAvatarURL,
         });
 
         if (dbResponse.acknowledged) {
-            console.log('User added successfuly');
+            console.log("User added successfuly");
 
             res.send({
-                status: 'success',
-                message: 'User added successfuly',
+                status: "success",
+                message: "User added successfuly",
             });
 
             return;

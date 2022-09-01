@@ -9,6 +9,7 @@
     "express-session": "^1.17.2",
     "google-auth-library": "^7.1.2",
     "googleapis": "^76.0.0",
+    "helmet": "^6.0.0",
     "lru-cache": "^7.7.1",
     "module-alias": "^2.2.2",
     "mongodb": "^4.4.0",

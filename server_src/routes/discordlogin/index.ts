@@ -1,59 +1,56 @@
-import fetch from 'node-fetch';
-import crypto from 'crypto';
-import * as uuid from 'uuid';
-import { client as DiscordClient } from '../../../src/main';
-import { Db } from 'mongodb';
-import { Express } from 'express';
+import fetch from "node-fetch";
+import crypto from "crypto";
+import * as uuid from "uuid";
+import { client as DiscordClient } from "../../../src/main";
+import { Db } from "mongodb";
+import { Express } from "express";
 
-import dotenv from 'dotenv';
-import { logger } from '../../../src/logger';
-import { BotdizSession } from '../../types';
-import { makeImageUrl } from '../../scripts/makeImageUrl';
-import { DbGuildObject } from 'server_src/db/databaseTypes';
+import dotenv from "dotenv";
+import { logger } from "../../../src/logger";
+import { BotdizSession } from "../../types";
+import { makeImageUrl } from "../../scripts/makeImageUrl";
+import { DbGuildObject } from "server_src/db/databaseTypes";
 dotenv.config();
 
 export default async function playlists(app: Express, db: Db) {
-    app.post('/discordlogin', async (req, res) => {
+    app.post("/discordlogin", async (req, res) => {
         const code = req.body?.code;
 
         let clientId, clientSecret, redirectUri;
 
-        if (process.env.NODE_ENV === 'development') {
-            if (
-                !process.env.DISCORD_TESTBOT_CLIENT_ID ||
-                !process.env.DISCORD_TESTBOT_CLIENT_SECRET
-            ) {
-                logger.log('error', 'Env variables not set properly!');
+        if (process.env.NODE_ENV === "development") {
+            if (!process.env.DISCORD_TESTBOT_CLIENT_ID || !process.env.DISCORD_TESTBOT_CLIENT_SECRET) {
+                logger.log("error", "Env variables not set properly!");
 
                 return;
             }
 
             clientId = process.env.DISCORD_TESTBOT_CLIENT_ID;
             clientSecret = process.env.DISCORD_TESTBOT_CLIENT_SECRET;
-            redirectUri = 'http://localhost:3000/discordlogin';
+            redirectUri = "http://localhost:3000/discordlogin";
         } else {
             if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
-                logger.log('error', 'Env variables not set properly!');
+                logger.log("error", "Env variables not set properly!");
 
                 return;
             }
 
             clientId = process.env.DISCORD_CLIENT_ID;
             clientSecret = process.env.DISCORD_CLIENT_SECRET;
-            redirectUri = 'https://botdiz.kaansarkaya.com/discordlogin';
+            redirectUri = "https://botdiz.kaansarkaya.com/discordlogin";
         }
         if (code) {
-            const oauthResult = await fetch('https://discord.com/api/oauth2/token', {
-                method: 'POST',
+            const oauthResult = await fetch("https://discord.com/api/oauth2/token", {
+                method: "POST",
                 body: new URLSearchParams({
                     client_id: clientId,
                     client_secret: clientSecret,
                     code,
-                    grant_type: 'authorization_code',
+                    grant_type: "authorization_code",
                     redirect_uri: redirectUri,
                 }),
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    "Content-Type": "application/x-www-form-urlencoded",
                 },
             }).then((response) => response.json());
 
@@ -67,11 +64,8 @@ export default async function playlists(app: Express, db: Db) {
             }
             */
             if (oauthResult.error) {
-                const error = oauthResult.error;
-
                 res.status(401).send({
-                    status: 'error',
-                    message: error.error_description,
+                    status: "error",
                 });
 
                 return;
@@ -81,7 +75,7 @@ export default async function playlists(app: Express, db: Db) {
             const expiresIn = oauthResult.expires_in;
             const tokenType = oauthResult.token_type;
 
-            const userResult = await fetch('https://discord.com/api/users/@me', {
+            const userResult = await fetch("https://discord.com/api/users/@me", {
                 headers: {
                     authorization: `${tokenType} ${accessToken}`,
                 },
@@ -105,7 +99,7 @@ export default async function playlists(app: Express, db: Db) {
                 verified: true
             }
             */
-            const userGuilds = await fetch('https://discord.com/api/users/@me/guilds', {
+            const userGuilds = await fetch("https://discord.com/api/users/@me/guilds", {
                 headers: {
                     authorization: `${tokenType} ${accessToken}`,
                 },
@@ -147,7 +141,7 @@ export default async function playlists(app: Express, db: Db) {
                         guild.administrator = true;
                         allowedGuilds.push(guild);
                     } else {
-                        const botdizGuildOptions = (await db.collection('guilds').findOne({
+                        const botdizGuildOptions = (await db.collection("guilds").findOne({
                             guild_id: guild.id,
                         })) as unknown as DbGuildObject;
 
@@ -180,17 +174,17 @@ export default async function playlists(app: Express, db: Db) {
             if (userResult.avatar) {
                 avatarURL = `https://cdn.discordapp.com/avatars/${userResult.id}/${userResult.avatar}`;
             } else {
-                avatarURL = 'https://discord.com/assets/3c6ccb83716d1e4fb91d3082f6b21d77.png';
+                avatarURL = "https://discord.com/assets/3c6ccb83716d1e4fb91d3082f6b21d77.png";
             }
 
-            db.collection('discord_users').updateOne(
+            db.collection("discord_users").updateOne(
                 {
                     discord_id: userResult.id,
                 },
                 {
                     $set: {
                         discord_id: userResult.id,
-                        username: userResult.username + '#' + userResult.discriminator,
+                        username: userResult.username + "#" + userResult.discriminator,
                         avatarURL: avatarURL,
                         email: userResult.email,
                         avatar: userResult.avatar,
@@ -202,9 +196,9 @@ export default async function playlists(app: Express, db: Db) {
             );
 
             const id = uuid.v4();
-            const token = await crypto.randomBytes(64).toString('hex');
+            const token = await crypto.randomBytes(64).toString("hex");
 
-            db.collection('sessions').updateOne(
+            db.collection("sessions").updateOne(
                 {
                     discord_id: userResult.id,
                 },
@@ -214,7 +208,7 @@ export default async function playlists(app: Express, db: Db) {
                         discord_session: true,
                         discord_id: userResult.id,
                         user_id: id,
-                        username: userResult.username + '#' + userResult.discriminator,
+                        username: userResult.username + "#" + userResult.discriminator,
                         token: token,
                         discord_auth_token: accessToken,
                         discord_refresh_token: refreshToken,
@@ -230,20 +224,20 @@ export default async function playlists(app: Express, db: Db) {
             reqSession.token = token;
             reqSession.cookie.maxAge = 1000 * 60 * 60 * 24 * 7; //7 days
 
-            if (process.env.NODE_ENV == 'development') {
-                res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+            if (process.env.NODE_ENV == "development") {
+                res.header("Access-Control-Allow-Origin", "http://localhost:3000");
             } else {
-                res.header('Access-Control-Allow-Origin', 'https://botdiz.kaansarkaya.com');
+                res.header("Access-Control-Allow-Origin", "https://botdiz.kaansarkaya.com");
             }
-            res.header('Access-Control-Allow-Credentials', 'true');
+            res.header("Access-Control-Allow-Credentials", "true");
             //console.log(req)
 
             res.status(200).send({
-                result: 'success',
-                message: 'Login successfull',
+                result: "success",
+                message: "Login successfull",
             });
 
-            console.log(userResult.username + '#' + userResult.discriminator + ' logged in.');
+            console.log(userResult.username + "#" + userResult.discriminator + " logged in.");
         }
     });
 }

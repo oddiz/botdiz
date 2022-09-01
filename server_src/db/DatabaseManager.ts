@@ -1,8 +1,8 @@
-import { logger } from '../../src/logger';
-import dotenv from 'dotenv';
+import { logger } from "../../src/logger";
+import dotenv from "dotenv";
 dotenv.config();
 
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db } from "mongodb";
 
 /* 
 const MongoClientOptions: MongoClientOptions = {
@@ -26,10 +26,10 @@ export class DatabaseManager {
         try {
             await this.client.connect();
 
-            this.db = this.client.db('botdiz_db');
-            logger.log('info', 'Connected to mongo database: botdiz_db');
+            this.db = this.client.db("botdiz_db");
+            logger.log("info", "Connected to mongo database: botdiz_db");
 
-            this.db.collection('sessions').createIndex(
+            this.db.collection("sessions").createIndex(
                 {
                     createdAt: 1,
                 },
@@ -40,7 +40,7 @@ export class DatabaseManager {
 
             return this.db;
         } catch (error) {
-            logger.log('error', 'Error while trying to connect to database: ', error);
+            logger.log("error", "Error while trying to connect to database: ", error);
 
             return null;
         }
