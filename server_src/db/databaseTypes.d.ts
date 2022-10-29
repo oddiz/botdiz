@@ -1,5 +1,5 @@
-import { ListOfUsersPlaylistsResponse } from 'spotify-api';
-import { Guild } from 'discord.js';
+import { ListOfUsersPlaylistsResponse } from "spotify-api";
+import { Guild } from "discord.js";
 
 export interface DbGuildSubscriptions {
     type: string;
@@ -30,7 +30,7 @@ export interface AllowedGuild {
 }
 
 export type DbGuildSettings = {
-    autoplay: boolean;
+    recommendSongs: boolean;
     skipVotingEnabled: boolean;
     skipVotingPassPercentage: number;
 };
