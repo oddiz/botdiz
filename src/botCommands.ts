@@ -2,7 +2,7 @@ import { ApplicationCommandOptionData } from "discord.js";
 import { Command } from "./modules/Command";
 import { Controller as BotdizGuildContoller } from "./modules/Controller";
 import helpCommand from "./commands/help";
-import autoplayCommand from "./commands/autoplay";
+import recommendSongsCommand from "./commands/recommendSongs";
 import w2gCommand from "./commands/w2g";
 import stopCommand from "./commands/stop";
 import playCommand from "./commands/play";
@@ -17,7 +17,6 @@ import statusCommand from "./commands/status";
 import voteToSkipCommand from "./commands/votetoskip";
 import epicCommand from "./commands/epic";
 
-
 export interface BotdizCommand {
     name: string;
     description: string;
@@ -28,148 +27,169 @@ export interface BotdizCommand {
     options?: ApplicationCommandOptionData[];
 }
 export const botCommands = function (Controller: BotdizGuildContoller) {
-
     return [
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "help",
                 description: "Shows available commands",
                 needArgs: false,
                 usage: "/help <command> or /help",
                 ephemeral: true,
-                options: [{
-                    type: "STRING",
-                    name: "command",
-                    description: "Search for a specific command.",
-                    required: false,
-                }]
+                options: [
+                    {
+                        type: "STRING",
+                        name: "command",
+                        description: "Search for a specific command.",
+                        required: false,
+                    },
+                ],
             },
             helpCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "w2g",
                 description: "Creates a watch2gether room. You can watch videos with your friends in sync.",
                 needArgs: true,
                 usage: "/w2g https://www.youtube.com/watch?v=<video id>\n\n/w2g funny memes",
-                options: [{
-                    type: "STRING",
-                    name: "input",
-                    description: "Query to search or URL.",
-                    required: true,
-                }]
+                options: [
+                    {
+                        type: "STRING",
+                        name: "input",
+                        description: "Query to search or URL.",
+                        required: true,
+                    },
+                ],
             },
             w2gCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "play",
                 description: "Plays song from a link or finds from search.",
                 needArgs: true,
                 usage: "/play https://www.youtube.com/watch?v=<video id>\n\n/play https://open.spotify.com/track/<track id>\n\n/play chill tunes",
                 noBind: true,
                 ephemeral: false,
-                options: [{
-                    type: "STRING",
-                    name: "input",
-                    description: "Query to search or URL.",
-                    required: true,
-                }]
+                options: [
+                    {
+                        type: "STRING",
+                        name: "input",
+                        description: "Query to search or URL.",
+                        required: true,
+                    },
+                ],
             },
             playCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "playnext",
                 description: "Plays song from a link or finds from search after current song.",
                 needArgs: true,
                 usage: "/playnext https://www.youtube.com/watch?v=<video id>\n\n/playnext https://open.spotify.com/track/<track id>\n\n/playnext chill tunes",
                 noBind: true,
                 ephemeral: false,
-                options: [{
-                    type: "STRING",
-                    name: "input",
-                    description: "Query to search or URL.",
-                    required: true,
-                }]
+                options: [
+                    {
+                        type: "STRING",
+                        name: "input",
+                        description: "Query to search or URL.",
+                        required: true,
+                    },
+                ],
             },
             playNextCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "clear",
                 description: "Deletes messages in the channel which are less than 14 days old. Administrators only.",
                 needArgs: true,
                 usage: "/clear <amount of message to delete (Max 100)>",
                 ephemeral: true,
-                options: [{
-                    type: "INTEGER",
-                    name: "amount",
-                    description: "Clears specified amount of messages. Must have manage permissions.",
-                    required: true
-                }]
+                options: [
+                    {
+                        type: "INTEGER",
+                        name: "amount",
+                        description: "Clears specified amount of messages. Must have manage permissions.",
+                        required: true,
+                    },
+                ],
             },
             clearCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "stop",
                 description: "Stops the music.",
                 needArgs: false,
                 usage: "/stop",
-                noBind: true
+                noBind: true,
             },
             stopCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "pause",
                 description: "Pauses the music.",
                 needArgs: false,
                 usage: "/pause",
-                noBind: true
+                noBind: true,
             },
             pauseCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "resume",
                 description: "Stops the music.",
                 needArgs: false,
                 usage: "/resume",
-                noBind: true
+                noBind: true,
             },
             resumeCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "queue",
                 description: "Shows current music queue",
                 needArgs: false,
-                usage: "/queue"
+                usage: "/queue",
             },
             queueCommand
-
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "skip",
                 description: "Skips current song, or skips specified times",
                 needArgs: false,
                 usage: "/skip or /skip 4 (to skip to 4. song in queue)",
                 noBind: true,
                 ephemeral: true,
-                options: [{
-                    type: "INTEGER",
-                    name: "amount",
-                    description: "Skips specified amount of songs in queue.",
-                    required: false
-                }]
+                options: [
+                    {
+                        type: "INTEGER",
+                        name: "amount",
+                        description: "Skips specified amount of songs in queue.",
+                        required: false,
+                    },
+                ],
             },
             skipCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "votetoskip",
                 description: "Enables / disables voting to skip songs. Only administrator can change this setting.",
                 needArgs: false,
@@ -178,7 +198,8 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             voteToSkipCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "next",
                 description: "Skips the current song.",
                 needArgs: false,
@@ -189,55 +210,56 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             skipCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "status",
                 description: "Shows the status of current playing song",
                 needArgs: false,
                 usage: "/status",
-                ephemeral: true
-
+                ephemeral: true,
             },
             statusCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "epic",
                 description: "Shows current epic free deals.",
                 needArgs: false,
                 usage: "/epic",
-
-
             },
             epicCommand
         ),
         new Command(
-            Controller, {
-                name: "autoplay",
-                description: "Toggles autoplay feature. Bot will keep playing recommended songs when queue is finished if enabled.",
+            Controller,
+            {
+                name: "recommendsongs",
+                description:
+                    "Toggles recommend feature. Bot will keep playing recommended songs when queue is finished if enabled.",
                 needArgs: false,
-                usage: "/autoplay",
-
-
+                usage: "/recommendsongs",
             },
-            autoplayCommand
+            recommendSongsCommand
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "invite",
                 description: "Gets invite link for the bot to use in other servers.",
                 needArgs: false,
-                usage: "/invite"
+                usage: "/invite",
             },
             require("./commands/invite")
         ),
         new Command(
-            Controller, {
+            Controller,
+            {
                 name: "shuffle",
                 description: "Shuffles the current playlist.",
                 needArgs: false,
-                usage: "/shuffle"
+                usage: "/shuffle",
             },
             shuffleCommand
         ),
-    ]
-}
+    ];
+};

@@ -211,7 +211,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     applySettings(settings: DbGuildSettings) {
         try {
             if (settings) {
-                if ("autoplay" in settings) {
+                if ("recommendSongs" in settings) {
                     this.recommendSongs = settings.recommendSongs;
                 }
                 if ("skipVotingEnabled" in settings) {

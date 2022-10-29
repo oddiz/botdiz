@@ -149,7 +149,7 @@ export class Controller {
         try {
             if (this.MusicController) {
                 const settings = {
-                    autoplay: this.MusicController.autoplay,
+                    recommendSongs: this.MusicController.recommendSongs,
                     skipVotingEnabled: this.MusicController.skipVotingEnabled,
                     skipVotingPassPercentage: this.MusicController.skipVotingPassPercentage,
                 };
