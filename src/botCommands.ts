@@ -233,11 +233,11 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
         new Command(
             Controller,
             {
-                name: "recommendsongs",
+                name: "recommend",
                 description:
                     "Toggles recommend feature. Bot will keep playing recommended songs when queue is finished if enabled.",
                 needArgs: false,
-                usage: "/recommendsongs",
+                usage: "/recommend",
             },
             recommendSongsCommand
         ),
