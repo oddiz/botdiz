@@ -1,15 +1,15 @@
-import { Command } from '../modules/Command';
-import { Controller } from '../modules/Controller';
-import { QueueTrack } from '../modules/MusicPlayer/MusicControllerLavalink';
-import { CommandInteraction, GuildMember } from 'discord.js';
-import spotifyUri, { Album, Playlist, Track } from 'spotify-uri';
+import { Command } from "../modules/Command";
+import { Controller } from "../modules/Controller";
+import { QueueTrack } from "../modules/MusicPlayer/MusicControllerLavalink";
+import { CommandInteraction, GuildMember } from "discord.js";
+import spotifyUri, { Album, Playlist, Track } from "spotify-uri";
 
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
-import axios from 'axios';
-import { logger } from '../logger';
-import { spotifyApiManager } from '../modules/SpotifyApiHandler';
+import axios from "axios";
+import { logger } from "../logger";
+import { spotifyApiManager } from "../modules/SpotifyApiHandler";
 
 export type PlayCommandOptions = {
     query?: string | null;
@@ -29,12 +29,12 @@ export default async function (
         const controller = self.controller as Controller;
         const musicController = controller.MusicController;
         if (!controller) {
-            logger.log('error', 'play command is not bound to a controller');
+            logger.log("error", "play command is not bound to a controller");
             return;
         }
 
         if (!musicController) {
-            logger.log('error', 'Music controller not found on the controller');
+            logger.log("error", "Music controller not found on the controller");
             return;
         }
         const node = musicController.shoukaku.getNode();
@@ -47,11 +47,11 @@ export default async function (
                 return;
             }
         } else if (invokedMessage) {
-            input = invokedMessage.options.getString('input');
+            input = invokedMessage.options.getString("input");
 
             // if no arguments passed
             if (!input) {
-                self.wrongUsage(invokedMessage, self.name, '');
+                self.wrongUsage(invokedMessage, self.name, "");
 
                 return;
             }
@@ -63,7 +63,7 @@ export default async function (
             const memberVoiceChannel = member.voice?.channel;
 
             if (!memberVoiceChannel) {
-                self.reply('You are not in a voice channel.');
+                self.reply("You are not in a voice channel.");
 
                 return;
             }
@@ -100,15 +100,12 @@ export default async function (
              */
 
             if (!musicController.audioPlayer) {
-                logger.log(
-                    'error',
-                    'Audio player is not found on the music controller, trying to initialize'
-                );
+                logger.log("error", "Audio player is not found on the music controller, trying to initialize");
                 await musicController.init();
             }
 
             if (!botVoiceChannel) {
-                logger.log('info', 'Bot is not in a voice channel, joining now.');
+                logger.log("info", "Bot is not in a voice channel, joining now.");
 
                 const res = await musicController.setVoiceConnection(memberVoiceChannel);
 
@@ -116,26 +113,23 @@ export default async function (
                     //try again
                     const retryres = await musicController.setVoiceConnection(memberVoiceChannel);
                     if (!retryres) {
-                        self.reply('I could not join your voice channel.');
-                        throw (
-                            'Could not join voice channel, memberVoiceChannel: ' +
-                            JSON.stringify(memberVoiceChannel)
-                        );
+                        self.reply("I could not join your voice channel.");
+                        throw "Could not join voice channel, memberVoiceChannel: " + JSON.stringify(memberVoiceChannel);
                     }
                 }
             } else {
                 //bot is in a voice channel
 
                 if (memberVoiceChannel.id !== botVoiceChannel.id) {
-                    logger.log('info', "Bot is in a voice channel but not in same member's");
-                    if (musicController.audioPlayerStatus === 'PLAYING') {
-                        logger.log('info', "Bot is already playing. Won't switch to new channel");
+                    logger.log("info", "Bot is in a voice channel but not in same member's");
+                    if (musicController.audioPlayerStatus === "PLAYING") {
+                        logger.log("info", "Bot is already playing. Won't switch to new channel");
 
-                        self.reply('Bot is already playing in another channel ❗');
+                        self.reply("Bot is already playing in another channel ❗");
 
                         return;
                     } else {
-                        logger.log('info', 'Bot is not playing. Switching to new channel.');
+                        logger.log("info", "Bot is not playing. Switching to new channel.");
 
                         // let voiceConnection = await joinVoiceChannel({
                         //     channelId: memberVoiceChannel.id,
@@ -150,7 +144,7 @@ export default async function (
                 } else if (!musicController.activeVoiceChannel) {
                     //bot is in same voice channel but it doesn't have a voice connection
                     logger.log(
-                        'error',
+                        "error",
                         "Bot is in same voice channel but doesn't have a voice connection, shouldn't happen."
                     );
                     //shouldn't happen with the new lavalink system
@@ -167,11 +161,11 @@ export default async function (
                 }
             }
         } else {
-            throw 'No arguments provided';
+            throw "No arguments provided";
         }
 
         if (musicController.queueLock) {
-            self.reply('Already processing queue try again in moment.');
+            self.reply("Already processing queue try again in moment.");
 
             return;
         }
@@ -181,12 +175,6 @@ export default async function (
 
         searchMode = true;
 
-        if (input.includes('/play ')) {
-            try {
-                //idiot proofing
-                input = input.replace('/play ', '').trim();
-            } catch (error) {}
-        }
         try {
             //link is passed
             videoUrl = new URL(input);
@@ -198,7 +186,12 @@ export default async function (
 
         if (searchMode) {
             const query = input;
-            const searchResult = await node.rest.resolve(query, 'youtube');
+            const searchResult = await node?.rest.resolve("ytsearch:" + query);
+
+            console.log(searchResult);
+            if (!searchResult) {
+                return;
+            }
 
             if (searchResult?.tracks.length === 0) {
                 musicController.queueLock = false;
@@ -226,25 +219,27 @@ export default async function (
         } else if (videoUrl) {
             //if URL is provided
 
-            const result = await node.rest.resolve(videoUrl.href); //returns ShoukakuTrackList Object
+            const result = await node?.rest.resolve(videoUrl.href); //returns ShoukakuTrackList Object
             //https://deivu.github.io/Shoukaku/?api#ShoukakuTrackList#type
 
-            const { type } = result;
+            if (!result) return;
+
+            const { loadType } = result;
 
             //if url is not recognized by lavalink
-            if (type === 'LOAD_FAILED') {
+            if (loadType === "LOAD_FAILED") {
                 //could be spotify link
-                if (videoUrl.host.includes('spotify.com')) {
+                if (videoUrl.host.includes("spotify.com")) {
                     try {
                         const parsed = spotifyUri.parse(videoUrl.href);
                         // credentials are optional
                         const spotifyApi = await spotifyApiManager.getSpotifyApi();
 
-                        if (parsed.type === 'playlist' || parsed.type === 'album') {
+                        if (parsed.type === "playlist" || parsed.type === "album") {
                             const albumOrPlaylistParsed = parsed as Album | Playlist;
                             const spotifyId = albumOrPlaylistParsed.id;
 
-                            if (parsed.type === 'album') {
+                            if (parsed.type === "album") {
                                 const albumReply = await spotifyApi.getAlbumTracks(spotifyId);
                                 const albumData = albumReply.body;
                                 console.log(albumData.items);
@@ -253,7 +248,7 @@ export default async function (
                                     musicController.queueLock = false;
 
                                     self.reply(
-                                        '`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`'
+                                        "`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`"
                                     );
 
                                     return;
@@ -262,7 +257,7 @@ export default async function (
                                 for (const item of albumData.items) {
                                     const videoName = item.name;
                                     const videoArtist = item.artists[0].name;
-                                    const videoTitle = videoArtist + ' - ' + videoName;
+                                    const videoTitle = videoArtist + " - " + videoName;
                                     const botdizSong: QueueTrack = {
                                         info: {
                                             artist: videoArtist,
@@ -273,25 +268,22 @@ export default async function (
                                         },
                                         isSpotify: true,
                                     };
-                                    musicController.addToQueue(
-                                        botdizSong,
-                                        optionsDefault.forceNext || false
-                                    );
+                                    musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
                                 }
 
-                                self.reply('`Album added to queue 👍`');
+                                self.reply("`Album added to queue 👍`");
                                 musicController.queueLock = false;
                                 musicController.processQueue();
 
                                 return;
-                            } else if (parsed.type === 'playlist') {
+                            } else if (parsed.type === "playlist") {
                                 const playlistReply = await spotifyApi.getPlaylistTracks(spotifyId);
                                 const playlistData = playlistReply.body;
 
                                 for (const item of playlistData.items) {
                                     const videoName = item.track.name;
                                     const videoArtist = item.track.artists[0].name;
-                                    const videoTitle = videoArtist + ' - ' + videoName;
+                                    const videoTitle = videoArtist + " - " + videoName;
                                     const botdizSong: QueueTrack = {
                                         info: {
                                             artist: videoArtist,
@@ -302,18 +294,15 @@ export default async function (
                                         },
                                         isSpotify: true,
                                     };
-                                    musicController.addToQueue(
-                                        botdizSong,
-                                        optionsDefault.forceNext || false
-                                    );
+                                    musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
                                 }
-                                self.reply('Playlist added to queue 👍');
+                                self.reply("Playlist added to queue 👍");
                                 musicController.queueLock = false;
                                 musicController.processQueue();
 
                                 return;
                             }
-                        } else if (parsed.type === 'track') {
+                        } else if (parsed.type === "track") {
                             const trackParsed = parsed as Track;
                             const trackId = trackParsed.id;
 
@@ -330,16 +319,13 @@ export default async function (
                                 info: {
                                     trackName: songName,
                                     artist: artistName,
-                                    title: artistName + ' - ' + songName,
+                                    title: artistName + " - " + songName,
                                     artistId: trackData.artists[0].id,
                                     trackId: trackData.id,
                                 },
                                 isSpotify: isSpotify,
                             };
-                            musicController.addToQueue(
-                                botdizSong,
-                                optionsDefault.forceNext || false
-                            );
+                            musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
                             self.reply(`Added \`${songName}\``);
                             musicController.queueLock = false;
                             musicController.processQueue();
@@ -347,8 +333,8 @@ export default async function (
                             return;
                         }
                     } catch (error) {
-                        logger.log('error', 'Error while trying to play spotify link: ', error);
-                        self.reply('`Error while trying to play spotify link, contact oddiz.`');
+                        logger.log("error", "Error while trying to play spotify link: ", error);
+                        self.reply("`Error while trying to play spotify link, contact oddiz.`");
 
                         musicController.queueLock = false;
                         return;
@@ -362,16 +348,20 @@ export default async function (
                 }
             } else {
                 try {
-                    const { tracks, playlistName } = result;
+                    const {
+                        tracks,
+                        loadType,
+                        playlistInfo: { name },
+                    } = result;
 
-                    const isPlaylist = type === 'PLAYLIST';
-                    const isTrack = type === 'TRACK';
+                    const isPlaylist = loadType === "PLAYLIST_LOADED";
+                    const isTrack = loadType === "TRACK_LOADED";
 
                     if (isPlaylist) {
                         for (const track of tracks) {
                             musicController.addToQueue(track, optionsDefault.forceNext || false);
                         }
-                        self.reply('`' + (playlistName || 'Playlist') + ' added to queue 👍`');
+                        self.reply("`" + (name || "Playlist") + " added to queue 👍`");
                     } else if (isTrack) {
                         const track = tracks.shift();
                         if (track) {
@@ -384,25 +374,25 @@ export default async function (
                     return;
                 } catch (error) {
                     logger.log(
-                        'error',
-                        'Error while trying to parse result from URL: ' +
+                        "error",
+                        "Error while trying to parse result from URL: " +
                             error +
-                            '\n result from lavalink is:' +
+                            "\n result from lavalink is:" +
                             JSON.stringify(result, null, 2)
                     );
                     musicController.queueLock = false;
-                    self.reply('`Error trying to process command, contact oddiz.`');
+                    self.reply("`Error trying to process command, contact oddiz.`");
 
                     //if there is no song in queue stop the music controller to prevent lockdown.
                     if (musicController.queue.length > 0) {
                         musicController.stop();
-                        logger.log('info', 'Stopping music controller- to prevent lockdown.');
+                        logger.log("info", "Stopping music controller- to prevent lockdown.");
                     }
                 }
             }
         }
     } catch (error) {
-        logger.log('error', 'Error while executing play.js', error);
+        logger.log("error", "Error while executing play.js", error);
 
         if (self.controller?.MusicController) {
             self.controller.MusicController.queueLock = false;

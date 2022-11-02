@@ -17,7 +17,7 @@
     "object-hash": "^3.0.0",
     "prom-client": "^13.1.0",
     "session-file-store": "^1.5.0",
-    "shoukaku": "https://github.com/Deivu/Shoukaku.git",
+    "shoukaku": "^3.2.2",
     "spotify-uri": "^2.2.0",
     "spotify-web-api-node": "^5.0.2",
     "tiny-typed-emitter": "^2.1.0",
