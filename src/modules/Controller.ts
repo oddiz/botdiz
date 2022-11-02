@@ -7,17 +7,17 @@ import {
     ButtonInteraction,
     Interaction,
     ColorResolvable,
-} from 'discord.js';
-import { Command } from './Command';
-import { ShoukakuHandler } from '../Shokaku/ShokakuHandler';
-import { MsgHandler } from './MessageHandler';
-import { botCommands } from '../botCommands';
-import { logger } from '../logger';
-import { MessageEmbed } from 'discord.js';
-import { MusicController } from './MusicPlayer/MusicControllerLavalink';
-import { SubscriptionManager } from './SubscriptionManager';
-import { Db } from 'mongodb';
-import { DbGuildObject } from '../../server_src/db/databaseTypes';
+} from "discord.js";
+import { Command } from "./Command";
+import { ShoukakuHandler } from "../Shokaku/ShokakuHandler";
+import { MsgHandler } from "./MessageHandler";
+import { botCommands } from "../botCommands";
+import { logger } from "../logger";
+import { MessageEmbed } from "discord.js";
+import { MusicController } from "./MusicPlayer/MusicControllerLavalink";
+import { SubscriptionManager } from "./SubscriptionManager";
+import { Db } from "mongodb";
+import { DbGuildObject } from "../../server_src/db/databaseTypes";
 
 export class Controller {
     public PREFIX: string;
@@ -32,7 +32,7 @@ export class Controller {
     public SubscriptionManager: SubscriptionManager;
 
     constructor(db: Db, client: DiscordClient, guild: Guild, shoukaku: ShoukakuHandler) {
-        this.PREFIX = '/';
+        this.PREFIX = "/";
         this.debugMode = false;
         this.guild = guild;
         this.client = client;
@@ -45,14 +45,14 @@ export class Controller {
             this.oddiz = app.owner as User | null;
         });
 
-        this.roleColor = guild.me?.roles?.color?.color || '#e9b463';
+        this.roleColor = guild.me?.roles?.color?.color || "#e9b463";
     }
 
     init = async () => {
         //check if bot needs to deploy slash commands
         this.guild.commands.fetch().then((commands) => {
             if (commands.size !== this.commands.length) {
-                logger.log('info', 'Deploying slash commands');
+                logger.log("info", "Deploying slash commands");
                 this.deploySlashCommands();
             } else {
                 //commands are up to date
@@ -61,7 +61,7 @@ export class Controller {
 
         try {
             let dbGuildObject = (await this.db
-                .collection('guilds')
+                .collection("guilds")
                 .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
             if (!dbGuildObject) {
                 dbGuildObject = {
@@ -75,14 +75,11 @@ export class Controller {
             await this.applyGuildSettings(dbGuildObject);
             await this.SubscriptionManager.init(dbGuildObject);
         } catch (error) {
-            console.log(
-                'Error while trying to init controller on database related things: ',
-                error
-            );
+            console.log("Error while trying to init controller on database related things: ", error);
         }
 
         this.controllerMaintainer();
-        logger.log('info', 'Controller initialized for guild: ' + this.guild.name);
+        logger.log("info", "Controller initialized for guild: " + this.guild.name);
     };
 
     controllerMaintainer = async () => {
@@ -120,7 +117,7 @@ export class Controller {
     };
 
     updateGuildInfoOnDatabase = async () => {
-        await this.db.collection('guilds').updateOne(
+        await this.db.collection("guilds").updateOne(
             {
                 guild_id: this.guild.id,
             },
@@ -154,7 +151,7 @@ export class Controller {
                     skipVotingPassPercentage: this.MusicController.skipVotingPassPercentage,
                 };
 
-                await this.db.collection('guilds').updateOne(
+                await this.db.collection("guilds").updateOne(
                     {
                         guild_id: this.guild.id,
                     },
@@ -169,17 +166,21 @@ export class Controller {
                 );
             }
         } catch (error) {
-            logger.log('error', 'Error while trying to save guild settings: ' + error);
+            logger.log("error", "Error while trying to save guild settings: " + error);
         }
     };
     deploySlashCommands() {
-        const slashCommands = [];
+        try {
+            const slashCommands = [];
 
-        for (const command of this.commands) {
-            slashCommands.push(command.convertSlashCommand());
+            for (const command of this.commands) {
+                slashCommands.push(command.convertSlashCommand());
+            }
+
+            this.guild.commands.set(slashCommands);
+        } catch (error) {
+            logger.log("error", "Error while trying to deploy slash commands: " + error);
         }
-
-        this.guild.commands.set(slashCommands);
     }
 
     destroy() {
@@ -205,7 +206,7 @@ export class Controller {
                 `Discord didn't register your message as a command!`,
                 `Make sure to press tab or enter after you typed /${responseObj.command}!`
             )
-            .setColor('#e9b463');
+            .setColor("#e9b463");
 
         message.channel.send({ embeds: [newEmbed] });
 
@@ -231,9 +232,9 @@ export class Controller {
         if (!interaction.deferred) {
             interaction.deferReply();
             if (!interaction.replied) {
-                interaction.reply({ content: interaction.customId + ' clicked' });
+                interaction.reply({ content: interaction.customId + " clicked" });
             } else {
-                interaction.editReply({ content: interaction.customId + ' clicked' });
+                interaction.editReply({ content: interaction.customId + " clicked" });
             }
         }
     }
@@ -245,16 +246,16 @@ export class Controller {
         } else if (interaction.isCommand()) {
             const commandName = interaction.commandName;
             const musicPlayerCommands = [
-                'play',
-                'skip',
-                'pause',
-                'playnext',
-                'queue',
-                'resume',
-                'skip',
-                'status',
-                'stop',
-                'votetoskip',
+                "play",
+                "skip",
+                "pause",
+                "playnext",
+                "queue",
+                "resume",
+                "skip",
+                "status",
+                "stop",
+                "votetoskip",
             ];
 
             if (musicPlayerCommands.includes(commandName) && this.MusicController) {
@@ -264,20 +265,20 @@ export class Controller {
             const foundCommand = this.commands.find(({ name }) => name === commandName);
             if (foundCommand) {
                 if (this.debugMode) {
-                    logger.log('info', `Command found ${foundCommand.name}`);
+                    logger.log("info", `Command found ${foundCommand.name}`);
                     //message.channel.send("Command found:\n" + foundCommand.name)
                 }
                 foundCommand.execute(interaction, true);
             }
         } else {
-            logger.log('warn', 'Unknown interaction type: ' + interaction.type);
+            logger.log("warn", "Unknown interaction type: " + interaction.type);
         }
     }
 
-    toggleDebug(options: 'on' | 'off') {
-        if (options === 'on') {
+    toggleDebug(options: "on" | "off") {
+        if (options === "on") {
             this.debugMode = true;
-        } else if (options === 'off') {
+        } else if (options === "off") {
             this.debugMode = false;
         } else {
             const curDebug = this.debugMode;
