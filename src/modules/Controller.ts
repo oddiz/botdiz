@@ -49,17 +49,17 @@ export class Controller {
     }
 
     init = async () => {
-        //check if bot needs to deploy slash commands
-        this.guild.commands.fetch().then((commands) => {
-            if (commands.size !== this.commands.length) {
-                logger.log("info", "Deploying slash commands");
-                this.deploySlashCommands();
-            } else {
-                //commands are up to date
-            }
-        });
-
         try {
+            //check if bot needs to deploy slash commands
+            this.guild.commands.fetch().then((commands) => {
+                if (commands.size !== this.commands.length) {
+                    logger.log("info", "Deploying slash commands");
+                    this.deploySlashCommands();
+                } else {
+                    //commands are up to date
+                }
+            });
+
             let dbGuildObject = (await this.db
                 .collection("guilds")
                 .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
