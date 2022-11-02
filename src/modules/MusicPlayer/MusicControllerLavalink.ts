@@ -744,6 +744,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             }
 
             botMessage = await this.playCommand.reply(
+                //@ts-ignore-next-line
                 { embeds: [embedMessage], components: [botdizLinkButton] },
                 { new: true, required: true }
             );

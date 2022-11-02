@@ -3,7 +3,7 @@
     "argon2": "^0.28.2",
     "axios": "^0.21.1",
     "cors": "^2.8.5",
-    "discord.js": "^13.0.0-dev.f7eeccba4b7015496df811f10cc2da2b0fab0630",
+    "discord.js": "13.12.0",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
