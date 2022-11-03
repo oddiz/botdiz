@@ -148,7 +148,8 @@ export default async function playlists(app: Express, db: Db) {
 
                             if (botdizGuildOptions) {
                                 const allowedDjRoles = botdizGuildOptions.dj_roles;
-
+                                console.log(botdizGuildOptions);
+                                console.log(allowedDjRoles);
                                 if (allowedDjRoles.length > 0) {
                                     const discordGuildMemberRoles = await DiscordClient.guilds
                                         .fetch({ guild: guild.id })
