@@ -80,11 +80,12 @@ export class Controller {
                 .collection("guilds")
                 .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
             if (!dbGuildObject) {
+                const everyoneRole = this.guild.roles.everyone.id;
                 dbGuildObject = {
                     guild_id: this.guild.id,
                     guild_name: this.guild.name,
                     owner_id: this.guild.ownerId,
-                    dj_roles: [],
+                    dj_roles: [everyoneRole],
                 };
             }
             await this.updateGuildInfoOnDatabase();
