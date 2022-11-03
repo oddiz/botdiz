@@ -1,21 +1,21 @@
-import { GuildControllers } from '../../../src/main';
-import { Db } from 'mongodb';
-import { Express } from 'express';
-import { getToken } from '../../scripts/getToken';
-import { DbDiscordUser, DbGuildObject } from '../../db/databaseTypes';
-import { MessageEmbed, TextChannel } from 'discord.js';
-import { withAuth } from '../middlewares';
+import { GuildControllers } from "../../../src/main";
+import { Db } from "mongodb";
+import { Express } from "express";
+import { getToken } from "../../scripts/getToken";
+import { DbDiscordUser, DbGuildObject } from "../../db/databaseTypes";
+import { EmbedBuilder, TextChannel } from "discord.js";
+import { withAuth } from "../middlewares";
 
 export default async function botdizguild(app: Express, db: Db) {
-    app.get('/botdizguild/:guildId', withAuth, async (req, res) => {
+    app.get("/botdizguild/:guildId", withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guildId;
 
             if (!reqGuildId) {
-                console.log('No guild Id specified');
+                console.log("No guild Id specified");
                 res.status(401).send({
-                    status: 'failed',
-                    message: '404 No guild id',
+                    status: "failed",
+                    message: "404 No guild id",
                 });
                 return;
             }
@@ -24,8 +24,8 @@ export default async function botdizguild(app: Express, db: Db) {
 
             if (!session) {
                 res.status(401).send({
-                    status: 'failed',
-                    message: '401 Unauthorized',
+                    status: "failed",
+                    message: "401 Unauthorized",
                 });
 
                 return;
@@ -33,7 +33,7 @@ export default async function botdizguild(app: Express, db: Db) {
 
             const user = req.user;
 
-            if ('discord_session' in session && 'discord_id' in user) {
+            if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
@@ -48,37 +48,36 @@ export default async function botdizguild(app: Express, db: Db) {
 
                 if (!commandAllowed) {
                     res.status(401).send({
-                        status: 'failed',
-                        message: '401 Unauthorized',
+                        status: "failed",
+                        message: "401 Unauthorized",
                     });
 
                     return;
                 }
             }
 
-            let replyGuild =
-                (await db.collection('guilds').findOne({ guild_id: reqGuildId })) || {};
+            let replyGuild = (await db.collection("guilds").findOne({ guild_id: reqGuildId })) || {};
 
             res.send({
-                status: 'success',
+                status: "success",
                 result: replyGuild,
             });
         } catch (error) {
-            console.log('Error while trying to get guild info. Error: ', error);
+            console.log("Error while trying to get guild info. Error: ", error);
         }
     });
 
-    app.post('/botdizguild/:guildId', withAuth, async (req, res) => {
+    app.post("/botdizguild/:guildId", withAuth, async (req, res) => {
         //used for updating guild info only guild admins and owners can do this
         //updates dj roles
         try {
             const reqGuildId = req.params.guildId;
 
             if (!reqGuildId) {
-                console.log('No guild Id specified');
+                console.log("No guild Id specified");
                 res.status(401).send({
-                    status: 'failed',
-                    message: '404 No guild id',
+                    status: "failed",
+                    message: "404 No guild id",
                 });
                 return;
             }
@@ -86,7 +85,7 @@ export default async function botdizguild(app: Express, db: Db) {
             const session = req.dbSession;
 
             const user = req.user;
-            if ('discord_session' in session && 'discord_id' in user) {
+            if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
@@ -101,8 +100,8 @@ export default async function botdizguild(app: Express, db: Db) {
 
                 if (!commandAllowed) {
                     res.status(401).send({
-                        status: 'failed',
-                        message: '401 Unauthorized',
+                        status: "failed",
+                        message: "401 Unauthorized",
                     });
 
                     return;
@@ -111,7 +110,7 @@ export default async function botdizguild(app: Express, db: Db) {
 
             const djRoles = req.body.dj_roles;
 
-            const dbReply = await db.collection('guilds').updateOne(
+            const dbReply = await db.collection("guilds").updateOne(
                 {
                     guild_id: reqGuildId,
                 },
@@ -127,33 +126,33 @@ export default async function botdizguild(app: Express, db: Db) {
 
             if (dbReply.upsertedCount > 0 || dbReply.modifiedCount > 0) {
                 res.send({
-                    status: 'success',
-                    message: 'Updated allowed DJ roles.',
+                    status: "success",
+                    message: "Updated allowed DJ roles.",
                 });
 
                 return;
             } else {
                 res.status(404).send({
-                    status: 'failed',
-                    message: '404 Guild not found',
+                    status: "failed",
+                    message: "404 Guild not found",
                 });
 
                 return;
             }
         } catch (error) {
-            console.log('Error while updating guild: ', error);
+            console.log("Error while updating guild: ", error);
         }
     });
 
-    app.get('/botdizguild/subscriptions/:guildId', withAuth, async (req, res) => {
+    app.get("/botdizguild/subscriptions/:guildId", withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guildId;
 
             if (!reqGuildId) {
-                console.log('No guild Id specified');
+                console.log("No guild Id specified");
                 res.status(401).send({
-                    status: 'failed',
-                    message: '404 No guild id',
+                    status: "failed",
+                    message: "404 No guild id",
                 });
                 return;
             }
@@ -161,7 +160,7 @@ export default async function botdizguild(app: Express, db: Db) {
             const session = req.dbSession;
 
             const user = req.user;
-            if ('discord_session' in session && 'discord_id' in user) {
+            if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
@@ -176,16 +175,16 @@ export default async function botdizguild(app: Express, db: Db) {
 
                 if (!commandAllowed) {
                     res.status(401).send({
-                        status: 'failed',
-                        message: '401 Unauthorized',
+                        status: "failed",
+                        message: "401 Unauthorized",
                     });
 
                     return;
                 }
             }
 
-            let guildSubs: DbGuildObject['subscriptions'] = await db
-                .collection('guilds')
+            let guildSubs: DbGuildObject["subscriptions"] = await db
+                .collection("guilds")
                 .findOne({
                     guild_id: reqGuildId,
                 })
@@ -196,27 +195,27 @@ export default async function botdizguild(app: Express, db: Db) {
             }
 
             res.send({
-                status: 'success',
+                status: "success",
                 result: guildSubs,
             });
         } catch (error) {
-            console.log('Error while trying to get guild subscriptions: ', error);
+            console.log("Error while trying to get guild subscriptions: ", error);
             res.status(401).send({
-                status: 'failed',
-                message: 'Error occured while trying to get guild subscriptions',
+                status: "failed",
+                message: "Error occured while trying to get guild subscriptions",
             });
         }
     });
 
-    app.post('/botdizguild/subscriptions/:guildId', withAuth, async (req, res) => {
+    app.post("/botdizguild/subscriptions/:guildId", withAuth, async (req, res) => {
         try {
             const reqGuildId = req.params.guildId;
 
             if (!reqGuildId) {
-                console.log('No guild Id specified');
+                console.log("No guild Id specified");
                 res.status(401).send({
-                    status: 'failed',
-                    message: '404 No guild id',
+                    status: "failed",
+                    message: "404 No guild id",
                 });
                 return;
             }
@@ -225,7 +224,7 @@ export default async function botdizguild(app: Express, db: Db) {
 
             const user = req.user;
 
-            if ('discord_session' in session && 'discord_id' in user) {
+            if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
 
                 let commandAllowed = false;
@@ -240,8 +239,8 @@ export default async function botdizguild(app: Express, db: Db) {
 
                 if (!commandAllowed) {
                     res.status(401).send({
-                        status: 'failed',
-                        message: '401 Unauthorized',
+                        status: "failed",
+                        message: "401 Unauthorized",
                     });
 
                     return;
@@ -249,7 +248,7 @@ export default async function botdizguild(app: Express, db: Db) {
             }
 
             let dbSubs = await db
-                .collection('guilds')
+                .collection("guilds")
                 .findOne({ guild_id: reqGuildId })
                 .then((guild) => guild?.subscriptions);
 
@@ -260,28 +259,23 @@ export default async function botdizguild(app: Express, db: Db) {
             let subFound = false;
             for (const sub of dbSubs) {
                 if (sub.type === reqSubType && GuildControllers) {
-                    const guild = await GuildControllers.find(
-                        (element) => element.guildId === reqGuildId
-                    )?.guildObj;
+                    const guild = await GuildControllers.find((element) => element.guildId === reqGuildId)?.guildObj;
 
                     let subbedChannel;
                     if (guild) {
-                        subbedChannel = (await guild.channels.fetch(
-                            req.body.subscribed_channel
-                        )) as TextChannel;
+                        subbedChannel = (await guild.channels.fetch(req.body.subscribed_channel)) as TextChannel;
                     }
 
                     if (subbedChannel) {
-                        let embedMessage = new MessageEmbed();
+                        let embedMessage = new EmbedBuilder();
 
                         if (
                             (!sub.active && req.body.active) ||
-                            (req.body.active &&
-                                sub.subscribed_channel !== req.body.subscribed_channel)
+                            (req.body.active && sub.subscribed_channel !== req.body.subscribed_channel)
                         ) {
                             embedMessage
-                                .setColor('#0FF28F')
-                                .setTitle('This channel is now subscribed to epic deals')
+                                .setColor("#0FF28F")
+                                .setTitle("This channel is now subscribed to epic deals")
                                 .setTimestamp();
                             subbedChannel.send({ embeds: [embedMessage] });
                         }
@@ -297,7 +291,7 @@ export default async function botdizguild(app: Express, db: Db) {
                 dbSubs.push(req.body);
             }
 
-            const result = await db.collection('guilds').updateOne(
+            const result = await db.collection("guilds").updateOne(
                 {
                     guild_id: reqGuildId,
                 },
@@ -313,17 +307,17 @@ export default async function botdizguild(app: Express, db: Db) {
 
             if (result.acknowledged && result.matchedCount > 0) {
                 res.send({
-                    status: 'success',
-                    message: 'Subscription updated',
+                    status: "success",
+                    message: "Subscription updated",
                 });
             } else {
                 throw "Couldn't find guild to update in DB " + reqGuildId;
             }
         } catch (error) {
-            console.log('Error while trying to update guild subs: ', error);
+            console.log("Error while trying to update guild subs: ", error);
             res.status(401).send({
-                status: 'failed',
-                message: 'Error occured while trying to update guild subs',
+                status: "failed",
+                message: "Error occured while trying to update guild subs",
             });
         }
     });

@@ -1,7 +1,7 @@
 import { Command } from "../modules/Command";
 import { Controller } from "../modules/Controller";
 import { QueueTrack } from "../modules/MusicPlayer/MusicControllerLavalink";
-import { CommandInteraction, GuildMember } from "discord.js";
+import { ChatInputCommandInteraction, CommandInteraction, GuildMember } from "discord.js";
 import spotifyUri, { Album, Playlist, Track } from "spotify-uri";
 
 import dotenv from "dotenv";
@@ -17,7 +17,7 @@ export type PlayCommandOptions = {
 };
 export default async function (
     this: Command,
-    invokedMessage?: CommandInteraction | null,
+    invokedMessage?: ChatInputCommandInteraction | null,
     options?: PlayCommandOptions | null
 ): Promise<void> {
     const self = this;
@@ -68,36 +68,7 @@ export default async function (
                 return;
             }
 
-            const botVoiceChannel = invokedMessage?.guild?.me?.voice.channel;
-            //discord.js/voice VoiceConnection object
-            //https://discordjs.github.io/voice/classes/voiceconnection.html
-
-            // console.log({
-            //     memberVoiceChannel: memberVoiceChannel,
-            //     botVoiceChannel: botVoiceChannel,
-            //     botVoiceConnection: botVoiceConnection,
-            //     audioPlayerStatus: musicController.audioPlayerStatus
-            // })
-
-            /**
-             * if member vc = undefined  ✅
-             *      -> "you are not in vc", return
-             *
-             * if bot vc = undefined ✅
-             *      -> join member vc
-             *
-             *
-             * if member vc = bot vc ✅
-             *      -> continue
-             *
-             * if member vc != bot vc: ✅
-             *      if bot is playing: ✅
-             *          -> bot is already playing, return
-             *      if bot is idle: ✅
-             *          -> join member voice channel
-             *          -> set musiccontroller voicechannel to new
-             *          -> continue
-             */
+            const botVoiceChannel = invokedMessage?.guild?.members.me?.voice.channel;
 
             if (!musicController.audioPlayer) {
                 logger.log("error", "Audio player is not found on the music controller, trying to initialize");
@@ -131,14 +102,6 @@ export default async function (
                     } else {
                         logger.log("info", "Bot is not playing. Switching to new channel.");
 
-                        // let voiceConnection = await joinVoiceChannel({
-                        //     channelId: memberVoiceChannel.id,
-                        //     guildId: memberVoiceChannel.guild.id,
-                        //     adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
-                        //     selfMute: false,
-                        //     selfDeaf: false
-                        // })
-
                         musicController.setVoiceConnection(memberVoiceChannel);
                     }
                 } else if (!musicController.activeVoiceChannel) {
@@ -148,14 +111,6 @@ export default async function (
                         "Bot is in same voice channel but doesn't have a voice connection, shouldn't happen."
                     );
                     //shouldn't happen with the new lavalink system
-
-                    // let voiceConnection = await joinVoiceChannel({
-                    //     channelId: memberVoiceChannel.id,
-                    //     guildId: memberVoiceChannel.guild.id,
-                    //     adapterCreator: memberVoiceChannel.guild.voiceAdapterCreator,
-                    //     selfMute: false,
-                    //     selfDeaf: false
-                    // })
 
                     musicController.setVoiceConnection(memberVoiceChannel);
                 }
@@ -188,7 +143,6 @@ export default async function (
             const query = input;
             const searchResult = await node?.rest.resolve("ytsearch:" + query);
 
-            console.log(searchResult);
             if (!searchResult) {
                 return;
             }
@@ -242,7 +196,6 @@ export default async function (
                             if (parsed.type === "album") {
                                 const albumReply = await spotifyApi.getAlbumTracks(spotifyId);
                                 const albumData = albumReply.body;
-                                console.log(albumData.items);
 
                                 if ((albumData.items.length = 0)) {
                                     musicController.queueLock = false;
@@ -310,9 +263,7 @@ export default async function (
                             const trackData = getTrackResponse.body;
 
                             const artistName = trackData.artists[0].name;
-                            //console.log("artist name:", artistName)
                             const songName = trackData.name;
-                            //console.log("songName: ", songName )
                             const isSpotify = true;
 
                             const botdizSong: QueueTrack = {

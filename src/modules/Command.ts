@@ -2,12 +2,12 @@ import { logger } from "../logger";
 import {
     ApplicationCommandData,
     ApplicationCommandOptionData,
+    ChatInputCommandInteraction,
     CommandInteraction,
     InteractionReplyOptions,
     Message,
-    MessageOptions,
+    MessageCreateOptions,
     MessagePayload,
-    ReplyMessageOptions,
 } from "discord.js";
 import { Controller as BotdizController } from "./Controller";
 import { PlayCommandOptions } from "../commands/play";
@@ -30,7 +30,7 @@ export type replyOptions = {
 };
 
 export type CommandFunction = (
-    invokedMessage?: CommandInteraction | null,
+    invokedMessage?: CommandInteraction | ChatInputCommandInteraction | null,
     options?: PlayCommandOptions | null
 ) => Promise<void>;
 export class Command {
@@ -58,7 +58,7 @@ export class Command {
     public lastInvokedMessage: Message | CommandInteraction | null;
     public lastIsInteraction: boolean | null;
 
-    constructor(controller: BotdizController, config: BotdizCommandConfig, func: CommandFunction) {
+    constructor(controller: BotdizController, config: BotdizCommandConfig, func: any) {
         this.controller = controller;
 
         this.name = config.name;
@@ -110,8 +110,19 @@ export class Command {
         }
     }
 
+    async createNewMessage(content: string | MessagePayload | MessageCreateOptions | InteractionReplyOptions) {
+        if (!this.lastInvokedMessage) {
+            // no message to reply
+            return;
+        }
+        const newMessage = content as MessageCreateOptions;
+        this.lastInvokedMessage = (await this.lastInvokedMessage.channel?.send(newMessage)) || null;
+        this.lastIsInteraction = false;
+
+        return this.lastInvokedMessage;
+    }
     async reply(
-        content: string | MessagePayload,
+        content: string | MessagePayload | InteractionReplyOptions,
         options: replyOptions = { followup: false, new: false, required: true }
     ) {
         try {
@@ -134,29 +145,20 @@ export class Command {
                 }
 
                 if (options.new) {
-                    this.lastInvokedMessage = (await this.lastInvokedMessage.channel?.send(content)) || null;
-                    this.lastIsInteraction = false;
-
-                    return this.lastInvokedMessage;
+                    return this.createNewMessage(content);
                 }
 
                 return await this.lastInvokedMessage.editReply(content).catch(async (err) => {
                     console.log(err + " -> Can't edit Last Invoked Message");
 
                     if (options.new && options.required) {
-                        this.lastInvokedMessage = (await this.lastInvokedMessage?.channel?.send(content)) || null;
-                        this.lastIsInteraction = false;
-
-                        return this.lastInvokedMessage;
+                        return this.createNewMessage(content);
                     }
                 });
             } else {
                 //if normal command
                 if (options.required) {
-                    this.lastInvokedMessage = (await this.lastInvokedMessage.channel?.send(content)) || null;
-                    this.lastIsInteraction = false;
-
-                    return this.lastInvokedMessage;
+                    return this.createNewMessage(content);
                 }
             }
         } catch (error) {

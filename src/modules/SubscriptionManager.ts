@@ -1,4 +1,4 @@
-import { BaseGuildTextChannel, Guild, MessageEmbed } from 'discord.js'
+import { BaseGuildTextChannel, Guild, EmbedBuilder } from 'discord.js'
 import { DbGuildObject, DbSubscriptionContent } from '../../server_src/db/databaseTypes'
 import {
     Db as MongoDb
@@ -297,7 +297,7 @@ export class SubscriptionManager {
                     const hours = Math.floor((dateDiff / (1000 * 60 * 60 )) % 24)
                     const days = Math.floor(dateDiff / (1000 * 60 * 60 * 24))
                     
-                    const embedMessage = new MessageEmbed
+                    const embedMessage = new EmbedBuilder
     
                     embedMessage
                         .setColor("#0FF28F")
@@ -327,7 +327,7 @@ export class SubscriptionManager {
                     const days = Math.floor(dateDiff / (1000 * 60 * 60 * 24))
                     //console.log("Days: ", days , "hours: ", hours, "minutes:", minutes, "seconds: ", seconds)
     
-                    let embedMessage = new MessageEmbed
+                    let embedMessage = new EmbedBuilder
                     embedMessage = embedMessage
                         .setColor("#CB462C")
                         .setTitle(epicGame.gameTitle)

@@ -1,7 +1,5 @@
-import { DiscordAPIError, Message } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError, EmbedBuilder, Message } from "discord.js";
 import { BotdizShoukakuTrack, MusicController } from "./MusicControllerLavalink";
-
-import { MessageEmbed, MessageActionRow, MessageButton } from "discord.js";
 
 import { logger } from "../../logger";
 
@@ -39,32 +37,12 @@ export class EmbedPlayer {
     }
 
     async updateLoop() {
-        const botdizLinkButton = new MessageActionRow();
         const botdizLink =
             process.env.NODE_ENV === "development" ? "http://localhost:3000/app" : "https://botdiz.kaansarkaya.com/app";
-        botdizLinkButton.addComponents([
-            new MessageButton().setLabel("Botdiz Interface").setStyle("LINK").setURL(botdizLink),
+        const botdizLinkButton = new ActionRowBuilder<ButtonBuilder>().addComponents([
+            new ButtonBuilder().setLabel("Botdiz Interface").setStyle(ButtonStyle.Link).setURL(botdizLink),
         ]);
-        // botdizLinkButton
-        //     .addComponents(
-        //         [new MessageButton()
-        //             .setLabel("Botdiz Interface")
-        //             .setStyle("LINK")
-        //             .setURL(botdizLink),
-        //         new MessageButton()
-        //             .setLabel("test")
-        //             .setCustomID("test_id")
-        //             .setStyle("PRIMARY"),
-        //         new MessageButton()
-        //             .setLabel("stop")
-        //             .setCustomID("stop_button")
-        //             .setStyle("DANGER"),
-        //         new MessageButton()
-        //             .setLabel("play")
-        //             .setCustomID("play_button")
-        //             .setStyle("SECONDARY"),
-        //         ]
-        //     )
+
         if (!this.MusicController.audioPlayer) {
             logger.log("error", "No audio player available. Can't run embed loop.");
             return;
@@ -84,10 +62,10 @@ export class EmbedPlayer {
             }
             try {
                 this.looping = true;
-                let newEmbed = new MessageEmbed();
+                let newEmbed = new EmbedBuilder();
                 newEmbed = newEmbed
                     .setColor(this.MusicController.controller.roleColor)
-                    .addField("Now Playing: ", `${this.currentSong.info.title}`)
+                    .addFields({ name: "Now Playing: ", value: `${this.currentSong.info.title}` })
                     .setTimestamp();
                 if (this.currentSong.thumbnail) {
                     newEmbed = newEmbed.setThumbnail(this.currentSong.thumbnail);
@@ -114,29 +92,44 @@ export class EmbedPlayer {
                 let newEmbedMessage;
 
                 if (this.currentSong.info.isStream) {
-                    newEmbedMessage = newEmbed.addField(
-                        `Play time:`,
-                        `${streamHours}:${streamMins.toString().padStart(2, "0")}:${streamSecs
+                    newEmbedMessage = newEmbed.addFields({
+                        name: `Play time:`,
+                        value: `${streamHours}:${streamMins.toString().padStart(2, "0")}:${streamSecs
                             .toString()
                             .padStart(2, "0")}\n\n Recommend Songs: ${
                             this.MusicController.recommendSongs ? "On" : "Off"
-                        }`
-                    );
+                        }`,
+                    });
                 } else if (videoHours > 0) {
-                    newEmbedMessage = newEmbed.addField(
-                        `${streamHours}:${streamMins.toString().padStart(2, "0")}:${streamSecs
-                            .toString()
-                            .padStart(2, "0")} / ${videoHours}:${videoMins.toString().padStart(2, "0")}:${videoSecs
-                            .toString()
-                            .padStart(2, "0")}`,
-                        `|${progressBar}|\n\n Recommend Songs: ${this.MusicController.recommendSongs ? "On" : "Off"} `
+                    newEmbedMessage = newEmbed.addFields(
+                        {
+                            name: "\u200B",
+                            value: `${streamHours}:${streamMins.toString().padStart(2, "0")}:${streamSecs
+                                .toString()
+                                .padStart(2, "0")} / ${videoHours}:${videoMins.toString().padStart(2, "0")}:${videoSecs
+                                .toString()
+                                .padStart(2, "0")}`,
+                        },
+                        { name: "\u200B", value: `|${progressBar}|` },
+                        {
+                            name: `Recommend Songs:`,
+                            value: `${this.MusicController.recommendSongs ? "On" : "Off"} `,
+                        }
                     );
                 } else {
-                    newEmbedMessage = newEmbed.addField(
-                        `${streamMins}:${streamSecs.toString().padStart(2, "0")} / ${videoMins}:${videoSecs
-                            .toString()
-                            .padStart(2, "0")}`,
-                        `|${progressBar}|\n\n Recommend Songs: ${this.MusicController.recommendSongs ? "On" : "Off"}`
+                    newEmbedMessage = newEmbed.addFields(
+                        {
+                            name: "\u200B",
+                            value: `${streamMins}:${streamSecs.toString().padStart(2, "0")} / ${videoMins}:${videoSecs
+                                .toString()
+                                .padStart(2, "0")}`,
+                        },
+                        { name: "\u200B", value: `|${progressBar}|` },
+
+                        {
+                            name: `Recommend Songs:`,
+                            value: `${this.MusicController.recommendSongs ? "On" : "Off"}`,
+                        }
                     );
                 }
 
@@ -159,10 +152,16 @@ export class EmbedPlayer {
         if (this.getQuitState()) {
             try {
                 if (this.currentSong) {
-                    let newEmbed = new MessageEmbed();
+                    let newEmbed = new EmbedBuilder();
                     newEmbed = newEmbed
                         .setColor(this.MusicController.controller.roleColor)
-                        .addField("Stopped playing: ", `${this.currentSong.info.title}`)
+                        .addFields(
+                            { name: "\u200B", value: "Stopped playing:" },
+                            {
+                                name: "\u200B",
+                                value: `${this.currentSong.info.title}`,
+                            }
+                        )
                         .setTimestamp();
                     if (this.currentSong.thumbnail) {
                         newEmbed = newEmbed.setThumbnail(this.currentSong.thumbnail);

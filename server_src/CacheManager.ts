@@ -1,11 +1,4 @@
-import {
-    Client,
-    Collection,
-    GuildMember,
-    NonThreadGuildBasedChannel,
-    TextBasedChannel,
-    VoiceBasedChannel,
-} from "discord.js";
+import { ChannelType, Collection, GuildMember, NonThreadGuildBasedChannel } from "discord.js";
 import LRU from "lru-cache";
 import { client, GuildControllers } from "../src/main";
 import { logger } from "../src/logger";
@@ -90,8 +83,8 @@ class CacheManager {
 
         const guildChannels = await guild.channels.fetch();
 
-        const textChannels = guildChannels.filter((c) => c?.type === "GUILD_TEXT" && c.viewable);
-        const voiceChannels = guildChannels.filter((c) => c?.type === "GUILD_VOICE" && c.viewable);
+        const textChannels = guildChannels.filter((c) => c?.type === ChannelType.GuildText && c.viewable);
+        const voiceChannels = guildChannels.filter((c) => c?.type === ChannelType.GuildVoice && c.viewable);
 
         const mappedVoiceChannels = voiceChannels.map((channel) => {
             return {

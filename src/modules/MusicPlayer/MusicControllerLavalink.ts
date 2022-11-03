@@ -1,13 +1,14 @@
 import fetch from "node-fetch";
 import { logger } from "../../logger";
 import {
-    MessageEmbed,
-    MessageActionRow,
-    MessageButton,
     TextBasedChannel,
     VoiceBasedChannel,
     Message,
     CommandInteraction,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    EmbedBuilder,
 } from "discord.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 
@@ -716,19 +717,19 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     async createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null) {
         try {
             let botMessage;
-            const botdizLinkButton = new MessageActionRow();
+            const botdizLinkButton = new ActionRowBuilder();
             const botdizLink =
                 process.env.NODE_ENV === "development"
                     ? "http://localhost:3000/app"
                     : "https://botdiz.kaansarkaya.com/app";
             botdizLinkButton.addComponents(
-                new MessageButton().setLabel("Botdiz Interface").setStyle("LINK").setURL(botdizLink)
+                new ButtonBuilder().setLabel("Botdiz Interface").setStyle(ButtonStyle.Link).setURL(botdizLink)
             );
-            let embedMessage = new MessageEmbed();
+            let embedMessage = new EmbedBuilder();
 
             embedMessage
                 .setColor(this.controller.roleColor)
-                .addField("Now Playing: ", `${currentSong.info.title}`)
+                .addFields({ name: "Now Playing: ", value: `${currentSong.info.title}` })
                 .setTimestamp();
 
             if (currentSong.thumbnail) {

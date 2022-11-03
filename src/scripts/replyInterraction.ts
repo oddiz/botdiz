@@ -1,6 +1,6 @@
-import { Interaction, MessagePayload, TextChannel, Message, MessageOptions, MessageEditOptions } from "discord.js";
+import { MessagePayload, TextChannel, Message, CommandInteraction, InteractionReplyOptions } from "discord.js";
 import { logger } from "../logger";
-export interface InteractionReplyOptions {
+export interface BotdizInteractionReplyOptions {
     followup?: boolean;
     new?: boolean;
     required?: boolean;
@@ -9,16 +9,16 @@ export interface InteractionReplyOptions {
 }
 
 export default async function (
-    invokedMessage: Interaction,
-    content: string | MessagePayload,
-    options: InteractionReplyOptions = {
+    invokedMessage: CommandInteraction,
+    content: string | MessagePayload | InteractionReplyOptions,
+    options: BotdizInteractionReplyOptions = {
         followup: false,
         new: false,
         required: false,
         ephemeral: false,
         editReply: false,
     }
-): Promise<void | Message<boolean>> {
+) {
     try {
         if (!invokedMessage) {
             // no message to reply
@@ -34,7 +34,8 @@ export default async function (
 
         //if not there send normal message and return
         if (!foundMessage) {
-            return await lastInvokedChannel.send(content);
+            const messageContent = content as MessagePayload;
+            return await lastInvokedChannel.send(messageContent);
         }
 
         if (invokedMessage.isCommand()) {
@@ -50,20 +51,20 @@ export default async function (
                 return await invokedMessage.reply(content);
             } else {
                 if (options.editReply) {
-                    return (await invokedMessage.editReply(content)) as Message;
+                    const editContent = content as string | MessagePayload;
+                    return await invokedMessage.editReply(editContent);
                 } else if (options.followup) {
-                    return (await invokedMessage.followUp(content)) as Message;
+                    return await invokedMessage.followUp(content);
                 } else if (options.new) {
-                    return await invokedMessage.channel?.send(content);
+                    const messageContent = content as string | MessagePayload;
+                    return await invokedMessage.channel?.send(messageContent);
                 } else {
-                    return await invokedMessage.channel?.send(content);
+                    const messageContent = content as string | MessagePayload;
+                    return await invokedMessage.channel?.send(messageContent);
                 }
             }
         } else {
             //if normal command
-            if (options.required) {
-                return await invokedMessage.channel?.send(content);
-            }
         }
     } catch (error) {
         logger.log("error", "Failed to reply to command: \n" + error);

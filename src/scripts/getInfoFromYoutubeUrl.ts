@@ -14,44 +14,40 @@ export default async (videoUrl: string): Promise<YoutubeSearchResult | null> => 
                     videoThumbnailUrl: response.data.thumbnail_url
                 }
         */
-        const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-        const href = videoUrl
-        const hrefArray = href.match(regex) || []
-        const videoId = hrefArray[1]
+        const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const href = videoUrl;
+        const hrefArray = href.match(regex) || [];
+        const videoId = hrefArray[1];
         //\?v=(.*)&|\?v=(.*)$
-        
-        if (videoId) {
 
-            const videoInfo = await ytdl.getBasicInfo(videoId)
+        if (videoId) {
+            const videoInfo = await ytdl.getBasicInfo(videoId);
 
             if (videoInfo) {
-                
-                
-                const videoDetails = videoInfo.player_response.videoDetails
-                const title = videoDetails.title
-                const duration = videoDetails.lengthSeconds
-                const thumbnailUrl = videoDetails.thumbnail.thumbnails[0].url
-                
+                const videoDetails = videoInfo.player_response.videoDetails;
+                const title = videoDetails.title;
+                const duration = videoDetails.lengthSeconds;
+                const thumbnailUrl = videoDetails.thumbnails[0].url;
+
                 const parsedInfo: YoutubeSearchResult = {
                     videoUrl: href,
                     videoId: videoId,
                     videoTitle: title,
                     videoThumbnailUrl: thumbnailUrl,
-                    videoDuration: duration
-                }
-                
-                return parsedInfo
+                    videoDuration: duration,
+                };
+
+                return parsedInfo;
             }
         }
-        
-        return null
 
+        return null;
     } catch (error) {
-        logger.log("error", "Error while getting info from youtube url : ", error)
-        return null
+        logger.log("error", "Error while getting info from youtube url : ", error);
+        return null;
     }
-}
-    
+};
+
 /*
     {
         videoTitle: title,

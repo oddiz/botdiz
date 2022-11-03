@@ -131,14 +131,10 @@ const getCommands = {
 
             if (!channel) throw "Channel not found ID: " + channelId;
 
-            const messages = await channel.messages.fetch(
-                {
-                    limit: 25,
-                },
-                {
-                    cache: true,
-                }
-            );
+            const messages = await channel.messages.fetch({
+                cache: true,
+                limit: 25,
+            });
 
             const parsedMessages = messages.map((message) => {
                 let color = guild.members.cache.get(message.author.id)?.displayHexColor;
