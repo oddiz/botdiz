@@ -49,15 +49,21 @@ export class Controller {
     }
 
     init = async () => {
+        //last update date is 03/11/2022
+        const forceUpdateTill = new Date("2022-11-05T00:00:00.000Z"); // 2 days after last update
+        const today = new Date();
+
         //check if bot needs to deploy slash commands
-        this.guild.commands.fetch().then((commands) => {
-            if (commands.size !== this.commands.length) {
-                logger.log("info", "Deploying slash commands");
-                this.deploySlashCommands();
-            } else {
-                //commands are up to date
-            }
-        });
+        if (today < forceUpdateTill) {
+            this.deploySlashCommands();
+        } else {
+            this.guild.commands.fetch().then((commands) => {
+                if (commands.size !== this.commands.length) {
+                    logger.log("info", "Deploying slash commands");
+                    this.deploySlashCommands();
+                }
+            });
+        }
 
         try {
             let dbGuildObject = (await this.db
