@@ -155,6 +155,8 @@ export default async function playlists(app: Express, db: Db) {
                                     guild.administrator = false;
                                     guild.owner = false;
                                     allowedGuilds.push(guild);
+
+                                    continue;
                                 }
                                 if (allowedDjRoles.length > 0) {
                                     const discordGuildMemberRoles = await DiscordClient.guilds
