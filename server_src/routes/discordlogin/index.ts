@@ -148,8 +148,14 @@ export default async function playlists(app: Express, db: Db) {
 
                             if (botdizGuildOptions) {
                                 const allowedDjRoles = botdizGuildOptions.dj_roles;
-                                console.log(botdizGuildOptions);
-                                console.log(allowedDjRoles);
+
+                                if (!allowedDjRoles) {
+                                    //if owner of the guild hasn't set any dj roles, everyone is allowed
+                                    guild.dj_access = true;
+                                    guild.administrator = false;
+                                    guild.owner = false;
+                                    allowedGuilds.push(guild);
+                                }
                                 if (allowedDjRoles.length > 0) {
                                     const discordGuildMemberRoles = await DiscordClient.guilds
                                         .fetch({ guild: guild.id })
@@ -242,7 +248,10 @@ export default async function playlists(app: Express, db: Db) {
                 console.log(userResult.username + "#" + userResult.discriminator + " logged in.");
             }
         } catch (error) {
-            logger.log("error", "Error while trying to discord login: " + error);
+            logger.log("error", "Error while trying to login via discord: " + error);
+            res.status(401).send({
+                status: "error",
+            });
         }
     });
 }
