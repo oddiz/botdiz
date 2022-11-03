@@ -10,7 +10,7 @@
     "google-auth-library": "^7.1.2",
     "googleapis": "^76.0.0",
     "helmet": "^6.0.0",
-    "lru-cache": "^7.7.1",
+    "lru-cache": "^7.14.0",
     "module-alias": "^2.2.2",
     "mongodb": "^4.4.0",
     "node-fetch": "^2.6.1",
