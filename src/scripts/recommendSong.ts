@@ -1,22 +1,33 @@
-const parseTitleStrings = require('./parseTitleStrings');
-import dotenv from 'dotenv';
-import { ShoukakuTrack } from 'shoukaku';
+const parseTitleStrings = require("./parseTitleStrings");
+import dotenv from "dotenv";
+import { Track as ShoukakuTrack } from "shoukaku";
 import {
     BotdizTrack,
+    BotdizShoukakuTrack,
     QueueTrack,
     YoutubeRecommended,
-} from '../modules/MusicPlayer/MusicControllerLavalink';
-import { spotifyApiManager } from '../modules/SpotifyApiHandler';
+} from "../modules/MusicPlayer/MusicControllerLavalink";
+import { spotifyApiManager } from "../modules/SpotifyApiHandler";
 
 //@ts-ignore
-import ytdl from 'ytdl-core';
-import fetch from 'node-fetch';
+import ytdl from "ytdl-core";
+import fetch from "node-fetch";
 
 dotenv.config();
 
+function isBotdizShoukakuTrack(track: QueueTrack): track is BotdizShoukakuTrack {
+    return (track as BotdizShoukakuTrack).info.identifier !== undefined;
+}
+function isBotdizTrack(track: QueueTrack): track is BotdizTrack {
+    return (
+        (track as BotdizTrack).isSpotify !== undefined &&
+        (track as BotdizTrack).info.artist !== undefined &&
+        (track as BotdizTrack).info.title !== undefined
+    );
+}
 export const getRecommended = async (queueItem: QueueTrack) => {
     try {
-        if (queueItem instanceof ShoukakuTrack) {
+        if (isBotdizShoukakuTrack(queueItem)) {
             //song is from lavalink player
 
             const songUri = queueItem.info.uri;
@@ -27,12 +38,7 @@ export const getRecommended = async (queueItem: QueueTrack) => {
                 const videoTitle = ytdlVideoInfo.videoDetails?.title;
 
                 const ytMediaInfo = ytdlVideoInfo.videoDetails?.media;
-                if (
-                    ytMediaInfo &&
-                    ytMediaInfo.category === 'Music' &&
-                    ytMediaInfo.song &&
-                    ytMediaInfo.artist
-                ) {
+                if (ytMediaInfo && ytMediaInfo.category === "Music" && ytMediaInfo.song && ytMediaInfo.artist) {
                     track = ytMediaInfo.song;
                     artist = ytMediaInfo.artist;
                 } else {
@@ -79,7 +85,7 @@ export const getRecommended = async (queueItem: QueueTrack) => {
                         info: {
                             trackName: song.name,
                             artist: song.artist.name,
-                            title: song.artist.name + ' - ' + song.name,
+                            title: song.artist.name + " - " + song.name,
                         },
                         isSpotify: false,
                         recommendedSong: true,
@@ -90,15 +96,12 @@ export const getRecommended = async (queueItem: QueueTrack) => {
             }
 
             return null;
-        } else if ((queueItem as BotdizTrack) && queueItem.isSpotify) {
+        } else if (isBotdizTrack(queueItem) && queueItem.isSpotify) {
             //song is from spotify
 
             if (!(queueItem.info.trackId && queueItem.info.artistId)) return null;
 
-            const recommended = await spotifyRecommend(
-                queueItem.info.trackId,
-                queueItem.info.artistId
-            );
+            const recommended = await spotifyRecommend(queueItem.info.trackId, queueItem.info.artistId);
 
             if (!recommended) return null;
 
@@ -109,7 +112,7 @@ export const getRecommended = async (queueItem: QueueTrack) => {
                         artistId: song.artists[0].id,
                         trackName: song.name,
                         artist: song.artists[0].name,
-                        title: song.artists[0].name + ' - ' + song.name,
+                        title: song.artists[0].name + " - " + song.name,
                     },
                     isSpotify: true,
                     recommendedSong: true,
@@ -122,7 +125,7 @@ export const getRecommended = async (queueItem: QueueTrack) => {
             return null;
         }
     } catch (error) {
-        console.log('Error while trying to recommend song: ' + error);
+        console.log("Error while trying to recommend song: " + error);
 
         return null;
     }
@@ -139,7 +142,7 @@ type LastFMSong = {
         url: string;
     };
     image: {
-        '#text': string;
+        "#text": string;
         size: string;
     }[];
 };

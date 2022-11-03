@@ -1,63 +1,61 @@
-import { CommandInteraction, MessageEmbed } from "discord.js"
+import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 
-import { logger } from '../logger'
-import { Command, CommandFunction } from "../modules/Command"
+import { logger } from "../logger";
+import { Command, CommandFunction } from "../modules/Command";
 
-export default async function (this: Command, invokedMessage?: CommandInteraction | null): Promise<void> {
-    const self = this 
+export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null): Promise<void> {
+    const self = this;
     try {
-        
-        if (!invokedMessage) throw "No invoked message"
-        
-        const commandName = invokedMessage.options.getString("command")
-    
-        let embedMessage = new MessageEmbed
-        const PREFIX = self.controller.PREFIX
-        const userAvatar = self.controller.client.user?.avatarURL()
+        if (!invokedMessage) throw "No invoked message";
 
-        embedMessage = embedMessage
-            .setColor("#e9b463")
-            .setTimestamp()
+        const commandName = invokedMessage.options.getString("command");
+
+        let embedMessage = new EmbedBuilder();
+        const PREFIX = self.controller.PREFIX;
+        const userAvatar = self.controller.client.user?.avatarURL();
+
+        embedMessage = embedMessage.setColor("#e9b463").setTimestamp();
 
         if (userAvatar) {
-            embedMessage = embedMessage.setThumbnail(userAvatar)
+            embedMessage = embedMessage.setThumbnail(userAvatar);
         }
         if (commandName) {
-            const foundCommand = self.controller.commands.find( ( { name } ) => name === commandName )
+            const foundCommand = self.controller.commands.find(({ name }) => name === commandName);
             if (foundCommand) {
                 embedMessage = embedMessage
                     .setTitle(PREFIX + foundCommand.name)
-                    .addField("Description", foundCommand.description)
-                    .addField("Usage", foundCommand.usage)
-    
-                    self.reply({ embeds: [embedMessage]})
-                
-                return
-            } else {
-                self.reply(`Unable to find command: ${PREFIX + commandName}`)
+                    .addFields(
+                        { name: "Description", value: foundCommand.description },
+                        { name: "Usage", value: foundCommand.usage }
+                    );
 
-                return
+                self.reply({ embeds: [embedMessage] });
+
+                return;
+            } else {
+                self.reply(`Unable to find command: ${PREFIX + commandName}`);
+
+                return;
             }
         }
-        
+
         embedMessage = embedMessage
             .setTitle("Botdiz Help Menu")
             .setDescription(`Below are all the things Botdiz can do.`)
-            .setFooter({ text: `Made with 💜 by oddiz#9659` })
-            
+            .setFooter({ text: `Made with 💜 by oddiz#9659` });
+
         for (const command of self.controller.commands) {
-            
-            embedMessage = embedMessage.addField(
-                PREFIX + command.name,
-                "```" +`Description:\n${command.description}\n\nUsage:\n${command.usage}` + "```",
-                false
-            )
-        } 
-        
-    
-        self.reply({ embeds: [embedMessage]})
-        
+            embedMessage = embedMessage.addFields(
+                { name: "\u200B", value: PREFIX + command.name },
+                {
+                    name: "\u200B",
+                    value: "```" + `Description:\n${command.description}\n\nUsage:\n${command.usage}` + "```",
+                }
+            );
+        }
+
+        self.reply({ embeds: [embedMessage] });
     } catch (error) {
-        logger.log("error", "Error while executing help command : ", error)
+        logger.log("error", "Error while executing help command : ", error);
     }
 }

@@ -1,22 +1,22 @@
-import { Command } from '../modules/Command';
-import { CommandInteraction } from 'discord.js';
-import dotenv from 'dotenv';
+import { Command } from "../modules/Command";
+import { ChatInputCommandInteraction, CommandInteraction } from "discord.js";
+import dotenv from "dotenv";
 dotenv.config();
 
-import fetch from 'node-fetch';
-import { logger } from '../logger';
-import searchYT from '../scripts/searchYT';
+import fetch from "node-fetch";
+import { logger } from "../logger";
+import searchYT from "../scripts/searchYT";
 
-export default async function (this: Command, invokedMessage?: CommandInteraction | null) {
+export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null) {
     const self = this;
     try {
-        if (!invokedMessage) throw 'invokedMessage is not defined';
+        if (!invokedMessage) throw "invokedMessage is not defined";
 
-        const input = invokedMessage.options.getString('input');
+        const input = invokedMessage.options.getString("input");
 
         let videoUrl, searchMode;
         if (!input) {
-            throw new Error('No input provided');
+            throw new Error("No input provided");
         }
         try {
             const parsedURL = new URL(input);
@@ -32,54 +32,54 @@ export default async function (this: Command, invokedMessage?: CommandInteractio
             searchYT(query, 1, (result) => {
                 if (result) {
                     const videoId = result.videoId;
-                    const ytUrlTemplate = 'https://www.youtube.com/watch?v=';
+                    const ytUrlTemplate = "https://www.youtube.com/watch?v=";
                     videoUrl = ytUrlTemplate + videoId;
 
-                    self.reply('Video found: ' + videoUrl);
+                    self.reply("Video found: " + videoUrl);
 
-                    fetch('https://w2g.tv/rooms/create.json', {
-                        method: 'POST',
+                    fetch("https://w2g.tv/rooms/create.json", {
+                        method: "POST",
                         headers: {
-                            Accept: 'application/json',
-                            'Content-Type': 'application/json',
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
                             w2g_api_key: process.env.W2G_TOKEN,
                             share: videoUrl,
-                            bg_color: '#2a2c37',
-                            bg_opacity: '100',
+                            bg_color: "#2a2c37",
+                            bg_opacity: "100",
                         }),
                     })
                         .then((response) => response.json())
                         .then(function (data) {
-                            const w2gRoom = 'https://w2g.tv/rooms/' + data.streamkey;
-                            self.reply('**Room is ready:**\n' + w2gRoom, { followup: true });
+                            const w2gRoom = "https://w2g.tv/rooms/" + data.streamkey;
+                            self.reply("**Room is ready:**\n" + w2gRoom, { followup: true });
                         });
                 } else {
-                    self.wrongUsage(invokedMessage, self.name, 'Video not found.');
+                    self.wrongUsage(invokedMessage, self.name, "Video not found.");
                 }
             });
         } else {
-            fetch('https://w2g.tv/rooms/create.json', {
-                method: 'POST',
+            fetch("https://w2g.tv/rooms/create.json", {
+                method: "POST",
                 headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     w2g_api_key: process.env.W2G_TOKEN,
                     share: videoUrl,
-                    bg_color: '#2a2c37',
-                    bg_opacity: '100',
+                    bg_color: "#2a2c37",
+                    bg_opacity: "100",
                 }),
             })
                 .then((response) => response.json())
                 .then(function (data) {
-                    const w2gRoom = 'https://w2g.tv/rooms/' + data.streamkey;
-                    self.reply('**Room is ready:**\n' + w2gRoom);
+                    const w2gRoom = "https://w2g.tv/rooms/" + data.streamkey;
+                    self.reply("**Room is ready:**\n" + w2gRoom);
                 });
         }
     } catch (error) {
-        logger.log('error', 'Error while executing w2g command: ', error);
+        logger.log("error", "Error while executing w2g command: ", error);
     }
 }

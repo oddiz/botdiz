@@ -13,7 +13,7 @@ import { ShoukakuHandler } from "../Shokaku/ShokakuHandler";
 import { MsgHandler } from "./MessageHandler";
 import { botCommands } from "../botCommands";
 import { logger } from "../logger";
-import { MessageEmbed } from "discord.js";
+import { EmbedBuilder } from "discord.js";
 import { MusicController } from "./MusicPlayer/MusicControllerLavalink";
 import { SubscriptionManager } from "./SubscriptionManager";
 import { Db } from "mongodb";
@@ -45,10 +45,26 @@ export class Controller {
             this.oddiz = app.owner as User | null;
         });
 
-        this.roleColor = guild.me?.roles?.color?.color || "#e9b463";
+        this.roleColor = guild.members.me?.roles?.color?.color || "#e9b463";
     }
 
     init = async () => {
+        //last update date is 03/11/2022
+        const forceUpdateTill = new Date("2022-11-05T00:00:00.000Z"); // 2 days after last update
+        const today = new Date();
+
+        //check if bot needs to deploy slash commands
+        if (today < forceUpdateTill) {
+            this.deploySlashCommands();
+        } else {
+            this.guild.commands.fetch().then((commands) => {
+                if (commands.size !== this.commands.length) {
+                    logger.log("info", "Deploying slash commands");
+                    this.deploySlashCommands();
+                }
+            });
+        }
+
         try {
             //check if bot needs to deploy slash commands
             this.guild.commands.fetch().then((commands) => {
@@ -90,7 +106,7 @@ export class Controller {
             try {
                 await new Promise((resolve) => setTimeout(resolve, tenMinutes));
 
-                const connectedVoiceChannelMembers = this.guild?.me?.voice.channel?.members;
+                const connectedVoiceChannelMembers = this.guild?.members.me?.voice.channel?.members;
                 const members = [];
                 if (!connectedVoiceChannelMembers) {
                     continue;
@@ -177,7 +193,9 @@ export class Controller {
                 slashCommands.push(command.convertSlashCommand());
             }
 
-            this.guild.commands.set(slashCommands);
+            this.guild.commands.set(slashCommands).catch((error) => {
+                logger.log("error", "Error while trying to deploy slash commands: " + error);
+            });
         } catch (error) {
             logger.log("error", "Error while trying to deploy slash commands: " + error);
         }
@@ -200,11 +218,12 @@ export class Controller {
             args: this.args
         } 
         */
-        let newEmbed = new MessageEmbed();
+        let newEmbed = new EmbedBuilder();
         newEmbed
-            .addField(
-                `Discord didn't register your message as a command!`,
-                `Make sure to press tab or enter after you typed /${responseObj.command}!`
+
+            .addFields(
+                { name: "\u200B", value: `Discord didn't register your message as a command!` },
+                { name: "\u200B", value: `Make sure to press tab or enter after you typed /${responseObj.command}!` }
             )
             .setColor("#e9b463");
 

@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionData } from "discord.js";
+import { ApplicationCommandOptionData, ApplicationCommandOptionType } from "discord.js";
 import { Command } from "./modules/Command";
 import { Controller as BotdizGuildContoller } from "./modules/Controller";
 import helpCommand from "./commands/help";
@@ -38,7 +38,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 ephemeral: true,
                 options: [
                     {
-                        type: "STRING",
+                        type: ApplicationCommandOptionType.String,
                         name: "command",
                         description: "Search for a specific command.",
                         required: false,
@@ -56,7 +56,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 usage: "/w2g https://www.youtube.com/watch?v=<video id>\n\n/w2g funny memes",
                 options: [
                     {
-                        type: "STRING",
+                        type: ApplicationCommandOptionType.String,
                         name: "input",
                         description: "Query to search or URL.",
                         required: true,
@@ -76,7 +76,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 ephemeral: false,
                 options: [
                     {
-                        type: "STRING",
+                        type: ApplicationCommandOptionType.String,
                         name: "input",
                         description: "Query to search or URL.",
                         required: true,
@@ -96,7 +96,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 ephemeral: false,
                 options: [
                     {
-                        type: "STRING",
+                        type: ApplicationCommandOptionType.String,
                         name: "input",
                         description: "Query to search or URL.",
                         required: true,
@@ -115,7 +115,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 ephemeral: true,
                 options: [
                     {
-                        type: "INTEGER",
+                        type: ApplicationCommandOptionType.Integer,
                         name: "amount",
                         description: "Clears specified amount of messages. Must have manage permissions.",
                         required: true,
@@ -178,7 +178,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 ephemeral: true,
                 options: [
                     {
-                        type: "INTEGER",
+                        type: ApplicationCommandOptionType.Integer,
                         name: "amount",
                         description: "Skips specified amount of songs in queue.",
                         required: false,
@@ -234,8 +234,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             Controller,
             {
                 name: "recommend",
-                description:
-                    "Toggles recommend feature. Bot will keep playing recommended songs when queue is finished if enabled.",
+                description: "Toggles recommend feature. Bot will recommend new songs when queue is finished.",
                 needArgs: false,
                 usage: "/recommend",
             },
