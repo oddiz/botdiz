@@ -78,7 +78,9 @@ export default async function (
             if (!botVoiceChannel) {
                 logger.log("info", "Bot is not in a voice channel, joining now.");
 
-                const res = await musicController.setVoiceConnection(memberVoiceChannel);
+                const res = await musicController
+                    .setVoiceConnection(memberVoiceChannel)
+                    .catch((e) => logger.log("error", "Couldn't join voice channel in first try. Error: " + e));
 
                 if (!res) {
                     //try again
@@ -343,7 +345,7 @@ export default async function (
             }
         }
     } catch (error) {
-        logger.log("error", "Error while executing play.js", error);
+        logger.log("error", "Error while executing play.js. Error: " + error);
 
         if (self.controller?.MusicController) {
             self.controller.MusicController.queueLock = false;
