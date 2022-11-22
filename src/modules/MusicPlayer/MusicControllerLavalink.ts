@@ -248,26 +248,28 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
         this.emit("playerStatusUpdate", this.getAudioPlayerStatusEvent());
     }
 
-    async setVoiceConnection(channel: VoiceBasedChannel) {
+    async setVoiceConnection(channel: VoiceBasedChannel): Promise<boolean> {
         try {
             const node = this.shoukaku.getNode();
 
             if (!node) {
-                console.error("No available nodes found");
-                return;
+                throw "No available nodes found";
             }
 
-            if (channel.id === this.activeVoiceChannel?.id) {
-                //already in same channel
-                return false;
+            if (this.controller.guild.members.me?.voice.channel) {
+                logger.log(
+                    "warn",
+                    "Trying to connect to a voice channel while already connected to a voice channel, it'll connect to new channel to avoid bugs"
+                );
+                await node.leaveChannel(this.controller.guild.id);
             }
 
             await this.stop();
 
             if (this.audioPlayer) {
+                //If there is audioplayer present we are already connected to voice channel
                 await node.leaveChannel(this.controller.guild.id);
             }
-            //If there is audioplayer present we are already connected to voice channel
 
             this.audioPlayer = await node.joinChannel({
                 guildId: this.controller.guild.id,
