@@ -386,9 +386,10 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             });
 
             this.audioPlayer.on("closed", (data) => {
-                if (data instanceof Error || data instanceof Object) logger.log("info", "Audioplayer closed: " + data);
+                if (data instanceof Error || data instanceof Object)
+                    logger.log("info", "Audioplayer closed. Reason: " + data.reason);
 
-                this.queue.length = 0;
+                this.activeVoiceChannel = null;
                 this.stop();
             });
 
