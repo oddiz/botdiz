@@ -30,6 +30,7 @@ const defaultSettings = {
     skipVotingEnabled: false,
     skipVotingPassPercentage: 0.5,
 };
+const AUDIOPLAYER_VOLUME = 0.5;
 
 export interface BotdizTrack {
     info: {
@@ -100,7 +101,6 @@ export interface MusicControllerEvents {
     currentSongUpdate: (data: CurrentSongUpdateEvent) => void;
     playerStatusUpdate: (data: PlayerStatusUpdateEvent) => void;
 }
-
 export class MusicController extends TypedEmitter<MusicControllerEvents> {
     public controller;
     public guild;
@@ -597,12 +597,14 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             if (this.audioPlayer) {
                 this.changeCurrentSong(nextSong);
 
-                await this.audioPlayer.playTrack({
-                    track: nextSong.track,
-                    options: {
-                        noReplace: false,
-                    },
-                });
+                await this.audioPlayer
+                    .playTrack({
+                        track: nextSong.track,
+                        options: {
+                            noReplace: false,
+                        },
+                    })
+                    .setVolume(AUDIOPLAYER_VOLUME);
             } else {
                 logger.log("error", "No audio player available /MusicController/playNext()");
 
