@@ -30,7 +30,7 @@ const defaultSettings = {
     skipVotingEnabled: false,
     skipVotingPassPercentage: 0.5,
 };
-const AUDIOPLAYER_VOLUME = 0.5;
+const AUDIOPLAYER_VOLUME = 0.3;
 
 export interface BotdizTrack {
     info: {
