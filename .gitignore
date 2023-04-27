@@ -1,6 +1,8 @@
 *.env
 .env
 
+*.tgz
+
 config.json
 log
 

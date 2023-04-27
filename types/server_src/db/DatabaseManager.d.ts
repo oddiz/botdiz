@@ -1,0 +1,10 @@
+import { Db } from "mongodb";
+export declare class DatabaseManager {
+    db: Db | null;
+    private client;
+    private dbUrl;
+    constructor();
+    connect(): Promise<Db | null>;
+    getDb(): Db | undefined;
+}
+export declare const dbManager: DatabaseManager;

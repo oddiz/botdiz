@@ -1,0 +1,31 @@
+import { Guild, Client as DiscordClient, User, Message, ButtonInteraction, Interaction, ColorResolvable } from "discord.js";
+import { Command } from "./Command";
+import { ShoukakuHandler } from "../Shokaku/ShokakuHandler";
+import { MusicController } from "./MusicPlayer/MusicControllerLavalink";
+import { SubscriptionManager } from "./SubscriptionManager";
+import { Db } from "mongodb";
+import { DbGuildObject } from "../../server_src/db/databaseTypes";
+export declare class Controller {
+    PREFIX: string;
+    debugMode: boolean;
+    guild: Guild;
+    MusicController: MusicController | null;
+    client: DiscordClient;
+    commands: Command[];
+    oddiz: User | null;
+    roleColor: ColorResolvable;
+    db: Db;
+    SubscriptionManager: SubscriptionManager;
+    constructor(db: Db, client: DiscordClient, guild: Guild, shoukaku: ShoukakuHandler);
+    init: () => Promise<void>;
+    controllerMaintainer: () => Promise<never>;
+    updateGuildInfoOnDatabase: () => Promise<void>;
+    applyGuildSettings: (dbGuildObject: DbGuildObject) => Promise<void>;
+    saveGuildSettings: () => Promise<void>;
+    deploySlashCommands(): void;
+    destroy(): void;
+    handleMessage(message: Message): void;
+    handleButtonInteraction(interaction: ButtonInteraction): Promise<void>;
+    handleInteraction(interaction: Interaction): Promise<void>;
+    toggleDebug(options: "on" | "off"): boolean;
+}

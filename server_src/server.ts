@@ -114,3 +114,5 @@ async function init() {
 }
 
 init();
+
+export { WsManager, DatabaseManager, dbManager, RouteManager, DiscordClient, GuildControllers} 

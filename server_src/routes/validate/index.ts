@@ -2,23 +2,9 @@ import { Db } from 'mongodb';
 import { Express } from 'express';
 import { DbDiscordUser, DbUserData } from '../../db/databaseTypes';
 import { Session } from 'express-session';
+import { ValidateUserData } from './types';
 
-export interface ValidateUserData {
-    username: string;
-    avatarURL: string;
-    is_admin: boolean;
-    user_id?: string;
-}
 
-export type ValidateResponse =
-    | {
-          isValidated: true;
-          accountInfo: ValidateUserData;
-          token: string;
-      }
-    | {
-          isValidated: false;
-      };
 export default function validate(app: Express, db: Db) {
     app.use('/validate', async (req, res) => {
         const reqSession = req.session as Session & { token: string };
