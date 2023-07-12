@@ -1,5 +1,6 @@
 {
     "name": "botdiz-types",
     "version": "1.0.0",
-    "typings": "./server_src/server.d.ts"
+    "typings": "./server_src/server.d.ts",
+    "license": "MIT" 
 }
