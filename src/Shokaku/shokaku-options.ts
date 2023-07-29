@@ -1,7 +1,10 @@
-export const options = {
+import { ShoukakuOptions } from "shoukaku";
+
+export const options: ShoukakuOptions = {
     moveOnDisconnect: false,
-    resumable: true,
-    resumableTimeout: 30,
-    reconnectTries:2,
-    restTimeout: 10000
+    resume: true,
+    resumeTimeout: 30,
+    reconnectTries: 2000000,
+    reconnectInterval: 15000,
+    restTimeout: 10000,
 };
