@@ -78,7 +78,6 @@ async function main(): Promise<void> {
         }
 
         logger.log("info", "The bot is online!");
-        await shoukaku.ready();
     });
     client.on("debug", (m) => {
         logger.log("debug", m);

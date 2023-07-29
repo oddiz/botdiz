@@ -2,13 +2,12 @@ import { Shoukaku, Connectors, NodeOption } from "shoukaku";
 import servers from "./lavalink-server.json";
 import { options } from "./shokaku-options";
 import { Client } from "discord.js";
-import { logger } from "src/logger";
+import { logger } from "../logger";
 
-const nodes: NodeOption[] = servers;
 export class ShoukakuHandler extends Shoukaku {
     private connected: boolean;
     constructor(client: Client) {
-        super(new Connectors.DiscordJS(client), nodes, options);
+        super(new Connectors.DiscordJS(client), servers, options);
 
         this.connected = false;
 
@@ -30,7 +29,7 @@ export class ShoukakuHandler extends Shoukaku {
             this.connected = false;
 
             logger.log(
-                "lavalink",
+                "lavalinkError",
                 `Lavalink Node: ${name} disconnected`,
                 moved ? "players have been moved" : "players have been disconnected"
             );

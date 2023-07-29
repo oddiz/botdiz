@@ -36,10 +36,10 @@ export const logger = winston.createLogger({
 });
 
 winston.addColors({
-    error: "red",
+    error: "brightRed",
     warn: "yellow",
     info: "cyan",
     debug: "green",
-    lavalink: "orange",
-    lavalinkError: "red",
+    lavalink: "red",
+    lavalinkError: "brightRed",
 });

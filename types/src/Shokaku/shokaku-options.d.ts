@@ -1,7 +1,2 @@
-export declare const options: {
-    moveOnDisconnect: boolean;
-    resumable: boolean;
-    resumableTimeout: number;
-    reconnectTries: number;
-    restTimeout: number;
-};
+import { ShoukakuOptions } from "shoukaku";
+export declare const options: ShoukakuOptions;

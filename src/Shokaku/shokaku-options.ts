@@ -5,6 +5,6 @@ export const options: ShoukakuOptions = {
     resume: true,
     resumeTimeout: 30,
     reconnectTries: 2000000,
-    reconnectInterval: 15,
+    reconnectInterval: 1500,
     restTimeout: 10000000,
 };
