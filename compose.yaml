@@ -6,10 +6,10 @@ services:
       x-develop:
         watch:
           - action: sync
-            path: ./packages/botdiz
+            path: ./
             target: /usr/src/app
           - action: rebuild
-            path: ./packages/botdiz/package.json
+            path: ./package.json
     ports:
       - 8080:8080
     volumes:
@@ -19,7 +19,6 @@ services:
       - ./.env
       - ./.docker.env
     depends_on:
-      - mongo
       - lavalink
     networks:
       - lavalink-network

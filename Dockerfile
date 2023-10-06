@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:current-alpine AS development
+FROM node:latest AS development
 
 WORKDIR /usr/src/app
 
