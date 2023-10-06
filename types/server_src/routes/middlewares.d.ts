@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
-import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from 'server_src/db/databaseTypes';
+import { NextFunction, Request, Response } from "express";
+import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from "server_src/db/databaseTypes";
 declare global {
     namespace Express {
         interface Request {

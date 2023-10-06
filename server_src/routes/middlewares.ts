@@ -1,16 +1,10 @@
-import { logger } from '@sentry/utils';
-import { NextFunction, Request, Response } from 'express';
-import { dbManager } from '../db/DatabaseManager';
-import {
-    DbDiscordGuild,
-    DbDiscordSession,
-    DbDiscordUser,
-    DbSession,
-    DbUser,
-} from 'server_src/db/databaseTypes';
-import { BotdizSession } from 'server_src/types';
+import { NextFunction, Request, Response } from "express";
+import { dbManager } from "../db/DatabaseManager";
+import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from "server_src/db/databaseTypes";
+import { BotdizSession } from "server_src/types";
 
 declare global {
+    // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace Express {
         interface Request {
             dbSession: DbSession | DbDiscordSession;
@@ -26,46 +20,45 @@ export async function withAuth(req: Request, res: Response, next: NextFunction) 
     try {
         const reqSession = req.session as BotdizSession;
 
-        if (!reqSession) throw 'No session was found';
+        if (!reqSession) throw "No session was found";
 
         const reqToken = reqSession.token;
 
-        if (!reqToken) throw 'No session info in credentials';
+        if (!reqToken) throw "No session info in credentials";
 
         const db = dbManager.getDb();
 
         if (!db) {
-            logger.log('error', "No database connection found, this shouldn't happen");
+            console.error("No database connection found, this shouldn't happen");
             return;
         }
 
-        const session = (await db
-            .collection('sessions')
-            .findOne({ token: reqToken })) as unknown as DbSession | DbDiscordSession | undefined;
+        const session = (await db.collection("sessions").findOne({ token: reqToken })) as unknown as
+            | DbSession
+            | DbDiscordSession
+            | undefined;
 
-        if (!session) throw 'Unauthorized, no session';
+        if (!session) throw "Unauthorized, no session";
 
         let user: DbUser | DbDiscordUser | null;
-        if ('discord_session' in session) {
+        if ("discord_session" in session) {
             user = (await db
-                .collection('discord_users')
+                .collection("discord_users")
                 .findOne({ discord_id: session.discord_id })) as DbDiscordUser | null;
         } else {
-            user = (await db
-                .collection('users')
-                .findOne({ username: session.username })) as DbUser | null;
+            user = (await db.collection("users").findOne({ username: session.username })) as DbUser | null;
         }
 
-        if (!user) throw 'Unauthorized, user not found.';
+        if (!user) throw "Unauthorized, user not found.";
 
         req.user = user;
         req.dbSession = session;
 
         next();
     } catch (error) {
-        console.log('error withAuth: ' + JSON.stringify(error));
+        console.log("error withAuth: " + JSON.stringify(error));
         res.status(401).send({
-            status: 'failed',
+            status: "failed",
             message: error,
         });
     }

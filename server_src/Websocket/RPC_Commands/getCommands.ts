@@ -1,6 +1,6 @@
-import { AllowedGuild, DbDiscordGuild } from "../../db/databaseTypes";
+import { AllowedGuild } from "../../db/databaseTypes";
 import { client as DiscordClient, GuildControllers } from "../../../src/main";
-import { GuildMember, TextChannel } from "discord.js";
+import { TextChannel } from "discord.js";
 import cacheManager from "../../CacheManager";
 const failed = {
     status: "failed",
@@ -18,7 +18,7 @@ type getTextChannelsFailed = {
 };
 type getTextChannelsReturn = getTextChannelsSuccess | getTextChannelsFailed | unauthorizedResponse;
 
-const getCommands = {
+const getCommands: { [commandName: string]: (allowedGuilds: AllowedGuild[] | "ALL", ...args: string[]) => any } = {
     RPC_getGuilds: async function (allowedGuilds: AllowedGuild[] | "ALL") {
         try {
             const guilds = await DiscordClient.guilds.cache;

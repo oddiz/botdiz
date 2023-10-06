@@ -1,8 +1,7 @@
 import { GuildControllers } from "../../../src/main";
 import { Db } from "mongodb";
 import { Express } from "express";
-import { getToken } from "../../scripts/getToken";
-import { DbDiscordUser, DbGuildObject } from "../../db/databaseTypes";
+import { DbGuildObject } from "../../db/databaseTypes";
 import { EmbedBuilder, TextChannel } from "discord.js";
 import { withAuth } from "../middlewares";
 
@@ -56,7 +55,7 @@ export default async function botdizguild(app: Express, db: Db) {
                 }
             }
 
-            let replyGuild = (await db.collection("guilds").findOne({ guild_id: reqGuildId })) || {};
+            const replyGuild = (await db.collection("guilds").findOne({ guild_id: reqGuildId })) || {};
 
             res.send({
                 status: "success",
@@ -267,7 +266,7 @@ export default async function botdizguild(app: Express, db: Db) {
                     }
 
                     if (subbedChannel) {
-                        let embedMessage = new EmbedBuilder();
+                        const embedMessage = new EmbedBuilder();
 
                         if (
                             (!sub.active && req.body.active) ||

@@ -1,14 +1,11 @@
-import WebSocket, { RawData } from "ws";
+import WebSocket from "ws";
 import { ClientListenerManager } from "./ClientListenerManager";
 import { Server } from "http";
 import { Db } from "mongodb";
 import { Request, RequestHandler, Response } from "express";
 import { Client } from "discord.js";
 import { GuildController } from "../../src/main";
-import { ParamsDictionary } from "express-serve-static-core";
-import { ParsedQs } from "qs";
 import { getToken } from "../scripts/getToken";
-import { logger } from "@sentry/utils";
 import { BotdizSession } from "server_src/types";
 import { AllowedGuild, DbDiscordSession, DbDiscordUser, DbSession } from "../db/databaseTypes";
 import execCommands from "./RPC_Commands/execCommands";
@@ -27,7 +24,7 @@ export default class WebsocketManager {
     public db: Db;
     public client: Client;
     public GuildControllers: GuildController[];
-    public sessionParser: RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>;
+    public sessionParser: RequestHandler;
     public connectedClients: Map<string, BotdizWebsocketClient>;
     public WebsocketServer: WebSocket.Server | null;
 
@@ -36,7 +33,7 @@ export default class WebsocketManager {
         db: Db,
         DiscordClient: Client,
         GuildControllers: GuildController[],
-        sessionParser: RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>
+        sessionParser: any
     ) {
         this.server = server;
 
@@ -59,14 +56,14 @@ export default class WebsocketManager {
         });
 
         if (!this.WebsocketServer) {
-            logger.log("error", "Failed to create websocket server");
+            console.log("error", "Failed to create websocket server");
 
             return;
         }
 
         this.server.on("upgrade", async (request, socket, head) => {
             if (!this.WebsocketServer) {
-                logger.log("error", "No websocket server.");
+                console.log("error", "No websocket server.");
                 return;
             }
             const req = request as Request;
@@ -78,7 +75,7 @@ export default class WebsocketManager {
 
                 this.sessionParser(req, {} as Response, async () => {
                     if (!this.WebsocketServer) {
-                        logger.log("error", "No websocket server.");
+                        console.log("error", "No websocket server.");
                         return;
                     }
                     if (!req.session) return;
@@ -131,10 +128,9 @@ export default class WebsocketManager {
                     try {
                         const token = getToken(req);
                         if (!token) {
-                            logger.log("error", "No token found in request");
+                            console.log("error", "No token found in request");
                             return;
                         }
-                        //@ts-ignore
                         self.handleWsMessage(ws, msg, clientListener, token);
                     } catch (error) {
                         console.log("error in websocket message handler");
@@ -154,12 +150,7 @@ export default class WebsocketManager {
         });
     }
 
-    async handleWsMessage(
-        ws: WebSocket,
-        msg: WebSocket.MessageEvent,
-        clientListener: ClientListenerManager,
-        token: string
-    ) {
+    async handleWsMessage(ws: WebSocket, msg: WebSocket.RawData, clientListener: ClientListenerManager, token: string) {
         try {
             const session = (await this.db.collection("sessions").findOne({ token: token })) as unknown as
                 | DbDiscordSession
@@ -173,7 +164,7 @@ export default class WebsocketManager {
 
             const userId = session.user_id;
 
-            let allowedGuilds, user;
+            let allowedGuilds: AllowedGuild[] | "ALL", user;
             if ("discord_session" in session) {
                 user = (await this.db.collection("discord_users").findOne({
                     discord_id: session.discord_id,
@@ -237,15 +228,11 @@ export default class WebsocketManager {
             }
 
             if (message.type === "get") {
-                const getCommandsName = message.command as GetCommands;
-                const commandName = getCommandsName;
-                const params = message.params as string[];
+                const commandName = message.command as GetCommands;
+                const args = message.params as [string] | [string, string] | [string, string, string];
+                const targetFunc = getCommands[commandName];
                 //find command
-                const result = await getCommands[commandName](
-                    allowedGuilds,
-                    //@ts-ignore
-                    ...params
-                );
+                const result = await targetFunc(allowedGuilds, ...args);
 
                 //when a result comes back construct a reply
                 const reply = {
@@ -334,6 +321,8 @@ export default class WebsocketManager {
                     ws.send(JSON.stringify(reply));
                 }
             }
-        } catch (error) {}
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
