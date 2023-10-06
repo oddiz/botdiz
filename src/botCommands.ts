@@ -2,6 +2,7 @@ import { ApplicationCommandOptionData, ApplicationCommandOptionType } from "disc
 import { Command } from "./modules/Command";
 import { Controller as BotdizGuildContoller } from "./modules/Controller";
 import helpCommand from "./commands/help";
+import gptCommand from "./commands/gpt";
 import recommendSongsCommand from "./commands/recommendSongs";
 import w2gCommand from "./commands/w2g";
 import stopCommand from "./commands/stop";
@@ -16,6 +17,7 @@ import queueCommand from "./commands/queue";
 import statusCommand from "./commands/status";
 import voteToSkipCommand from "./commands/votetoskip";
 import epicCommand from "./commands/epic";
+import inviteCommand from "./commands/invite";
 
 export interface BotdizCommand {
     name: string;
@@ -28,6 +30,25 @@ export interface BotdizCommand {
 }
 export const botCommands = function (Controller: BotdizGuildContoller) {
     return [
+        new Command(
+            Controller,
+            {
+                name: "gpt",
+                description: "Chat with botdizGPT",
+                needArgs: true,
+                usage: "/gpt <message>",
+                ephemeral: false,
+                options: [
+                    {
+                        type: ApplicationCommandOptionType.String,
+                        name: "message",
+                        description: "Type your message here.",
+                        required: true,
+                    },
+                ],
+            },
+            gptCommand
+        ),
         new Command(
             Controller,
             {
@@ -248,7 +269,7 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                 needArgs: false,
                 usage: "/invite",
             },
-            require("./commands/invite")
+            inviteCommand
         ),
         new Command(
             Controller,

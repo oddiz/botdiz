@@ -1,14 +1,11 @@
 import fetch from "node-fetch";
 import { client as DiscordClient } from "../../../src/main";
 import { makeImageUrl } from "../../scripts/makeImageUrl";
-import dotenv from "dotenv";
+import "dotenv/config";
 import { Db } from "mongodb";
 import { Express } from "express";
-import { getToken } from "../../scripts/getToken";
-import { Guild } from "discord.js";
 import { DbDiscordSession, DbGuildObject, DbSession } from "../../db/databaseTypes";
 import { withAuth } from "../middlewares";
-dotenv.config();
 
 interface BotdizGuild {
     id: string;
@@ -29,7 +26,7 @@ export default async function discordguild(app: Express, db: Db) {
             const botdizGuilds = await DiscordClient.guilds.cache;
 
             const botdizGuildIds = botdizGuilds.map((guild) => guild.id);
-            let responseUserGuilds: BotdizGuild[] = [];
+            const responseUserGuilds: BotdizGuild[] = [];
 
             if (authToken === "NOT_DISCORD_SESSION") {
                 botdizGuilds.each((guild) => {
@@ -70,7 +67,7 @@ export default async function discordguild(app: Express, db: Db) {
                 throw "userGuilds is undefined or not array. userGuilds: ";
             }
 
-            let allowedGuilds = [];
+            const allowedGuilds = [];
             for (const guild of userGuilds) {
                 guild.iconUrl = makeImageUrl(guild.id, guild.icon);
 
@@ -200,7 +197,7 @@ export default async function discordguild(app: Express, db: Db) {
             const guildRoles = await DiscordClient.guilds.fetch(reqGuildId).then((guild) => guild.roles.fetch());
 
             const guildRolesArray = [];
-            for (const [key, role] of guildRoles.entries()) {
+            for (const [, role] of guildRoles.entries()) {
                 if (!role.managed) {
                     const roleObject = {
                         id: role.id,

@@ -1,15 +1,13 @@
 import { Command } from "../modules/Command";
 import { Controller } from "../modules/Controller";
 import { QueueTrack } from "../modules/MusicPlayer/MusicControllerLavalink";
-import { ChatInputCommandInteraction, CommandInteraction, GuildMember } from "discord.js";
+import { ChatInputCommandInteraction, GuildMember } from "discord.js";
 import spotifyUri, { Album, Playlist, Track } from "spotify-uri";
+import "dotenv/config";
 
-import dotenv from "dotenv";
-dotenv.config();
-
-import axios from "axios";
 import { logger } from "../logger";
 import { spotifyApiManager } from "../modules/SpotifyApiHandler";
+import { LoadType } from "shoukaku";
 
 export type PlayCommandOptions = {
     query?: string | null;
@@ -37,7 +35,7 @@ export default async function (
             logger.log("error", "Music controller not found on the controller");
             return;
         }
-        const node = musicController.shoukaku.getNode();
+        const node = musicController.shoukaku.getIdealNode();
 
         let input;
         if (optionsDefault?.query) {
@@ -140,212 +138,162 @@ export default async function (
             //no link passed
             searchMode = true;
         }
-
+        let result;
         if (searchMode) {
             const query = input;
-            const searchResult = await node?.rest.resolve("ytsearch:" + query);
-
-            if (!searchResult) {
-                return;
-            }
-
-            if (searchResult?.tracks.length === 0) {
-                musicController.queueLock = false;
-
-                self.reply("`I couldn't find any tracks with query provided!`");
-
-                return;
-            }
-
-            const track = searchResult.tracks.shift();
-            if (track) {
-                self.reply(`\`Added ${track.info.title} to queue!\``);
-                musicController.addToQueue(track, optionsDefault.forceNext || false);
-
-                musicController.processQueue();
-
-                return;
-            } else {
-                musicController.queueLock = false;
-
-                self.reply("`I couldn't find any tracks with query provided!`");
-
-                return;
-            }
+            result = await node?.rest.resolve("ytsearch:" + query);
         } else if (videoUrl) {
             //if URL is provided
 
-            const result = await node?.rest.resolve(videoUrl.href); //returns ShoukakuTrackList Object
-            //https://deivu.github.io/Shoukaku/?api#ShoukakuTrackList#type
+            result = await node?.rest.resolve(videoUrl.href);
+        }
 
-            if (!result) return;
+        if (!result) throw new Error("No result returned from lavalink");
 
-            const { loadType } = result;
+        const { loadType, data } = result;
 
-            //if url is not recognized by lavalink
-            if (loadType === "LOAD_FAILED") {
-                //could be spotify link
-                if (videoUrl.host.includes("spotify.com")) {
-                    try {
-                        const parsed = spotifyUri.parse(videoUrl.href);
-                        // credentials are optional
-                        const spotifyApi = await spotifyApiManager.getSpotifyApi();
+        //if url is not recognized by lavalink
+        if (videoUrl && loadType === LoadType.ERROR) {
+            //could be spotify link
+            if (videoUrl.host.includes("spotify.com")) {
+                try {
+                    const parsed = spotifyUri.parse(videoUrl.href);
+                    // credentials are optional
+                    const spotifyApi = await spotifyApiManager.getSpotifyApi();
 
-                        if (parsed.type === "playlist" || parsed.type === "album") {
-                            const albumOrPlaylistParsed = parsed as Album | Playlist;
-                            const spotifyId = albumOrPlaylistParsed.id;
+                    if (parsed.type === "playlist" || parsed.type === "album") {
+                        const albumOrPlaylistParsed = parsed as Album | Playlist;
+                        const spotifyId = albumOrPlaylistParsed.id;
 
-                            if (parsed.type === "album") {
-                                const albumReply = await spotifyApi.getAlbumTracks(spotifyId);
-                                const albumData = albumReply.body;
+                        if (parsed.type === "album") {
+                            const albumReply = await spotifyApi.getAlbumTracks(spotifyId);
+                            const albumData = albumReply.body;
 
-                                if ((albumData.items.length = 0)) {
-                                    musicController.queueLock = false;
-
-                                    self.reply(
-                                        "`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`"
-                                    );
-
-                                    return;
-                                }
-
-                                for (const item of albumData.items) {
-                                    const videoName = item.name;
-                                    const videoArtist = item.artists[0].name;
-                                    const videoTitle = videoArtist + " - " + videoName;
-                                    const botdizSong: QueueTrack = {
-                                        info: {
-                                            artist: videoArtist,
-                                            trackName: videoName,
-                                            title: videoTitle,
-                                            artistId: item.artists[0].id,
-                                            trackId: item.id,
-                                        },
-                                        isSpotify: true,
-                                    };
-                                    musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
-                                }
-
-                                self.reply("`Album added to queue 👍`");
+                            if (albumData.items.length == 0) {
                                 musicController.queueLock = false;
-                                musicController.processQueue();
 
-                                return;
-                            } else if (parsed.type === "playlist") {
-                                const playlistReply = await spotifyApi.getPlaylistTracks(spotifyId);
-                                const playlistData = playlistReply.body;
-
-                                for (const item of playlistData.items) {
-                                    const videoName = item.track.name;
-                                    const videoArtist = item.track.artists[0].name;
-                                    const videoTitle = videoArtist + " - " + videoName;
-                                    const botdizSong: QueueTrack = {
-                                        info: {
-                                            artist: videoArtist,
-                                            trackName: videoName,
-                                            title: videoTitle,
-                                            artistId: item.track.artists[0].id,
-                                            trackId: item.track.id,
-                                        },
-                                        isSpotify: true,
-                                    };
-                                    musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
-                                }
-                                self.reply("Playlist added to queue 👍");
-                                musicController.queueLock = false;
-                                musicController.processQueue();
+                                self.reply(
+                                    "`Error while trying to add spotify album... Check spotify link again, if issue persists contact oddiz 😟`"
+                                );
 
                                 return;
                             }
-                        } else if (parsed.type === "track") {
-                            const trackParsed = parsed as Track;
-                            const trackId = trackParsed.id;
 
-                            const getTrackResponse = await spotifyApi.getTrack(trackId);
-                            const trackData = getTrackResponse.body;
+                            for (const item of albumData.items) {
+                                const videoName = item.name;
+                                const videoArtist = item.artists[0].name;
+                                const videoTitle = videoArtist + " - " + videoName;
+                                const botdizSong: QueueTrack = {
+                                    info: {
+                                        artist: videoArtist,
+                                        trackName: videoName,
+                                        title: videoTitle,
+                                        artistId: item.artists[0].id,
+                                        trackId: item.id,
+                                    },
+                                    isSpotify: true,
+                                };
+                                musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
+                            }
 
-                            const artistName = trackData.artists[0].name;
-                            const songName = trackData.name;
-                            const isSpotify = true;
+                            self.reply("`Album added to queue 👍`");
+                            musicController.queueLock = false;
+                            musicController.processQueue();
 
-                            const botdizSong: QueueTrack = {
-                                info: {
-                                    trackName: songName,
-                                    artist: artistName,
-                                    title: artistName + " - " + songName,
-                                    artistId: trackData.artists[0].id,
-                                    trackId: trackData.id,
-                                },
-                                isSpotify: isSpotify,
-                            };
-                            musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
-                            self.reply(`Added \`${songName}\``);
+                            return;
+                        } else if (parsed.type === "playlist") {
+                            const playlistReply = await spotifyApi.getPlaylistTracks(spotifyId);
+                            const playlistData = playlistReply.body;
+
+                            for (const item of playlistData.items) {
+                                const videoName = item.track.name;
+                                const videoArtist = item.track.artists[0].name;
+                                const videoTitle = videoArtist + " - " + videoName;
+                                const botdizSong: QueueTrack = {
+                                    info: {
+                                        artist: videoArtist,
+                                        trackName: videoName,
+                                        title: videoTitle,
+                                        artistId: item.track.artists[0].id,
+                                        trackId: item.track.id,
+                                    },
+                                    isSpotify: true,
+                                };
+                                musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
+                            }
+                            self.reply("Playlist added to queue 👍");
                             musicController.queueLock = false;
                             musicController.processQueue();
 
                             return;
                         }
-                    } catch (error) {
-                        logger.log("error", "Error while trying to play spotify link: ", error);
-                        self.reply("`Error while trying to play spotify link, contact oddiz.`");
+                    } else if (parsed.type === "track") {
+                        const trackParsed = parsed as Track;
+                        const trackId = trackParsed.id;
 
+                        const getTrackResponse = await spotifyApi.getTrack(trackId);
+                        const trackData = getTrackResponse.body;
+
+                        const artistName = trackData.artists[0].name;
+                        const songName = trackData.name;
+                        const isSpotify = true;
+
+                        const botdizSong: QueueTrack = {
+                            info: {
+                                trackName: songName,
+                                artist: artistName,
+                                title: artistName + " - " + songName,
+                                artistId: trackData.artists[0].id,
+                                trackId: trackData.id,
+                            },
+                            isSpotify: isSpotify,
+                        };
+                        musicController.addToQueue(botdizSong, optionsDefault.forceNext || false);
+                        self.reply(`Added \`${songName}\``);
                         musicController.queueLock = false;
+                        musicController.processQueue();
+
                         return;
                     }
-                } else {
+                } catch (error) {
+                    logger.log("error", "Error while trying to play spotify link: ", error);
+                    self.reply("`Error while trying to play spotify link, contact oddiz.`");
+
                     musicController.queueLock = false;
-                    self.reply(
-                        "`I couldn't find any tracks with URL provided!\nSupported platforms: spotify, youtube, soundcloud`"
-                    );
                     return;
                 }
             } else {
-                try {
-                    const {
-                        tracks,
-                        loadType,
-                        playlistInfo: { name },
-                    } = result;
-
-                    const isPlaylist = loadType === "PLAYLIST_LOADED";
-                    const isTrack = loadType === "TRACK_LOADED";
-
-                    if (isPlaylist) {
-                        for (const track of tracks) {
-                            musicController.addToQueue(track, optionsDefault.forceNext || false);
-                        }
-                        self.reply("`" + (name || "Playlist") + " added to queue 👍`");
-                    } else if (isTrack) {
-                        const track = tracks.shift();
-                        if (track) {
-                            musicController.addToQueue(track, optionsDefault.forceNext || false);
-                            self.reply(`\`${track.info.title} added to queue 👍\``);
-                        }
-                    }
-
-                    musicController.processQueue();
-                    return;
-                } catch (error) {
-                    logger.log(
-                        "error",
-                        "Error while trying to parse result from URL: " +
-                            error +
-                            "\n result from lavalink is:" +
-                            JSON.stringify(result, null, 2)
-                    );
-                    musicController.queueLock = false;
-                    self.reply("`Error trying to process command, contact oddiz.`");
-
-                    //if there is no song in queue stop the music controller to prevent lockdown.
-                    if (musicController.queue.length > 0) {
-                        musicController.stop();
-                        logger.log("info", "Stopping music controller- to prevent lockdown.");
-                    }
-                }
+                musicController.queueLock = false;
+                self.reply(
+                    "`I couldn't find any tracks with URL provided!\nSupported platforms: spotify, youtube, soundcloud`"
+                );
+                return;
             }
+        } else if (loadType === LoadType.PLAYLIST) {
+            for (const track of data.tracks) {
+                musicController.addToQueue(track, optionsDefault.forceNext || false);
+            }
+            self.reply("`" + (data.info.name || "Playlist") + " added to queue 👍`");
+        } else if (loadType === LoadType.TRACK) {
+            const track = data;
+            if (track) {
+                musicController.addToQueue(track, optionsDefault.forceNext || false);
+                self.reply(`\`${track.info.title} added to queue 👍\``);
+            }
+        } else {
+            musicController.queueLock = false;
+            throw new Error(
+                "Error while trying to parse result from URL:" +
+                    "\n result from lavalink is:" +
+                    JSON.stringify(result, null, 2)
+            );
         }
+
+        musicController.processQueue();
+        return;
     } catch (error) {
         logger.log("error", "Error while executing play.js. Error: " + error);
+        self.reply("`Error trying to process command, contact oddiz.`");
 
         if (self.controller?.MusicController) {
             self.controller.MusicController.queueLock = false;

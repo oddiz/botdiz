@@ -1,17 +1,20 @@
 import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 
 import { logger } from "../logger";
-import { Command, CommandFunction } from "../modules/Command";
+import { Command } from "../modules/Command";
 
-export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null): Promise<void> {
+export default function (this: Command, invokedMessage?: ChatInputCommandInteraction | null): void {
     const self = this;
+
     try {
-        if (!invokedMessage) throw "No invoked message";
+        if (!invokedMessage) {
+            throw new Error("No invoked message");
+        }
 
         const commandName = invokedMessage.options.getString("command");
 
         let embedMessage = new EmbedBuilder();
-        const PREFIX = self.controller.PREFIX;
+        const { PREFIX } = self.controller;
         const userAvatar = self.controller.client.user?.avatarURL();
 
         embedMessage = embedMessage.setColor("#e9b463").setTimestamp();
@@ -21,6 +24,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
         }
         if (commandName) {
             const foundCommand = self.controller.commands.find(({ name }) => name === commandName);
+
             if (foundCommand) {
                 embedMessage = embedMessage
                     .setTitle(PREFIX + foundCommand.name)
@@ -32,11 +36,10 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
                 self.reply({ embeds: [embedMessage] });
 
                 return;
-            } else {
-                self.reply(`Unable to find command: ${PREFIX + commandName}`);
-
-                return;
             }
+            self.reply(`Unable to find command: ${PREFIX + commandName}`);
+
+            return;
         }
 
         embedMessage = embedMessage

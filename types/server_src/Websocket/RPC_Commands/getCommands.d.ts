@@ -1,20 +1,20 @@
 import { AllowedGuild } from "../../db/databaseTypes";
 import { GuildMember } from "discord.js";
-declare type unauthorizedResponse = {
+type unauthorizedResponse = {
     status: "unauthorized";
 };
-declare type getTextChannelsSuccess = {
+type getTextChannelsSuccess = {
     status: "success";
     channels: {
         name: string | undefined;
         id: string | undefined;
     }[];
 };
-declare type getTextChannelsFailed = {
+type getTextChannelsFailed = {
     status: "failed";
     command: "RPC_getTextChannels";
 };
-declare type getTextChannelsReturn = getTextChannelsSuccess | getTextChannelsFailed | unauthorizedResponse;
+type getTextChannelsReturn = getTextChannelsSuccess | getTextChannelsFailed | unauthorizedResponse;
 declare const getCommands: {
     RPC_getGuilds: (allowedGuilds: AllowedGuild[] | "ALL") => Promise<AllowedGuild[] | {
         id: string;
@@ -29,6 +29,9 @@ declare const getCommands: {
     RPC_getTextChannels: (allowedGuilds: AllowedGuild[] | "ALL", activeGuildId: string) => Promise<getTextChannelsReturn>;
     RPC_getTextChannelContent: (allowedGuilds: AllowedGuild[] | "ALL", activeGuildId: string, channelId: string) => Promise<{
         status: string;
+        messages?: undefined;
+        command?: undefined;
+        message?: undefined;
     } | {
         status: string;
         messages: {

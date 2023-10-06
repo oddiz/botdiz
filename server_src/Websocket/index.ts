@@ -1,30 +1,26 @@
-import WebSocket, { RawData } from 'ws';
-import { ClientListenerManager } from './ClientListenerManager';
-import { Server } from 'http';
-import { Db } from 'mongodb';
-import { Request, RequestHandler, Response } from 'express';
-import { Client } from 'discord.js';
-import { GuildController } from '../../src/main';
-import { ParamsDictionary } from 'express-serve-static-core';
-import { ParsedQs } from 'qs';
-import { getToken } from '../scripts/getToken';
-import { logger } from '@sentry/utils';
-import { BotdizSession } from 'server_src/types';
-import { AllowedGuild, DbDiscordSession, DbDiscordUser, DbSession } from '../db/databaseTypes';
-import execCommands from './RPC_Commands/execCommands';
-import getCommands from './RPC_Commands/getCommands';
-import { webSocketRateLimiter } from '../RateLimiter';
+import WebSocket, { RawData } from "ws";
+import { ClientListenerManager } from "./ClientListenerManager";
+import { Server } from "http";
+import { Db } from "mongodb";
+import { Request, RequestHandler, Response } from "express";
+import { Client } from "discord.js";
+import { GuildController } from "../../src/main";
+import { ParamsDictionary } from "express-serve-static-core";
+import { ParsedQs } from "qs";
+import { getToken } from "../scripts/getToken";
+import { logger } from "@sentry/utils";
+import { BotdizSession } from "server_src/types";
+import { AllowedGuild, DbDiscordSession, DbDiscordUser, DbSession } from "../db/databaseTypes";
+import execCommands from "./RPC_Commands/execCommands";
+import getCommands from "./RPC_Commands/getCommands";
+import { webSocketRateLimiter } from "../RateLimiter";
 
 interface BotdizWebsocketClient {
     websocket: WebSocket;
     clientListener: ClientListenerManager;
 }
 
-type GetCommands =
-    | 'RPC_getGuilds'
-    | 'RPC_getTextChannels'
-    | 'RPC_getTextChannelContent'
-    | 'RPC_getVoiceChannels';
+type GetCommands = "RPC_getGuilds" | "RPC_getTextChannels" | "RPC_getTextChannelContent" | "RPC_getVoiceChannels";
 
 export default class WebsocketManager {
     public server: Server;
@@ -54,7 +50,7 @@ export default class WebsocketManager {
         this.handleWsMessage = this.handleWsMessage.bind(this);
         this.init = this.init.bind(this);
 
-        console.log('Created websocket manager');
+        console.log("Created websocket manager");
     }
 
     async init() {
@@ -63,14 +59,14 @@ export default class WebsocketManager {
         });
 
         if (!this.WebsocketServer) {
-            logger.log('error', 'Failed to create websocket server');
+            logger.log("error", "Failed to create websocket server");
 
             return;
         }
 
-        this.server.on('upgrade', async (request, socket, head) => {
+        this.server.on("upgrade", async (request, socket, head) => {
             if (!this.WebsocketServer) {
-                logger.log('error', 'No websocket server.');
+                logger.log("error", "No websocket server.");
                 return;
             }
             const req = request as Request;
@@ -82,7 +78,7 @@ export default class WebsocketManager {
 
                 this.sessionParser(req, {} as Response, async () => {
                     if (!this.WebsocketServer) {
-                        logger.log('error', 'No websocket server.');
+                        logger.log("error", "No websocket server.");
                         return;
                     }
                     if (!req.session) return;
@@ -91,11 +87,11 @@ export default class WebsocketManager {
 
                     if (token) {
                         session = (await this.db
-                            .collection('sessions')
+                            .collection("sessions")
                             .findOne({ token: token })) as unknown as DbDiscordSession | null;
                     }
                     if (token && session) {
-                        this.WebsocketServer.emit('connection', ws, request);
+                        this.WebsocketServer.emit("connection", ws, request);
                     } else {
                         socket.destroy();
                     }
@@ -103,7 +99,7 @@ export default class WebsocketManager {
             });
         });
 
-        this.WebsocketServer.on('connection', async (ws: WebSocket, request) => {
+        this.WebsocketServer.on("connection", async (ws: WebSocket, request) => {
             const self = this;
             const req = request as Request;
             this.sessionParser(req, {} as Response, async () => {
@@ -131,27 +127,27 @@ export default class WebsocketManager {
 
                 self.connectedClients.set(userId, client);
 
-                ws.on('message', (msg) => {
+                ws.on("message", (msg) => {
                     try {
                         const token = getToken(req);
                         if (!token) {
-                            logger.log('error', 'No token found in request');
+                            logger.log("error", "No token found in request");
                             return;
                         }
                         //@ts-ignore
                         self.handleWsMessage(ws, msg, clientListener, token);
                     } catch (error) {
-                        console.log('error in websocket message handler');
+                        console.log("error in websocket message handler");
                     }
                 });
 
-                ws.on('close', () => {
+                ws.on("close", () => {
                     try {
                         self.connectedClients?.get(userId)?.clientListener.terminate();
 
                         self.connectedClients.delete(userId);
                     } catch (error) {
-                        console.log('error while closing websocket', error);
+                        console.log("error while closing websocket", error);
                     }
                 });
             });
@@ -165,54 +161,52 @@ export default class WebsocketManager {
         token: string
     ) {
         try {
-            const session = (await this.db
-                .collection('sessions')
-                .findOne({ token: token })) as unknown as DbDiscordSession | DbSession | null;
+            const session = (await this.db.collection("sessions").findOne({ token: token })) as unknown as
+                | DbDiscordSession
+                | DbSession
+                | null;
 
             if (!session) {
-                console.log('Session not validated');
+                console.log("Session not validated");
                 return;
             }
 
             const userId = session.user_id;
 
             let allowedGuilds, user;
-            if ('discord_session' in session) {
-                user = (await this.db.collection('discord_users').findOne({
+            if ("discord_session" in session) {
+                user = (await this.db.collection("discord_users").findOne({
                     discord_id: session.discord_id,
                 })) as unknown as DbDiscordUser;
                 allowedGuilds = user.allowed_guilds;
             } else if (session.moderator_session) {
-                allowedGuilds = 'ALL';
+                allowedGuilds = "ALL";
             } else {
                 console.log("Couldn't parse allowed guilds");
                 return;
             }
 
             if (session.moderator_session) {
-                allowedGuilds = 'ALL';
+                allowedGuilds = "ALL";
             }
 
             const message = JSON.parse(msg as unknown as string);
 
-            if (message.type === 'ping') {
+            if (message.type === "ping") {
                 ws.send(
                     JSON.stringify({
-                        event: 'pong',
-                        result: 'success',
+                        event: "pong",
+                        result: "success",
                     })
                 );
 
                 return;
             }
-            if (message.type === 'listenMusicPlayer') {
-                clientListener.startMusicPlayerListener(
-                    allowedGuilds as AllowedGuild[] | 'ALL',
-                    message.guildId
-                );
+            if (message.type === "listenMusicPlayer") {
+                clientListener.startMusicPlayerListener(allowedGuilds as AllowedGuild[] | "ALL", message.guildId);
             }
 
-            if (message.type === 'addTextChannelListener') {
+            if (message.type === "addTextChannelListener") {
                 /**
                  *
                  * msg structer:
@@ -224,7 +218,7 @@ export default class WebsocketManager {
                  */
 
                 clientListener.addTextListener(
-                    allowedGuilds as AllowedGuild[] | 'ALL',
+                    allowedGuilds as AllowedGuild[] | "ALL",
                     message.guildId,
                     message.channelId
                 );
@@ -232,20 +226,17 @@ export default class WebsocketManager {
                 return;
             }
 
-            if (message.type === 'addVoiceChannelListener') {
-                clientListener.addVoiceChannelListener(
-                    allowedGuilds as AllowedGuild[] | 'ALL',
-                    message.guildId
-                );
+            if (message.type === "addVoiceChannelListener") {
+                clientListener.addVoiceChannelListener(allowedGuilds as AllowedGuild[] | "ALL", message.guildId);
 
                 return;
             }
 
-            if (message.type === 'clearListeners') {
+            if (message.type === "clearListeners") {
                 clientListener.clearListeners();
             }
 
-            if (message.type === 'get') {
+            if (message.type === "get") {
                 const getCommandsName = message.command as GetCommands;
                 const commandName = getCommandsName;
                 const params = message.params as string[];
@@ -269,25 +260,25 @@ export default class WebsocketManager {
                 return;
             }
 
-            if (message.type === 'exec') {
+            if (message.type === "exec") {
                 if (!webSocketRateLimiter.isUserAllowed(userId)) {
                     ws.send(
                         JSON.stringify({
-                            status: 'rate_limited',
-                            message: 'You are being rate limited',
+                            status: "rate_limited",
+                            message: "You are being rate limited",
                         })
                     );
 
                     return;
                 }
-                const adminExecCommands = ['RPC_sendMessage'];
+                const adminExecCommands = ["RPC_sendMessage"];
                 let result;
                 try {
                     //first param is always guildID so make the check here
                     const execGuildId = message.params[0];
                     let commandAllowed = false;
 
-                    if (allowedGuilds === 'ALL') {
+                    if (allowedGuilds === "ALL") {
                         commandAllowed = true;
                     } else {
                         const allowedGuildsArray = allowedGuilds as AllowedGuild[];
@@ -309,7 +300,7 @@ export default class WebsocketManager {
                         }
                     }
                     if (commandAllowed) {
-                        if (!user) throw 'user is null';
+                        if (!user) throw "user is null";
 
                         result = await execCommands[message.command](user, ...message.params);
                     } else {
@@ -322,12 +313,12 @@ export default class WebsocketManager {
                     }
                 } catch (error) {
                     console.log(
-                        'Error while trying to execute command: \n',
-                        message.command + '\n',
-                        'args: \n',
+                        "Error while trying to execute command: \n",
+                        message.command + "\n",
+                        "args: \n",
                         message.params,
-                        '\n',
-                        'error :\n',
+                        "\n",
+                        "error :\n",
                         error
                     );
                     return;
@@ -335,7 +326,7 @@ export default class WebsocketManager {
 
                 const reply = {
                     ...result,
-                    event: 'exec_command_status',
+                    event: "exec_command_status",
                     command: message.command,
                 };
 

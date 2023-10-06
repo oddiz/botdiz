@@ -1,5 +1,5 @@
 import { DbDiscordUser } from '../../db/databaseTypes';
-export declare type ExecCommandResponse = {
+export type ExecCommandResponse = {
     status: 'success' | 'failed';
     message?: string;
     command: string;

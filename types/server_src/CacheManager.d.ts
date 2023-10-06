@@ -1,5 +1,5 @@
 import { Collection, GuildMember, NonThreadGuildBasedChannel } from "discord.js";
-declare type BotdizVoiceChannel = {
+type BotdizVoiceChannel = {
     name: string;
     id: string;
     members: Collection<string, GuildMember>;

@@ -1,4 +1,5 @@
 import { Db } from "mongodb";
+import "dotenv/config";
 import { Express } from "express";
 export declare class RouteManager {
     private app;

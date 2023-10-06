@@ -12,13 +12,13 @@ import { client as DiscordClient, GuildControllers } from "../src/main";
 import session from "express-session";
 import https from "https";
 import fs from "fs";
-import dotenv from "dotenv";
+import "dotenv/config";
+
 import { logger } from "../src/logger";
 import session_store from "session-file-store";
 import helmet from "helmet";
 
 const SessionFileStore = session_store(session);
-dotenv.config();
 
 let corsOptions;
 if (process.env.NODE_ENV === "development") {
@@ -57,6 +57,7 @@ if (process.env.NODE_ENV === "development") {
     };
 } else {
     sessionParserOptions = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         store: new SessionFileStore({ ttl: 60 * 60 * 24 * 7, logFn: () => {} }),
         saveUninitialized: false,
         secret: process.env.SESSION_SECRET,
@@ -115,4 +116,4 @@ async function init() {
 
 init();
 
-export { WsManager, DatabaseManager, dbManager, RouteManager, DiscordClient, GuildControllers} 
+export { WsManager, DatabaseManager, dbManager, RouteManager, DiscordClient, GuildControllers };

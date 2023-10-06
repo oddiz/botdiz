@@ -10,12 +10,12 @@ interface BotdizCommandConfig {
     ephemeral?: boolean;
     options?: ApplicationCommandOptionData[];
 }
-export declare type replyOptions = {
+export type replyOptions = {
     followup?: boolean;
     new?: boolean;
     required?: boolean;
 };
-export declare type CommandFunction = (invokedMessage?: CommandInteraction | ChatInputCommandInteraction | null, options?: PlayCommandOptions | null) => Promise<void>;
+export type CommandFunction = (invokedMessage?: CommandInteraction | ChatInputCommandInteraction | null, options?: PlayCommandOptions | null) => Promise<void>;
 export declare class Command {
     name: string;
     description: string;

@@ -1,6 +1,7 @@
 import { Command } from "../modules/Command";
 import { ChatInputCommandInteraction } from "discord.js";
-export declare type PlayCommandOptions = {
+import "dotenv/config";
+export type PlayCommandOptions = {
     query?: string | null;
     forceNext?: boolean;
 };

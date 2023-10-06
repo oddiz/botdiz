@@ -1,7 +1,6 @@
-import dotenv from 'dotenv'
-dotenv.config()
+import "dotenv/config";
 
-import ytsr from 'ytsr'
+import ytsr from "ytsr";
 
 export type YoutubeSearchResult = {
     videoUrl: string;
@@ -9,23 +8,16 @@ export type YoutubeSearchResult = {
     videoTitle: string;
     videoThumbnailUrl: string | null;
     videoDuration?: string;
-}
-export default async (
-    query: string,
-    maxResults = 1,
-    callback: (result: YoutubeSearchResult | void) => void
-) => {
-
+};
+export default async (query: string, maxResults = 1, callback: (result: YoutubeSearchResult | void) => void) => {
     const filters1 = await ytsr.getFilters(query);
-    const filter1 = filters1.get('Type')?.get('Video');
+    const filter1 = filters1.get("Type")?.get("Video");
 
     if (filter1 && filter1.url) {
-
         ytsr(filter1.url, { limit: maxResults }).then((result) => {
             try {
                 const foundVid = result.items[0];
-                if (foundVid.type === 'video') {
-                
+                if (foundVid.type === "video") {
                     const resultObject: YoutubeSearchResult = {
                         videoUrl: foundVid.url,
                         videoId: foundVid.id,
@@ -35,7 +27,6 @@ export default async (
 
                     callback(resultObject);
                 }
-            
             } catch (error) {
                 callback();
             }

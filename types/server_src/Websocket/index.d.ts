@@ -1,13 +1,13 @@
 /// <reference types="node" />
-import WebSocket from 'ws';
-import { ClientListenerManager } from './ClientListenerManager';
-import { Server } from 'http';
-import { Db } from 'mongodb';
-import { RequestHandler } from 'express';
-import { Client } from 'discord.js';
-import { GuildController } from '../../src/main';
-import { ParamsDictionary } from 'express-serve-static-core';
-import { ParsedQs } from 'qs';
+import WebSocket from "ws";
+import { ClientListenerManager } from "./ClientListenerManager";
+import { Server } from "http";
+import { Db } from "mongodb";
+import { RequestHandler } from "express";
+import { Client } from "discord.js";
+import { GuildController } from "../../src/main";
+import { ParamsDictionary } from "express-serve-static-core";
+import { ParsedQs } from "qs";
 interface BotdizWebsocketClient {
     websocket: WebSocket;
     clientListener: ClientListenerManager;

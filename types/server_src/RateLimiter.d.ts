@@ -1,6 +1,6 @@
 import LRU from 'lru-cache';
-declare type UserId = string;
-declare type LastRequestTime = number;
+type UserId = string;
+type LastRequestTime = number;
 declare class RateLimiter {
     clients: LRU<UserId, LastRequestTime>;
     RATE_LIMIT_IN_MILLISECOND: number;

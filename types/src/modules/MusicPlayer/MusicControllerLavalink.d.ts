@@ -30,8 +30,8 @@ export interface YoutubeRecommended {
     thumbnail: string;
     isSpotify: false;
 }
-export declare type QueueTrack = BotdizTrack | BotdizShoukakuTrack | YoutubeRecommended;
-export declare type AudioPlayerStatus = "PLAYING" | "PAUSED" | "STOPPED" | "SKIPPING";
+export type QueueTrack = BotdizTrack | BotdizShoukakuTrack | YoutubeRecommended;
+export type AudioPlayerStatus = "PLAYING" | "PAUSED" | "STOPPED" | "SKIPPING";
 export interface QueueUpdateEvent {
     op: "queueUpdate";
     queue: QueueTrack[];
@@ -57,7 +57,7 @@ export interface CurrentSongUpdateEvent {
     currentSong: BotdizShoukakuTrack | null;
     guildId: string;
 }
-export declare type MusicControllerEventsData = QueueUpdateEvent | SkipVoteEvent | CurrentSongUpdateEvent | PlayerUpdate | PlayerStatusUpdateEvent;
+export type MusicControllerEventsData = QueueUpdateEvent | SkipVoteEvent | CurrentSongUpdateEvent | PlayerUpdate | PlayerStatusUpdateEvent;
 export interface MusicControllerEvents {
     playerUpdate: (data: PlayerUpdate) => void;
     queueUpdate: (data: QueueUpdateEvent) => void;

@@ -4,15 +4,15 @@ FROM node:current-alpine AS development
 WORKDIR /usr/src/app
 
 COPY package.json /usr/src/app/package.json
-COPY yarn.lock /usr/src/app/yarn.lock
+COPY package-lock.json /usr/src/app/package-lock.json
 
-RUN yarn
+RUN npm i
 
 COPY . /usr/src/app/
 
 EXPOSE 8080
 
-CMD ["yarn", "start"]
+CMD ["npm", "start"]
 
 FROM development as dev-envs
 RUN <<EOF
@@ -27,4 +27,4 @@ usermod -aG docker vscode
 EOF
 # install Docker tools (cli, buildx, compose)
 COPY --from=gloursdocker/docker / /
-CMD ["yarn", "start"]
+CMD ["npm", "start"]

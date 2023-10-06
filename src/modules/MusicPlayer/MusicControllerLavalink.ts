@@ -17,11 +17,10 @@ import { SkipHandler, SkipVoteData } from "./SkipHandler";
 import { Controller as BotdizGuildController } from "../../modules/Controller";
 import { Command as BotdizCommand } from "../../modules/Command";
 import { ShoukakuHandler } from "../../Shokaku/ShokakuHandler";
-import { PlayerUpdate, Player, Track } from "shoukaku";
+import { PlayerUpdate, Player, Track, LoadType, LavalinkResponse } from "shoukaku";
 import { DbGuildSettings } from "../../../server_src/db/databaseTypes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { getRecommended } from "../../scripts/recommendSong";
-import { timestampWithMs } from "@sentry/utils";
 
 let playCommand: BotdizCommand;
 
@@ -172,7 +171,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     async init() {
         try {
             //get audioPlayer from lavalink if available
-            const node = await this.shoukaku.getNode();
+            const node = await this.shoukaku.getIdealNode();
             if (!node) return;
             this.audioPlayer = await node.players.get(this.controller.guild.id);
             return true;
@@ -250,7 +249,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async setVoiceConnection(channel: VoiceBasedChannel): Promise<boolean> {
         try {
-            const node = this.shoukaku.getNode();
+            const node = this.shoukaku.getIdealNode();
 
             if (!node) {
                 throw "No available nodes found";
@@ -261,17 +260,17 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     "warn",
                     "Trying to connect to a voice channel while already connected to a voice channel, it'll connect to new channel to avoid bugs"
                 );
-                await node.leaveChannel(this.controller.guild.id);
+                await this.shoukaku.leaveVoiceChannel(this.controller.guild.id);
             }
 
             await this.stop();
 
             if (this.audioPlayer) {
                 //If there is audioplayer present we are already connected to voice channel
-                await node.leaveChannel(this.controller.guild.id);
+                await this.shoukaku.leaveVoiceChannel(this.controller.guild.id);
             }
 
-            this.audioPlayer = await node.joinChannel({
+            this.audioPlayer = await this.shoukaku.joinVoiceChannel({
                 guildId: this.controller.guild.id,
                 channelId: channel.id,
                 shardId: this.controller.guild.shardId,
@@ -279,9 +278,9 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
             this.activeVoiceChannel = channel;
 
-            this.audioPlayer.on("start", (data) => {
+            this.audioPlayer.on("start", () => {
                 this.changeAudioPlayerStatus("PLAYING");
-
+                this.audioPlayer?.setGlobalVolume(AUDIOPLAYER_VOLUME);
                 console.log("audioPlayer started");
             });
             this.audioPlayer.on("end", (data) => {
@@ -295,7 +294,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 console.log("audioplayer ended. Reason: ", reason);
 
                 if (this.audioPlayerStatus === "SKIPPING") {
-                    if (reason !== "REPLACED") {
+                    if (reason !== "replaced") {
                         console.log("reason should be 'REPLACED' reason: " + reason);
                     }
                     this.changeAudioPlayerStatus("STOPPED");
@@ -303,15 +302,15 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 }
                 this.changeAudioPlayerStatus("STOPPED");
 
-                if (reason === "LOAD_FAILED" || reason === "FINISHED") {
+                if (reason === "loadFailed" || reason === "finished") {
                     this.playNext();
                 }
 
-                if (reason === "STOPPED") {
+                if (reason === "stopped") {
                     this.stop();
                 }
 
-                if (reason === "CLEANUP") {
+                if (reason === "cleanup") {
                     console.log("CLEANUP end event triggered. Don't know why this is happening");
                 }
             });
@@ -402,14 +401,14 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async disconnectFromVoiceChannel() {
         try {
-            const node = this.shoukaku.getNode();
+            const node = this.shoukaku.getIdealNode();
 
             if (!node) {
                 console.error("No available nodes found, while disconnecting");
                 return;
             }
 
-            node.leaveChannel(this.controller.guild.id);
+            await this.shoukaku.leaveVoiceChannel(this.controller.guild.id);
             this.activeVoiceChannel = null;
         } catch (error) {
             console.log("Error while executing disconnectFromVoiceChannel: ", error);
@@ -468,7 +467,11 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 clientId: process.env.SPOTIFY_CLIENTID,
                 clientSecret: process.env.SPOTIFY_CLIENTSECRET,
             });
-        } catch (error) {}
+        } catch (error) {
+            logger.log("error", "Error while trying to find recommended song: ", error);
+
+            return;
+        }
     }
 
     removeRecommended() {
@@ -479,6 +482,9 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async processQueue() {
         this.queueLock = false;
+        if (this.queue.length > 0) {
+            this.stop();
+        }
         try {
             if (this.audioPlayerStatus !== "STOPPED") {
                 // If the queue is locked (already being processed), or the audio player is already playing something
@@ -597,14 +603,12 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             if (this.audioPlayer) {
                 this.changeCurrentSong(nextSong);
 
-                await this.audioPlayer
-                    .playTrack({
-                        track: nextSong.track,
-                        options: {
-                            noReplace: false,
-                        },
-                    })
-                    .setVolume(AUDIOPLAYER_VOLUME);
+                await this.audioPlayer.playTrack({
+                    track: nextSong.encoded,
+                    options: {
+                        noReplace: false,
+                    },
+                });
             } else {
                 logger.log("error", "No audio player available /MusicController/playNext()");
 
@@ -627,8 +631,49 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     }
 
     async processNextSong(): Promise<BotdizShoukakuTrack | null> {
+        async function addThumbnail(song: Track) {
+            const oembed = "https://www.youtube.com/oembed?url=";
+            const oEmbedUrl = oembed + song.info.uri;
+
+            const videoThumbnailUrl = await fetch(oEmbedUrl)
+                .then((res) => res.json())
+                .then((parsedRes) => parsedRes.thumbnail_url)
+                .catch((err) => {
+                    console.log("Error while fetching oEmbed. error: ", err);
+                    return song;
+                });
+            // copy an object
+
+            const botdizSong = JSON.parse(JSON.stringify(song)) as BotdizShoukakuTrack;
+            botdizSong.thumbnail = videoThumbnailUrl;
+
+            return botdizSong;
+        }
+        /**
+         * Gets track from lavalink response
+         * @param response
+         * @returns Track
+         */
+        function processLavalinkResponse(response: LavalinkResponse | undefined): Track | null {
+            if (!response) {
+                return null;
+            }
+            switch (response.loadType) {
+                case LoadType.EMPTY || LoadType.ERROR:
+                    return null;
+                case LoadType.PLAYLIST:
+                    return response.data.tracks[0];
+                    return null;
+                case LoadType.TRACK:
+                    return response.data;
+                case LoadType.SEARCH:
+                    return response.data[0];
+                default:
+                    return null;
+            }
+        }
         try {
-            const node = this.shoukaku.getNode();
+            const node = this.shoukaku.getIdealNode();
 
             if (!node) {
                 logger.log("error", "No node available /MusicController/processNextSong()");
@@ -644,71 +689,28 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     this.addToQueue(recommendedList);
                 }
             }
-            let nextInQueue = this.queue.shift();
-            let processedSong;
+            const nextInQueue = this.queue.shift();
 
             if (!nextInQueue) {
+                this.queueLock = false;
                 return null;
             }
 
-            const nextIsBotdizTrack = nextInQueue as BotdizTrack;
-            const nextIsYoutubeRecommended = nextInQueue as YoutubeRecommended;
-            if (nextIsBotdizTrack.isSpotify) {
-                //if came from spotify link
-                //only videoArtist, videoTitle, isSpotify present
-                //turn into Shoukaku Track
-
-                const query = nextIsBotdizTrack.info.title;
-
-                const result = await node.rest.resolve("ytsearch:" + query);
-
-                if (!result || !result.tracks.length) {
-                    //couldn't find song from spotify song
-                    return null;
-                }
-
-                processedSong = result.tracks.shift() as BotdizShoukakuTrack;
-            } else if (nextIsYoutubeRecommended.isYoutubeRecommended) {
-                const query = nextIsYoutubeRecommended.info.title;
-
-                const result = await node.rest.resolve("ytsearch:" + query);
-
-                if (!result || !result.tracks.length) {
-                    //couldn't find song from spotify song
-                    return null;
-                }
-
-                processedSong = result.tracks.shift() as BotdizShoukakuTrack;
-            } else {
-                processedSong = nextInQueue as Track;
-
-                this.queueLock = false;
+            const query = nextInQueue.info.title;
+            if (!this.audioPlayer) {
+                throw new Error("No audio player available");
             }
+            const result = await this.audioPlayer.node.rest.resolve("ytsearch:" + query);
+
+            const processedSong = processLavalinkResponse(result);
 
             if (processedSong) {
-                const oembed = "https://www.youtube.com/oembed?url=";
-                const oEmbedUrl = oembed + processedSong.info.uri;
-
-                const videoThumbnailUrl = await fetch(oEmbedUrl)
-                    .then((res) => res.json())
-                    .then((parsedRes) => parsedRes.thumbnail_url)
-                    .catch((err) => {
-                        console.log("Error while fetching oEmbed. error: ", err);
-                        return null;
-                    });
-
-                const botdizSong = processedSong as BotdizShoukakuTrack;
-                botdizSong.thumbnail = videoThumbnailUrl;
-
                 this.queueLock = false;
-
-                return botdizSong;
+                return addThumbnail(processedSong);
             } else {
                 this.queueLock = false;
 
-                logger.log("error", "Error while trying to process next song. processSong is " + processedSong);
-
-                return null;
+                throw new Error("Processed song is empty found");
             }
             //add thumbnail image if youtube
         } catch (error) {
@@ -721,7 +723,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null) {
         try {
-            let botMessage;
             const botdizLinkButton = new ActionRowBuilder();
             const botdizLink =
                 process.env.NODE_ENV === "development"
@@ -749,7 +750,8 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 }
             }
 
-            botMessage = await this.playCommand.reply(
+            const botMessage = await this.playCommand.reply(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 //@ts-ignore-next-line
                 { embeds: [embedMessage], components: [botdizLinkButton] },
                 { new: true, required: true }

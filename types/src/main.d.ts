@@ -1,6 +1,6 @@
-import Discord from "discord.js";
+import "dotenv/config";
+import Discord, { Guild } from "discord.js";
 export declare const client: Discord.Client<boolean>;
-import { Guild } from "discord.js";
 import { Controller as BotdizController } from "./modules/Controller";
 export interface GuildController {
     guildId: string;

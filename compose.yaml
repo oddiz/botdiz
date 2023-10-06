@@ -1,0 +1,53 @@
+services:
+  backend:
+    build:
+      context: ./
+      target: development
+      x-develop:
+        watch:
+          - action: sync
+            path: ./packages/botdiz
+            target: /usr/src/app
+          - action: rebuild
+            path: ./packages/botdiz/package.json
+    ports:
+      - 8080:8080
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./.env
+      - ./.docker.env
+    depends_on:
+      - mongo
+      - lavalink
+    networks:
+      - lavalink-network
+    expose:
+      - 8080
+
+  lavalink:
+    # pin the image version to Lavalink v4
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: lavalink
+    restart: unless-stopped
+    environment:
+      # set Java options here
+      - _JAVA_OPTIONS=-Xmx6G
+      # set lavalink server port
+      - SERVER_PORT=2333
+    volumes:
+      # mount application.yml from the same directory or use environment variables
+      - ./packages/lavalink/lavalink_settings.yaml:/opt/Lavalink/application.yml
+      # persist plugins between restarts, make sure to set the correct permissions (user: 322, group: 322)
+      - ./plugins/:/opt/Lavalink/plugins/
+    expose:
+      # lavalink exposes port 2333 to connect to for other containers (this is for documentation purposes only)
+      - 2333
+    ports:
+      # you only need this if you want to make your lavalink accessible from outside of containers
+      - "2333:2333"
+    networks:
+      - lavalink-network
+networks:
+  lavalink-network:

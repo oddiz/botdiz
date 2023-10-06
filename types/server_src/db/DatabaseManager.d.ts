@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Db } from "mongodb";
 export declare class DatabaseManager {
     db: Db | null;

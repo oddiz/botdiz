@@ -1,4 +1,5 @@
-export declare type YoutubeSearchResult = {
+import "dotenv/config";
+export type YoutubeSearchResult = {
     videoUrl: string;
     videoId: string;
     videoTitle: string;

@@ -35,7 +35,7 @@ export interface SkipData {
     currentSong: BotdizShoukakuTrack | null;
     invokedUser: GuildMember;
 }
-declare type SkipVoteUserData = {
+type SkipVoteUserData = {
     voiceChannelMembers: User[];
     votedUsers: string[];
 };

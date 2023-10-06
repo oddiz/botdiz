@@ -1,7 +1,6 @@
 import { Command } from "../modules/Command";
-import { ChatInputCommandInteraction, CommandInteraction } from "discord.js";
-import dotenv from "dotenv";
-dotenv.config();
+import { ChatInputCommandInteraction } from "discord.js";
+import "dotenv/config";
 
 import fetch from "node-fetch";
 import { logger } from "../logger";

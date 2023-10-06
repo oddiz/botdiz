@@ -1,28 +1,24 @@
-import spotifyWebApi from 'spotify-web-api-node';
-import fetch from 'node-fetch';
-import { Db } from 'mongodb';
-import { Express } from 'express';
-
-import dotenv from 'dotenv';
-import { BotdizSession } from 'server_src/types';
-import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from '../../db/databaseTypes';
-import { logger } from '../../../src/logger';
-import { getToken } from '../../scripts/getToken';
-import { withAuth } from '../middlewares';
-dotenv.config();
+import spotifyWebApi from "spotify-web-api-node";
+import fetch from "node-fetch";
+import { Db } from "mongodb";
+import { Express } from "express";
+import "dotenv/config";
+import { logger } from "../../../src/logger";
+import { getToken } from "../../scripts/getToken";
+import { withAuth } from "../middlewares";
 
 const UNAUTH_RESPONSE = {
-    status: 'failed',
-    message: '401 Not authorized',
+    status: "failed",
+    message: "401 Not authorized",
     isValidated: false,
 };
 export default async function playlists(app: Express, db: Db) {
     //get playlists if it's available from the database
-    app.get('/playlists', withAuth, async (req, res) => {
+    app.get("/playlists", withAuth, async (req, res) => {
         try {
             const reqToken = getToken(req);
             if (!reqToken) {
-                console.log('No session info in credentials');
+                console.log("No session info in credentials");
 
                 res.status(401).send(UNAUTH_RESPONSE);
 
@@ -34,7 +30,7 @@ export default async function playlists(app: Express, db: Db) {
 
             if (!user?.data?.spotify?.playlists) {
                 res.send({
-                    status: 'success',
+                    status: "success",
                     savedPlaylists: null,
                 });
 
@@ -42,20 +38,20 @@ export default async function playlists(app: Express, db: Db) {
             }
 
             res.send({
-                status: 'success',
+                status: "success",
                 savedPlaylists: user.data.spotify.playlists,
             });
         } catch (error) {
-            logger.log('error', 'Error while trying to get playlist: ' + error);
+            logger.log("error", "Error while trying to get playlist: " + error);
             res.status(404).send({
-                status: 'failed',
-                message: 'Error while trying to get playlist',
+                status: "failed",
+                message: "Error while trying to get playlist",
             });
         }
     });
 
     //get spotify auth token of user, get playlists and set them into user database
-    app.post('/playlists', withAuth, async (req, res) => {
+    app.post("/playlists", withAuth, async (req, res) => {
         try {
             //spotify auth
 
@@ -75,44 +71,39 @@ export default async function playlists(app: Express, db: Db) {
             const spotifyApi = new spotifyWebApi(botdizCredentials);
 
             // Retrieve an access token and a refresh token
-            const spotifyAuthData = await spotifyApi
-                .authorizationCodeGrant(reqCode)
-                .catch((err) => {
-                    console.log('Error while accessing spotify api: ', err);
-                });
+            const spotifyAuthData = await spotifyApi.authorizationCodeGrant(reqCode).catch((err) => {
+                console.log("Error while accessing spotify api: ", err);
+            });
 
             if (!spotifyAuthData) {
-                logger.log('error', 'Error while trying to get spotify auth data');
+                logger.log("error", "Error while trying to get spotify auth data");
                 res.status(403).send({
-                    message: 'Error while trying to get spotify auth data. ',
+                    message: "Error while trying to get spotify auth data. ",
                 });
 
                 return;
             }
-
-            // Set the access token on the API object to use it in later calls
-            spotifyApi.setAccessToken(spotifyAuthData.body['access_token']);
-            spotifyApi.setRefreshToken(spotifyAuthData.body['refresh_token']);
-            // Set auth data on database
-
+            // eslint-disable-next-line no-inner-declarations
             async function fetchSpotifyPlaylists(offset: number) {
-                if (!spotifyAuthData) throw 'No spotify auth data';
+                if (!spotifyAuthData) throw "No spotify auth data";
 
-                const response = await fetch(
-                    'https://api.spotify.com/v1/me/playlists?limit=50&offset=' + offset,
-                    {
-                        method: 'GET',
-                        headers: {
-                            'Content-Encoding': 'null',
-                            Accept: 'application/json',
-                            'Content-Type': 'application/json',
-                            Authorization: 'Bearer ' + spotifyAuthData.body['access_token'],
-                        },
-                    }
-                );
+                const response = await fetch("https://api.spotify.com/v1/me/playlists?limit=50&offset=" + offset, {
+                    method: "GET",
+                    headers: {
+                        "Content-Encoding": "null",
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + spotifyAuthData.body["access_token"],
+                    },
+                });
 
                 return response.json();
             }
+
+            // Set the access token on the API object to use it in later calls
+            spotifyApi.setAccessToken(spotifyAuthData.body["access_token"]);
+            spotifyApi.setRefreshToken(spotifyAuthData.body["refresh_token"]);
+            // Set auth data on database
 
             let offset = 0;
             const playlistsResponse = await fetchSpotifyPlaylists(offset);
@@ -125,33 +116,33 @@ export default async function playlists(app: Express, db: Db) {
                 }
             }
 
-            const expiryTime = spotifyAuthData.body['expires_in'] * 1000 + new Date().getTime();
+            const expiryTime = spotifyAuthData.body["expires_in"] * 1000 + new Date().getTime();
             const spotifyData = {
-                auth_token: spotifyAuthData.body['access_token'],
-                refresh_token: spotifyAuthData.body['refresh_token'],
+                auth_token: spotifyAuthData.body["access_token"],
+                refresh_token: spotifyAuthData.body["refresh_token"],
                 expires: expiryTime,
                 playlists: playlistsResponse,
             };
-            if ('discord_session' in req.session && 'discord_id' in req.user) {
-                await db.collection('discord_users').updateOne(
+            if ("discord_session" in req.session && "discord_id" in req.user) {
+                await db.collection("discord_users").updateOne(
                     {
                         discord_id: req.user.discord_id,
                     },
                     {
                         $set: {
-                            'data.spotify': spotifyData,
+                            "data.spotify": spotifyData,
                         },
                     },
                     { upsert: true }
                 );
             } else {
-                await db.collection('users').updateOne(
+                await db.collection("users").updateOne(
                     {
                         username: req.user.username,
                     },
                     {
                         $set: {
-                            'data.spotify': spotifyData,
+                            "data.spotify": spotifyData,
                         },
                     },
                     { upsert: true }
@@ -159,24 +150,23 @@ export default async function playlists(app: Express, db: Db) {
             }
 
             res.send({
-                status: 'success',
-                message: 'Playlists added successfuly',
+                status: "success",
+                message: "Playlists added successfuly",
             });
         } catch (error) {
             console.log(error);
             res.status(401).send({
-                status: 'error',
-                message:
-                    'Failed to fetch spotify playlists. Try again later, contact Oddiz if issue persists.',
+                status: "error",
+                message: "Failed to fetch spotify playlists. Try again later, contact Oddiz if issue persists.",
             });
         }
     });
 
-    app.post('/playlists/:playlistId', withAuth, async (req, res) => {
+    app.post("/playlists/:playlistId", withAuth, async (req, res) => {
         try {
             const playlistId = req.params.playlistId;
             if (!playlistId) {
-                console.log('No playlist Id specified');
+                console.log("No playlist Id specified");
 
                 return;
             }
@@ -184,7 +174,7 @@ export default async function playlists(app: Express, db: Db) {
             const reqToken = getToken(req);
 
             if (!reqToken) {
-                console.log('No session info in credentials');
+                console.log("No session info in credentials");
 
                 return;
             }
@@ -194,7 +184,7 @@ export default async function playlists(app: Express, db: Db) {
             const user = req.user;
 
             if (!user.data?.spotify?.auth_token) {
-                console.log('No spotify data about user');
+                console.log("No spotify data about user");
 
                 return;
             }
@@ -213,36 +203,36 @@ export default async function playlists(app: Express, db: Db) {
                 await spotifyApi.refreshAccessToken().then(
                     (data) => {
                         // Save the access token so that it's used in future calls
-                        spotifyApi.setAccessToken(data.body['access_token']);
-                        const expiryTime = data.body['expires_in'] * 1000 + new Date().getTime();
-                        if ('discord_session' in session) {
-                            db.collection('discord_users').updateOne(
+                        spotifyApi.setAccessToken(data.body["access_token"]);
+                        const expiryTime = data.body["expires_in"] * 1000 + new Date().getTime();
+                        if ("discord_session" in session) {
+                            db.collection("discord_users").updateOne(
                                 {
                                     discord_id: session.discord_id,
                                 },
                                 {
                                     $set: {
-                                        'data.spotify.auth_token': data.body['access_token'],
-                                        'data.spotify.expires': expiryTime,
+                                        "data.spotify.auth_token": data.body["access_token"],
+                                        "data.spotify.expires": expiryTime,
                                     },
                                 }
                             );
                         } else {
-                            db.collection('users').updateOne(
+                            db.collection("users").updateOne(
                                 {
                                     username: session.username,
                                 },
                                 {
                                     $set: {
-                                        'data.spotify.auth_token': data.body['access_token'],
-                                        'data.spotify.expires': expiryTime,
+                                        "data.spotify.auth_token": data.body["access_token"],
+                                        "data.spotify.expires": expiryTime,
                                     },
                                 }
                             );
                         }
                     },
                     (err) => {
-                        console.log('Could not refresh access token', err);
+                        console.log("Could not refresh access token", err);
                     }
                 );
             }
@@ -252,13 +242,13 @@ export default async function playlists(app: Express, db: Db) {
 
             res.send(
                 JSON.stringify({
-                    status: 'success',
+                    status: "success",
                     playlistId: playlistId,
                     result: playlistBody.tracks.items,
                 })
             );
         } catch (error) {
-            console.log('Error while trying to get playlist from id : ', error);
+            console.log("Error while trying to get playlist from id : ", error);
         }
     });
 }

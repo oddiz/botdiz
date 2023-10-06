@@ -10,12 +10,11 @@ import discordguild from "./discordguild";
 import botdizguild from "./botdizguild";
 import botdizstats from "./botdizstats";
 import metrics from "./metrics";
-import dotenv from "dotenv";
+import "dotenv/config";
 
 import { APIRateLimiter } from "../RateLimiter";
 import { Express, RequestHandler } from "express";
 import { BotdizSession } from "server_src/types";
-dotenv.config();
 
 const rateLimiter: RequestHandler = (req, res, next) => {
     const session = req.session as BotdizSession;

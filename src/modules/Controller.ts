@@ -219,7 +219,7 @@ export class Controller {
             args: this.args
         } 
         */
-        let newEmbed = new EmbedBuilder();
+        const newEmbed = new EmbedBuilder();
         newEmbed
 
             .addFields(

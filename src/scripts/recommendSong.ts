@@ -1,6 +1,5 @@
-const parseTitleStrings = require("./parseTitleStrings");
-import dotenv from "dotenv";
-import { Track as ShoukakuTrack } from "shoukaku";
+import parseTitleStrings from "./parseTitleStrings";
+import "dotenv/config";
 import {
     BotdizTrack,
     BotdizShoukakuTrack,
@@ -9,11 +8,8 @@ import {
 } from "../modules/MusicPlayer/MusicControllerLavalink";
 import { spotifyApiManager } from "../modules/SpotifyApiHandler";
 
-//@ts-ignore
 import ytdl from "ytdl-core";
 import fetch from "node-fetch";
-
-dotenv.config();
 
 function isBotdizShoukakuTrack(track: QueueTrack): track is BotdizShoukakuTrack {
     return (track as BotdizShoukakuTrack).info.identifier !== undefined;

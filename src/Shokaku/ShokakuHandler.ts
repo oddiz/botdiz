@@ -1,5 +1,5 @@
-import { Shoukaku, Connectors, NodeOption } from "shoukaku";
-import servers from "./lavalink-server.json";
+import { Shoukaku, Connectors } from "shoukaku";
+import { servers } from "./lavalink-servers";
 import { options } from "./shokaku-options";
 import { Client } from "discord.js";
 import { logger } from "../logger";

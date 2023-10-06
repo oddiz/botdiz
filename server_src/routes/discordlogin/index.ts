@@ -4,13 +4,12 @@ import * as uuid from "uuid";
 import { client as DiscordClient } from "../../../src/main";
 import { Db } from "mongodb";
 import { Express } from "express";
+import "dotenv/config";
 
-import dotenv from "dotenv";
 import { logger } from "../../../src/logger";
 import { BotdizSession } from "../../types";
 import { makeImageUrl } from "../../scripts/makeImageUrl";
 import { DbGuildObject } from "server_src/db/databaseTypes";
-dotenv.config();
 
 export default async function playlists(app: Express, db: Db) {
     app.post("/discordlogin", async (req, res) => {
@@ -119,12 +118,13 @@ export default async function playlists(app: Express, db: Db) {
                 ...
                 */
 
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const passPermissions = [
                     0x8, //ADMINISTRATOR
                     0x10, //MANAGE_CHANNELS
                     0x20, //MANAGE_GUILD
                 ];
-                let allowedGuilds = [];
+                const allowedGuilds = [];
 
                 const botdizGuilds = await DiscordClient.guilds.cache;
 

@@ -1,15 +1,7 @@
-import dotenv from "dotenv";
-dotenv.config();
+/* eslint-disable no-magic-numbers */
+import "dotenv/config";
 
-import Discord, {
-    ActionRowBuilder,
-    ActivityFlags,
-    ActivityFlagsBitField,
-    ButtonBuilder,
-    ButtonStyle,
-    Events,
-    IntentsBitField,
-} from "discord.js";
+import Discord, { Guild, Events, IntentsBitField } from "discord.js";
 
 import { logger } from "./logger";
 export const client = new Discord.Client({
@@ -21,12 +13,12 @@ export const client = new Discord.Client({
     ],
 });
 
-import { DatabaseManager as dbManager } from "../server_src/db/DatabaseManager";
+import { DatabaseManager as DbManager } from "../server_src/db/DatabaseManager";
 import { ShoukakuHandler } from "./Shokaku/ShokakuHandler";
 import { updateEpicDeals } from "./scripts/updateEpicDeals";
 
-import { Guild } from "discord.js";
 import { Controller as BotdizController } from "./modules/Controller";
+import { GptHandler } from "./modules/gptHandler";
 
 export interface GuildController {
     guildId: string;
@@ -39,11 +31,12 @@ export const GuildControllers: GuildController[] = [];
 async function main(): Promise<void> {
     const shoukaku: ShoukakuHandler = new ShoukakuHandler(client);
 
-    const databaseManager = new dbManager();
+    const databaseManager = new DbManager();
     const db = await databaseManager.connect();
 
     if (!db) {
         logger.log("error", "Failed to connect to database");
+
         return;
     }
 
@@ -55,10 +48,8 @@ async function main(): Promise<void> {
                 if (client.user.username !== "botdiz testing [alpha]") {
                     client.user.setUsername("botdiz testing [alpha]");
                 }
-            } else {
-                if (client.user.username !== "botdiz") {
-                    client.user.setUsername("botdiz");
-                }
+            } else if (client.user.username !== "botdiz") {
+                client.user.setUsername("botdiz");
             }
         }
 
@@ -67,6 +58,7 @@ async function main(): Promise<void> {
         await client.guilds.fetch();
         for (const guild of client.guilds.cache) {
             const Controller = new BotdizController(db, client, guild[1], shoukaku);
+
             Controller.init();
 
             GuildControllers.push({
@@ -79,14 +71,14 @@ async function main(): Promise<void> {
 
         logger.log("info", "The bot is online!");
     });
-    client.on("debug", (m) => {
-        logger.log("debug", m);
+    client.on("debug", (msg) => {
+        logger.log("debug", msg);
     });
-    client.on("warn", (m) => {
-        logger.log("warn", m);
+    client.on("warn", (msg) => {
+        logger.log("warn", msg);
     });
-    client.on("error", (m) => {
-        logger.log("error", m);
+    client.on("error", (msg) => {
+        logger.log("error", msg);
     });
 
     client.on("messageCreate", (message) => {
@@ -98,6 +90,7 @@ async function main(): Promise<void> {
             const guildController = GuildControllers.find(({ guildId }) => guildId === messageGuildId)?.controller;
 
             if (guildController) {
+                new GptHandler().handleMessage(message);
                 guildController.handleMessage(message);
             } else {
                 logger.log("warn", `No controller found for guild: ${message.guild.name}.`);
@@ -109,6 +102,7 @@ async function main(): Promise<void> {
         if (interaction.guild) {
             const messageGuildId = interaction.guild.id;
             const guildController = GuildControllers.find(({ guildId }) => guildId === messageGuildId)?.controller;
+
             if (guildController) {
                 guildController.handleInteraction(interaction);
             } else {
@@ -124,6 +118,7 @@ async function main(): Promise<void> {
 
     client.on("guildCreate", async (guild) => {
         const Controller = new BotdizController(db, client, guild, shoukaku);
+
         await Controller.init();
 
         GuildControllers.push({
@@ -136,6 +131,7 @@ async function main(): Promise<void> {
 
     client.on("guildDelete", (guild) => {
         const deletedGuildId = guild.id;
+
         for (const [index, guildObj] of GuildControllers.entries()) {
             if (guildObj.guildId == deletedGuildId) {
                 guildObj.controller.destroy();
