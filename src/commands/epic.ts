@@ -4,13 +4,17 @@ import { EmbedBuilder } from "discord.js";
 export default async function (this: Command) {
     const self = this;
     try {
-        let epicGames = await self.controller.db
+        if (!self.controller.db) {
+            logger.log("warn", "Not connected to database so epic deals won't work.");
+            return;
+        }
+        const epicGames = await self.controller.db
             .collection("subscription_content")
             .findOne({ type: "epic_deals" })
             .then((res) => res?.current_content);
 
-        let activeDeals = [];
-        let futureDeals = [];
+        const activeDeals = [];
+        const futureDeals = [];
 
         for (const epicGame of epicGames) {
             if (epicGame.isActive) {
@@ -24,7 +28,7 @@ export default async function (this: Command) {
                 const hours = Math.floor((dateDiff / (1000 * 60 * 60)) % 24);
                 const days = Math.floor(dateDiff / (1000 * 60 * 60 * 24));
 
-                let embedMessage = new EmbedBuilder();
+                const embedMessage = new EmbedBuilder();
 
                 embedMessage
                     .setColor("#0FF28F")

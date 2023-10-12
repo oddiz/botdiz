@@ -28,10 +28,10 @@ export class Controller {
     public commands: Command[];
     public oddiz: User | null;
     public roleColor: ColorResolvable;
-    public db: Db;
+    public db: Db | null;
     public SubscriptionManager: SubscriptionManager;
 
-    constructor(db: Db, client: DiscordClient, guild: Guild, shoukaku: ShoukakuHandler) {
+    constructor(db: Db | null, client: DiscordClient, guild: Guild, shoukaku: ShoukakuHandler) {
         this.PREFIX = "/";
         this.debugMode = false;
         this.guild = guild;
@@ -66,31 +66,23 @@ export class Controller {
         }
 
         try {
-            //check if bot needs to deploy slash commands
-            this.guild.commands.fetch().then((commands) => {
-                if (commands.size !== this.commands.length) {
-                    logger.log("info", "Deploying slash commands");
-                    this.deploySlashCommands();
-                } else {
-                    //commands are up to date
+            if (this.db) {
+                let dbGuildObject = (await this.db
+                    .collection("guilds")
+                    .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
+                if (!dbGuildObject) {
+                    const everyoneRole = this.guild.roles.everyone.id;
+                    dbGuildObject = {
+                        guild_id: this.guild.id,
+                        guild_name: this.guild.name,
+                        owner_id: this.guild.ownerId,
+                        dj_roles: [everyoneRole],
+                    };
                 }
-            });
-
-            let dbGuildObject = (await this.db
-                .collection("guilds")
-                .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
-            if (!dbGuildObject) {
-                const everyoneRole = this.guild.roles.everyone.id;
-                dbGuildObject = {
-                    guild_id: this.guild.id,
-                    guild_name: this.guild.name,
-                    owner_id: this.guild.ownerId,
-                    dj_roles: [everyoneRole],
-                };
+                await this.updateGuildInfoOnDatabase();
+                await this.applyGuildSettings(dbGuildObject);
+                await this.SubscriptionManager.init(dbGuildObject);
             }
-            await this.updateGuildInfoOnDatabase();
-            await this.applyGuildSettings(dbGuildObject);
-            await this.SubscriptionManager.init(dbGuildObject);
         } catch (error) {
             console.log("Error while trying to init controller on database related things: ", error);
         }
@@ -134,6 +126,7 @@ export class Controller {
     };
 
     updateGuildInfoOnDatabase = async () => {
+        if (!this.db) return;
         await this.db.collection("guilds").updateOne(
             {
                 guild_id: this.guild.id,
@@ -161,6 +154,7 @@ export class Controller {
 
     saveGuildSettings = async () => {
         try {
+            if (!this.db) return;
             if (this.MusicController) {
                 const settings = {
                     recommendSongs: this.MusicController.recommendSongs,

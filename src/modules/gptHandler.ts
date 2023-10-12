@@ -2,7 +2,7 @@ import { Channel, ChannelType, Collection, Message, TextChannel } from "discord.
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/index.mjs";
 
-const GPT_ALLOWED_CHANNEL_IDS = ["1158274050200719421, 1159299261045948436"];
+const GPT_ALLOWED_CHANNEL_IDS = ["1158274050200719421", "1159299261045948436"];
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const systemMessage: ChatCompletionMessageParam = {
@@ -28,7 +28,7 @@ export class GptHandler {
             model: "gpt-3.5-turbo",
             messages: [systemMessage, ...processedMessages],
             max_tokens: 256,
-            top_p: 0.7,
+            temperature: 1,
             frequency_penalty: 0.5,
             presence_penalty: 0,
         });
@@ -36,9 +36,8 @@ export class GptHandler {
         return response.choices[0].message.content;
     }
     public async processMessages(messages: Message<true>[]) {
-        const preprocessedMessages = await unpackInteractions(messages);
         const processedMessages: ChatCompletionMessageParam[] = [];
-        for (const message of preprocessedMessages) {
+        for (const message of messages) {
             let processedMessage: ChatCompletionMessageParam;
             if (message.author.bot) {
                 processedMessage = {
@@ -59,10 +58,10 @@ export class GptHandler {
     public async getMessages(channel: TextChannel) {
         const tenMinutes = 600000;
 
-        const lastFiveMessages = (await channel.messages.fetch({ limit: 5 })) as Collection<string, Message<true>>;
+        const lastMessages = (await channel.messages.fetch({ limit: 20 })) as Collection<string, Message<true>>;
 
         // Filter out messages that are older than 10 minutes
-        const filteredMessages = Array.from(lastFiveMessages.values()).filter((message) => {
+        const filteredMessages = Array.from(lastMessages.values()).filter((message) => {
             const messageTimestamp = message.createdTimestamp,
                 currentTimestamp = Date.now();
 
@@ -80,12 +79,16 @@ export class GptHandler {
             return;
         }
         if (!guildId || !channel) {
+            console.log("No guild id or channel");
             return;
         }
         if (channel.type !== ChannelType.GuildText) {
+            console.log("Not a guild text channel");
             return;
         }
         if (!GPT_ALLOWED_CHANNEL_IDS.includes(channel.id)) {
+            console.log(channel.id);
+            console.log("Not a gpt allowed channel");
             return;
         }
         rateLimit(async () => {
@@ -96,20 +99,6 @@ export class GptHandler {
             }
         }, 5000)();
     }
-}
-
-async function unpackInteractions(messages: Message<true>[]) {
-    const unpackedMessages = [];
-    for (const message of messages) {
-        if (message.interaction) {
-            const interactionMessage = await message.channel.messages.fetch(message.interaction.id);
-            if (interactionMessage) {
-                unpackedMessages.push(interactionMessage);
-            }
-        }
-        unpackedMessages.push(message);
-    }
-    return unpackedMessages;
 }
 
 function rateLimit<T extends (...args: any[]) => void>(fn: T, delay: number): T {
@@ -126,7 +115,7 @@ function rateLimit<T extends (...args: any[]) => void>(fn: T, delay: number): T 
             timeout = setTimeout(() => {
                 fn.apply(this, args);
                 lastInvocation = now;
-            }, delay - (now - lastInvocation));
+            }, delay);
         }
     } as T;
 }

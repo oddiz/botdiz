@@ -1,6 +1,6 @@
-import { Guild } from 'discord.js';
-import { DbGuildObject, DbSubscriptionContent } from '../../server_src/db/databaseTypes';
-import { Db as MongoDb } from 'mongodb';
+import { Guild } from "discord.js";
+import { DbGuildObject, DbSubscriptionContent } from "../../server_src/db/databaseTypes";
+import { Db as MongoDb } from "mongodb";
 interface BotdizSubInfo extends DbSubscriptionContent {
     subscribed_channel: string;
     last_posted_content_hash: string;
@@ -12,7 +12,7 @@ export declare class SubscriptionManager {
     subscriptions: Map<string, BotdizSubInfo>;
     stopLoop: boolean;
     looping: boolean;
-    constructor(guild: Guild, db: MongoDb);
+    constructor(guild: Guild, db: MongoDb | null);
     init: (dbGuildObject: DbGuildObject) => Promise<void>;
     runLoop: () => Promise<void>;
     getGuildSubscriptions: (dbGuildObject?: DbGuildObject) => Promise<import("../../server_src/db/databaseTypes").DbGuildSubscriptions[] | undefined>;

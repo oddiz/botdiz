@@ -76,18 +76,12 @@ export default async function (
             if (!botVoiceChannel) {
                 logger.log("info", "Bot is not in a voice channel, joining now.");
 
-                const res = await musicController
-                    .setVoiceConnection(memberVoiceChannel)
-                    .catch((e) => logger.log("error", "Couldn't join voice channel in first try. Error: " + e));
+                const res = await musicController.setVoiceConnection(memberVoiceChannel).catch((e) => {
+                    logger.log("error", "Couldn't join voice channel in first try. Error: " + e);
+                    return "error";
+                });
 
-                if (!res) {
-                    //try again
-                    const retryres = await musicController.setVoiceConnection(memberVoiceChannel);
-                    if (!retryres) {
-                        self.reply("I could not join your voice channel.");
-                        throw "Could not join voice channel, memberVoiceChannel: " + JSON.stringify(memberVoiceChannel);
-                    }
-                }
+                console.log(res);
             } else {
                 //bot is in a voice channel
 
@@ -269,6 +263,10 @@ export default async function (
                 );
                 return;
             }
+        } else if (loadType === LoadType.SEARCH) {
+            const track = data[0];
+            musicController.addToQueue(track, optionsDefault.forceNext || false);
+            self.reply(`\`${track.info.title} added to queue 👍\``);
         } else if (loadType === LoadType.PLAYLIST) {
             for (const track of data.tracks) {
                 musicController.addToQueue(track, optionsDefault.forceNext || false);

@@ -173,7 +173,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             //get audioPlayer from lavalink if available
             const node = await this.shoukaku.getIdealNode();
             if (!node) return;
-            this.audioPlayer = await node.players.get(this.controller.guild.id);
             return true;
         } catch (error) {
             logger.log("error", "Error while initializing MusicController: ", error);
@@ -249,20 +248,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async setVoiceConnection(channel: VoiceBasedChannel): Promise<boolean> {
         try {
-            const node = this.shoukaku.getIdealNode();
-
-            if (!node) {
-                throw "No available nodes found";
-            }
-
-            if (this.controller.guild.members.me?.voice.channel) {
-                logger.log(
-                    "warn",
-                    "Trying to connect to a voice channel while already connected to a voice channel, it'll connect to new channel to avoid bugs"
-                );
-                await this.shoukaku.leaveVoiceChannel(this.controller.guild.id);
-            }
-
             await this.stop();
 
             if (this.audioPlayer) {
@@ -401,13 +386,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async disconnectFromVoiceChannel() {
         try {
-            const node = this.shoukaku.getIdealNode();
-
-            if (!node) {
-                console.error("No available nodes found, while disconnecting");
-                return;
-            }
-
             await this.shoukaku.leaveVoiceChannel(this.controller.guild.id);
             this.activeVoiceChannel = null;
         } catch (error) {
@@ -482,9 +460,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
 
     async processQueue() {
         this.queueLock = false;
-        if (this.queue.length > 0) {
-            this.stop();
-        }
+
         try {
             if (this.audioPlayerStatus !== "STOPPED") {
                 // If the queue is locked (already being processed), or the audio player is already playing something

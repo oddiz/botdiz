@@ -76,7 +76,7 @@ export class EmbedPlayer {
                 const streamMins = Math.floor((streamtime / (1000 * 60)) % 60);
                 const streamSecs = Math.floor((streamtime / 1000) % 60);
 
-                let videoLength = (this.currentSong.info.length || 0) / 1000; //seconds
+                const videoLength = (this.currentSong.info.length || 0) / 1000; //seconds
 
                 const videoHours = Math.floor((videoLength / (60 * 60)) % 60);
                 const videoMins = Math.floor((videoLength / 60) % 60);

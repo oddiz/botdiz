@@ -14,9 +14,9 @@ export declare class Controller {
     commands: Command[];
     oddiz: User | null;
     roleColor: ColorResolvable;
-    db: Db;
+    db: Db | null;
     SubscriptionManager: SubscriptionManager;
-    constructor(db: Db, client: DiscordClient, guild: Guild, shoukaku: ShoukakuHandler);
+    constructor(db: Db | null, client: DiscordClient, guild: Guild, shoukaku: ShoukakuHandler);
     init: () => Promise<void>;
     controllerMaintainer: () => Promise<never>;
     updateGuildInfoOnDatabase: () => Promise<void>;

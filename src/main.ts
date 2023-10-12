@@ -36,8 +36,6 @@ async function main(): Promise<void> {
 
     if (!db) {
         logger.log("error", "Failed to connect to database");
-
-        return;
     }
 
     client.on("ready", async () => {
@@ -53,8 +51,8 @@ async function main(): Promise<void> {
             }
         }
 
-        await updateEpicDeals(db);
-        setInterval(updateEpicDeals, 1000 * 60 * 30, db);
+        //await updateEpicDeals(db);
+        //setInterval(updateEpicDeals, 1000 * 60 * 30, db);
         await client.guilds.fetch();
         for (const guild of client.guilds.cache) {
             const Controller = new BotdizController(db, client, guild[1], shoukaku);

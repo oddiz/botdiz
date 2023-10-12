@@ -63,12 +63,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:Database": "wttab mongod",
-    "start:Lava": "wttab Lavalink.bat",
+    "start:Lava": "docker compose up ./lavalink",
     "start:Server": "ts-node ./server_src/server.ts",
     "dev": "npm-run-all start:*",
-    "start": "tsc && node ./build/server_src/server.js",
+    "start": "tsc && node --trace-warnings ./build/server_src/server.js",
     "forever": "tsc &&  forever start ./build/server_src/server.js"
   },
   "author": "oddiz",
   "license": "MIT"
 }
+

@@ -16,3 +16,4 @@ log
 src/Shokaku/lavalink-server.json
 
 *.log
+lavalink/lavalink_settings.yml
