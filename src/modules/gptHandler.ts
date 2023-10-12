@@ -1,7 +1,7 @@
-import { Channel, ChannelType, Collection, Message, TextChannel } from "discord.js";
+import { ChannelType, Collection, Message, TextChannel } from "discord.js";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/index.mjs";
-
+import { logger } from "../logger";
 const GPT_ALLOWED_CHANNEL_IDS = ["1158274050200719421", "1159299261045948436"];
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -23,7 +23,6 @@ const systemMessage: ChatCompletionMessageParam = {
 export class GptHandler {
     public async generateReply(messages: Message<true>[]) {
         const processedMessages = await this.processMessages(messages);
-        console.log([systemMessage, ...processedMessages]);
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: [systemMessage, ...processedMessages],
@@ -79,16 +78,16 @@ export class GptHandler {
             return;
         }
         if (!guildId || !channel) {
-            console.log("No guild id or channel");
+            logger.log("warn", "No guild id or channel");
             return;
         }
         if (channel.type !== ChannelType.GuildText) {
-            console.log("Not a guild text channel");
+            logger.log("warn", "Not a guild text channel");
             return;
         }
         if (!GPT_ALLOWED_CHANNEL_IDS.includes(channel.id)) {
-            console.log(channel.id);
-            console.log("Not a gpt allowed channel");
+            logger.log("warn", channel.id);
+            logger.log("warn", "Not a gpt allowed channel");
             return;
         }
         rateLimit(async () => {
