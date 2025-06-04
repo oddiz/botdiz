@@ -31,12 +31,13 @@ class CacheManager {
     setupChannelUpdateListener() {
         const channelEvents = ["channelCreate", "channelDelete", "channelUpdate"];
 
+        client.on("voiceStateUpdate", (oldState) => {
+            this.needsChannelsUpdate.add(oldState.guild.id);
+        });
+
         for (const event of channelEvents) {
-            client.on("voiceStateUpdate", (oldState) => {
-                this.needsChannelsUpdate.add(oldState.guild.id);
-            });
             client.on(event, async (channel) => {
-                if (channel.type === "GUILD_TEXT" || channel.type === "GUILD_VOICE") {
+                if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildVoice) {
                     this.needsChannelsUpdate.add(channel.guild.id);
                     this.debug ? logger.log("info", `Channels of ${channel.guild.name} needs to be updated`) : null;
                 }
