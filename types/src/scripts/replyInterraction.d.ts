@@ -6,4 +6,4 @@ export interface BotdizInteractionReplyOptions {
     ephemeral?: boolean;
     editReply?: boolean;
 }
-export default function (invokedMessage: CommandInteraction, content: string | MessagePayload | InteractionReplyOptions, options?: BotdizInteractionReplyOptions): Promise<Message<boolean> | import("discord.js").InteractionResponse<boolean> | undefined>;
+export default function (invokedMessage: CommandInteraction, content: string | MessagePayload | InteractionReplyOptions, options?: BotdizInteractionReplyOptions): Promise<Message<boolean> | import("discord.js").InteractionResponse<boolean>>;

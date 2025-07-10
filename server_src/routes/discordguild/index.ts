@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+
 import { client as DiscordClient } from "../../../src/main";
 import { makeImageUrl } from "../../scripts/makeImageUrl";
 import "dotenv/config";

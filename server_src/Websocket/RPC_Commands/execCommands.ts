@@ -292,6 +292,9 @@ function execCommands(): {
                 guildController.MusicController.queueLock = true;
 
                 for (const item of playlistArray) {
+                    if (!item.track || !item.track.artists || item.track.artists.length === 0) {
+                        continue;
+                    }
                     const videoName = item.track.name;
                     const videoArtist = item.track.artists[0].name;
                     const videoTitle = videoArtist + ' - ' + videoName;

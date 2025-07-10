@@ -9,7 +9,6 @@ import {
 import { spotifyApiManager } from "../modules/SpotifyApiHandler";
 
 import ytdl from "ytdl-core";
-import fetch from "node-fetch";
 
 function isBotdizShoukakuTrack(track: QueueTrack): track is BotdizShoukakuTrack {
     return (track as BotdizShoukakuTrack).info.identifier !== undefined;
@@ -149,10 +148,11 @@ async function lastFmRecommend(trackName: string, artist: string) {
         artist
     )}&track=${encodeURIComponent(trackName)}&autocorrect=1&api_key=${livefmApiKey}&format=json`;
 
+    const { default: fetch } = await import("node-fetch");
     const result = await fetch(livefmRecommendedUrl).then((res) => res.json());
 
     try {
-        const songs: LastFMSong[] = result.similartracks.track;
+        const songs: LastFMSong[] = (result as any).similartracks.track;
 
         return songs;
     } catch (error) {

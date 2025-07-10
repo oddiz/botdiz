@@ -69,8 +69,8 @@ dependencies:
     specifier: ^1.5.0
     version: 1.5.0
   shoukaku:
-    specifier: github:Deivu/Shoukaku
-    version: github.com/Deivu/Shoukaku/89f335b0871e466ec3d51bcd72988c674fd0c802
+    specifier: ^4.0.1
+    version: 4.0.1
   spotify-uri:
     specifier: ^2.2.0
     version: 2.2.2
@@ -4420,6 +4420,16 @@ packages:
     resolution: {integrity: sha512-6j1W9l1iAs/4xYBI1SYOVZyFcCis9b4KCLQ8fgAGG07QvzaRLVVRQvAy85yNmmZSjYjg4MWh4gNvlPujU/5LpA==}
     dev: true
 
+  /shoukaku@4.0.1:
+    resolution: {integrity: sha512-+Y94AnUFabCkE8O2Y3MSfnVmiiQ1MMVK/DO962Q23KPTWJkuqs+S/CPRQSOPWqo+ISq7teVxGJsSapwnJOrFgQ==}
+    engines: {node: '>=18.0.0', npm: '>=7.0.0'}
+    dependencies:
+      ws: 8.14.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
   /side-channel@1.0.4:
     resolution: {integrity: sha512-q5XPytqFEIKHkGdiMIrY10mvLRvnQh42/+GoBlFW3b2LXLE2xxJpZFdm94we0BaoV3RwJyGqg5wS7epxTv0Zvw==}
     dependencies:
@@ -5125,17 +5135,4 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       miniget: 4.2.3
-    dev: false
-
-  github.com/Deivu/Shoukaku/89f335b0871e466ec3d51bcd72988c674fd0c802:
-    resolution: {tarball: https://codeload.github.com/Deivu/Shoukaku/tar.gz/89f335b0871e466ec3d51bcd72988c674fd0c802}
-    name: shoukaku
-    version: 4.0.0-dev
-    engines: {node: '>=18.0.0', npm: '>=7.0.0'}
-    requiresBuild: true
-    dependencies:
-      ws: 8.14.2
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
     dev: false

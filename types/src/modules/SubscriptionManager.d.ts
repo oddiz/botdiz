@@ -15,7 +15,7 @@ export declare class SubscriptionManager {
     constructor(guild: Guild, db: MongoDb | null);
     init: (dbGuildObject: DbGuildObject) => Promise<void>;
     runLoop: () => Promise<void>;
-    getGuildSubscriptions: (dbGuildObject?: DbGuildObject) => Promise<import("../../server_src/db/databaseTypes").DbGuildSubscriptions[] | undefined>;
+    getGuildSubscriptions: (dbGuildObject?: DbGuildObject) => Promise<any>;
     sendEpicDeals: (channelId: string) => Promise<void>;
 }
 export {};

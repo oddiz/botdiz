@@ -2,7 +2,6 @@ import { Command } from "../modules/Command";
 import { ChatInputCommandInteraction } from "discord.js";
 import "dotenv/config";
 
-import fetch from "node-fetch";
 import { logger } from "../logger";
 import searchYT from "../scripts/searchYT";
 
@@ -28,7 +27,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
         if (searchMode) {
             const query = input;
 
-            searchYT(query, 1, (result) => {
+            searchYT(query, 1, async (result) => {
                 if (result) {
                     const videoId = result.videoId;
                     const ytUrlTemplate = "https://www.youtube.com/watch?v=";
@@ -36,6 +35,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
 
                     self.reply("Video found: " + videoUrl);
 
+                    const { default: fetch } = await import("node-fetch");
                     fetch("https://w2g.tv/rooms/create.json", {
                         method: "POST",
                         headers: {
@@ -50,7 +50,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
                         }),
                     })
                         .then((response) => response.json())
-                        .then(function (data) {
+                        .then(function (data: any) {
                             const w2gRoom = "https://w2g.tv/rooms/" + data.streamkey;
                             self.reply("**Room is ready:**\n" + w2gRoom, { followup: true });
                         });
@@ -59,6 +59,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
                 }
             });
         } else {
+            const { default: fetch } = await import("node-fetch");
             fetch("https://w2g.tv/rooms/create.json", {
                 method: "POST",
                 headers: {
@@ -73,7 +74,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
                 }),
             })
                 .then((response) => response.json())
-                .then(function (data) {
+                .then(function (data: any) {
                     const w2gRoom = "https://w2g.tv/rooms/" + data.streamkey;
                     self.reply("**Room is ready:**\n" + w2gRoom);
                 });

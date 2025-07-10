@@ -30,8 +30,8 @@ export declare class Command {
     lastIsInteraction: boolean | null;
     constructor(controller: BotdizController, config: BotdizCommandConfig, func: any);
     execute(invokedMessage: CommandInteraction | null, isInteraction: boolean, options?: PlayCommandOptions | null): Promise<void>;
-    createNewMessage(content: string | MessagePayload | MessageCreateOptions | InteractionReplyOptions): Promise<Message<boolean> | null | undefined>;
-    reply(content: string | MessagePayload | InteractionReplyOptions, options?: replyOptions): Promise<Message<boolean> | import("discord.js").InteractionResponse<boolean> | null | undefined>;
+    createNewMessage(content: string | MessagePayload | MessageCreateOptions | InteractionReplyOptions): Promise<Message<boolean> | CommandInteraction<import("discord.js").CacheType>>;
+    reply(content: string | MessagePayload | InteractionReplyOptions, options?: replyOptions): Promise<Message<boolean> | CommandInteraction<import("discord.js").CacheType> | import("discord.js").InteractionResponse<boolean>>;
     convertSlashCommand(): ApplicationCommandData;
     wrongUsage(invokedMessage: CommandInteraction, commandName: string, errText?: string): void;
 }

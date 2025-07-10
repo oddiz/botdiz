@@ -1,7 +1,7 @@
 import uuid from "uuid";
 import argon2 from "argon2";
 import crypto from "crypto";
-import fetch from "node-fetch";
+
 import { Express } from "express";
 import { Db } from "mongodb";
 import { logger } from "../../../src/logger";

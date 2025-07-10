@@ -1,7 +1,6 @@
 import { TextBasedChannel, VoiceBasedChannel, CommandInteraction } from "discord.js";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { EmbedPlayer } from "./EmbedPlayer";
-import { SkipHandler, SkipVoteData } from "./SkipHandler";
+import { SkipVoteData } from "./SkipHandler";
 import { Controller as BotdizGuildController } from "../../modules/Controller";
 import { ShoukakuHandler } from "../../Shokaku/ShokakuHandler";
 import { PlayerUpdate, Player, Track } from "shoukaku";
@@ -66,16 +65,16 @@ export interface MusicControllerEvents {
     playerStatusUpdate: (data: PlayerStatusUpdateEvent) => void;
 }
 export declare class MusicController extends TypedEmitter<MusicControllerEvents> {
-    controller: BotdizGuildController;
-    guild: import("discord.js").Guild;
+    controller: any;
+    guild: any;
     private volume;
     private playCommand;
     UPDATE_INTERVAL: number;
-    EmbedPlayer: EmbedPlayer;
-    SkipHandler: SkipHandler;
+    EmbedPlayer: any;
+    SkipHandler: any;
     skipVotingEnabled: boolean;
     skipVotingPassPercentage: number;
-    shoukaku: ShoukakuHandler;
+    shoukaku: any;
     audioPlayer: Player | undefined;
     recommendSongs: boolean;
     songHistory: string[];
@@ -89,7 +88,7 @@ export declare class MusicController extends TypedEmitter<MusicControllerEvents>
     audioPlayerStatus: AudioPlayerStatus;
     repeat: "ONE" | "ALL" | "NONE";
     constructor(controller: BotdizGuildController, shoukaku: ShoukakuHandler);
-    init(): Promise<boolean | undefined>;
+    init(): Promise<boolean>;
     triggerUpdate(updateType?: "queueUpdate" | "currentSongUpdate" | "playerStatusUpdate" | "skipVoteUpdate"): void;
     applySettings(settings: DbGuildSettings): void;
     getAudioPlayerStatusEvent(): PlayerStatusUpdateEvent;
@@ -97,22 +96,22 @@ export declare class MusicController extends TypedEmitter<MusicControllerEvents>
     setVoiceConnection(channel: VoiceBasedChannel): Promise<boolean>;
     disconnectFromVoiceChannel(): Promise<void>;
     addToQueue(song: QueueTrack | QueueTrack[], forceNext?: boolean): void;
-    setYoutubeCookies(): Promise<string | null | undefined>;
-    findRecommended(song: BotdizTrack): import("winston").Logger | undefined;
+    setYoutubeCookies(): Promise<string>;
+    findRecommended(song: BotdizTrack): import("winston").Logger;
     removeRecommended(): void;
     processQueue(): Promise<"success" | "failed">;
     getQueueEvent(): QueueUpdateEvent;
-    getCurrentSong(): BotdizShoukakuTrack | null;
+    getCurrentSong(): BotdizShoukakuTrack;
     getCurrentSongUpdateEvent(): CurrentSongUpdateEvent;
     changeCurrentSong(song: BotdizShoukakuTrack | null): void;
     updateQueue(queue: QueueTrack[]): "success" | "failed";
     clearQueue(): void;
     deleteQueueItem(index: number): boolean;
-    playNext(): Promise<false | "success" | undefined>;
+    playNext(): Promise<false | "success">;
     processNextSong(): Promise<BotdizShoukakuTrack | null>;
-    createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null): Promise<true | undefined>;
+    createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null): Promise<boolean>;
     seekTo(timeInMs: number): Promise<"success" | "failed">;
-    skip(skipAmount: number): Promise<false | "success" | undefined>;
+    skip(skipAmount: number): Promise<false | "success">;
     shuffleQueue(): Promise<boolean>;
     stop(): Promise<void>;
     pause(): void;

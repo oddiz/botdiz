@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+
 import crypto from "crypto";
 import * as uuid from "uuid";
 import { client as DiscordClient } from "../../../src/main";

@@ -12,6 +12,11 @@ import execCommands from "./RPC_Commands/execCommands";
 import getCommands from "./RPC_Commands/getCommands";
 import { webSocketRateLimiter } from "../RateLimiter";
 
+// Extended Request type to include session
+interface SessionRequest extends Request {
+    session: BotdizSession;
+}
+
 interface BotdizWebsocketClient {
     websocket: WebSocket;
     clientListener: ClientListenerManager;
@@ -73,13 +78,14 @@ export default class WebsocketManager {
             this.WebsocketServer.handleUpgrade(request, socket, head, (ws) => {
                 //check for token, if valid allow connection
 
-                this.sessionParser(req, {} as Response, async () => {
+                (this.sessionParser as any)(req, {} as Response, async () => {
                     if (!this.WebsocketServer) {
                         console.log("error", "No websocket server.");
                         return;
                     }
-                    if (!req.session) return;
-                    const sessionData = req.session as BotdizSession;
+                    const sessionReq = req as SessionRequest;
+                    if (!sessionReq.session) return;
+                    const sessionData = sessionReq.session;
                     token = sessionData.token;
 
                     if (token) {
@@ -99,8 +105,9 @@ export default class WebsocketManager {
         this.WebsocketServer.on("connection", async (ws: WebSocket, request) => {
             const self = this;
             const req = request as Request;
-            this.sessionParser(req, {} as Response, async () => {
-                const session = req.session as BotdizSession;
+            (this.sessionParser as any)(req, {} as Response, async () => {
+                const sessionReq = req as SessionRequest;
+                const session = sessionReq.session;
                 const userId = session?.userId;
 
                 if (!userId) return;

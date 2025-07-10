@@ -1,8 +1,8 @@
 import { Command } from "../modules/Command";
-import { CommandInteraction, GuildMember, Interaction, PermissionFlagsBits, TextChannel } from "discord.js";
+import { CommandInteraction, GuildMember, Interaction, PermissionFlagsBits, TextChannel, ChatInputCommandInteraction } from "discord.js";
 import { logger } from "../logger";
 
-export default async function (this: Command, invokedMessage?: CommandInteraction | null) {
+export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null) {
     const self = this;
 
     try {
@@ -11,7 +11,7 @@ export default async function (this: Command, invokedMessage?: CommandInteractio
         const guildMember = invokedMessage.member;
 
         if (guildMember instanceof GuildMember) {
-            const deleteAmount = invokedMessage.options.get("amount") as unknown as number;
+            const deleteAmount = invokedMessage.options.getInteger("amount");
             if (!deleteAmount) {
                 return;
             }

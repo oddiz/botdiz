@@ -20,8 +20,8 @@ export default async function (
 ): Promise<void> {
     const self = this;
     const optionsDefault = {
-        query: null || options?.query,
-        forceNext: false || options?.forceNext,
+        query: options?.query || null,
+        forceNext: options?.forceNext || false,
     };
     try {
         const controller = self.controller as Controller;
@@ -200,6 +200,9 @@ export default async function (
                             const playlistData = playlistReply.body;
 
                             for (const item of playlistData.items) {
+                                if (!item.track || !item.track.artists || item.track.artists.length === 0) {
+                                    continue;
+                                }
                                 const videoName = item.track.name;
                                 const videoArtist = item.track.artists[0].name;
                                 const videoTitle = videoArtist + " - " + videoName;

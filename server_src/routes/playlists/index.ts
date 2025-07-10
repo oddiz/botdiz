@@ -1,5 +1,5 @@
 import spotifyWebApi from "spotify-web-api-node";
-import fetch from "node-fetch";
+
 import { Db } from "mongodb";
 import { Express } from "express";
 import "dotenv/config";

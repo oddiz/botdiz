@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { logger } from "../../logger";
 import {
     TextBasedChannel,
@@ -171,8 +170,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     async init() {
         try {
             //get audioPlayer from lavalink if available
-            const node = await this.shoukaku.getIdealNode();
-            if (!node) return;
+
             return true;
         } catch (error) {
             logger.log("error", "Error while initializing MusicController: ", error);
@@ -180,7 +178,9 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
         }
     }
 
-    triggerUpdate(updateType?: "queueUpdate" | "currentSongUpdate" | "playerStatusUpdate" | "skipVoteUpdate") {
+    triggerUpdate(
+        updateType?: "queueUpdate" | "currentSongUpdate" | "playerStatusUpdate" | "skipVoteUpdate"
+    ) {
         switch (updateType) {
             case "queueUpdate":
                 this.emit("queueUpdate", this.getQueueEvent());
@@ -218,7 +218,8 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 }
                 if ("skipVotingPassPercentage" in settings) {
                     const passPercentage =
-                        settings.skipVotingPassPercentage || defaultSettings.skipVotingPassPercentage;
+                        settings.skipVotingPassPercentage ||
+                        defaultSettings.skipVotingPassPercentage;
                     const result = this.SkipHandler.setPassPercentage(passPercentage);
                     if (result) {
                         this.skipVotingPassPercentage = passPercentage;
@@ -421,6 +422,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
     async setYoutubeCookies() {
         try {
             //get cookie for reccomendations
+            const { default: fetch } = await import("node-fetch");
             const cookies = await fetch("https://www.youtube.com").then((res) => {
                 return res.headers.get("set-cookie");
             });
@@ -580,7 +582,7 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 this.changeCurrentSong(nextSong);
 
                 await this.audioPlayer.playTrack({
-                    track: nextSong.encoded,
+                    track: { encoded: nextSong.encoded },
                     options: {
                         noReplace: false,
                     },
@@ -611,9 +613,10 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
             const oembed = "https://www.youtube.com/oembed?url=";
             const oEmbedUrl = oembed + song.info.uri;
 
+            const { default: fetch } = await import("node-fetch");
             const videoThumbnailUrl = await fetch(oEmbedUrl)
                 .then((res) => res.json())
-                .then((parsedRes) => parsedRes.thumbnail_url)
+                .then((parsedRes: any) => parsedRes.thumbnail_url)
                 .catch((err) => {
                     console.log("Error while fetching oEmbed. error: ", err);
                     return song;
@@ -697,7 +700,10 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
         }
     }
 
-    async createSongEmbed(currentSong: BotdizShoukakuTrack, invokedMessage?: CommandInteraction | null) {
+    async createSongEmbed(
+        currentSong: BotdizShoukakuTrack,
+        invokedMessage?: CommandInteraction | null
+    ) {
         try {
             const botdizLinkButton = new ActionRowBuilder();
             const botdizLink =
@@ -705,7 +711,10 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     ? "http://localhost:3000/app"
                     : "https://botdiz.kaansarkaya.com/app";
             botdizLinkButton.addComponents(
-                new ButtonBuilder().setLabel("Botdiz Interface").setStyle(ButtonStyle.Link).setURL(botdizLink)
+                new ButtonBuilder()
+                    .setLabel("Botdiz Interface")
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(botdizLink)
             );
             let embedMessage = new EmbedBuilder();
 

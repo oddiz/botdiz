@@ -1,14 +1,14 @@
-import LRU from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 
 type UserId = string;
 type LastRequestTime = number;
 
 class RateLimiter {
-    clients: LRU<UserId, LastRequestTime>;
+    clients: LRUCache<UserId, LastRequestTime>;
 
     RATE_LIMIT_IN_MILLISECOND = 500;
     constructor() {
-        this.clients = new LRU({ max: 100 });
+        this.clients = new LRUCache({ max: 100 });
     }
 
     isUserAllowed(userId: UserId) {

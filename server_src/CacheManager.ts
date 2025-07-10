@@ -1,5 +1,5 @@
 import { ChannelType, Collection, GuildMember, NonThreadGuildBasedChannel } from "discord.js";
-import LRU from "lru-cache";
+import { LRUCache } from "lru-cache";
 import { client, GuildControllers } from "../src/main";
 import { logger } from "../src/logger";
 
@@ -13,14 +13,14 @@ type BotdizVoiceChannel = {
     members: Collection<string, GuildMember>;
 };
 class CacheManager {
-    private voiceChannelsCache: LRU<string, BotdizVoiceChannel[]>;
-    private textChannelsCache: LRU<string, Collection<string, NonThreadGuildBasedChannel | null>>;
+    private voiceChannelsCache: LRUCache<string, BotdizVoiceChannel[]>;
+    private textChannelsCache: LRUCache<string, Collection<string, NonThreadGuildBasedChannel | null>>;
     private needsChannelsUpdate: Set<string>;
     private debug = true;
 
     constructor() {
-        this.voiceChannelsCache = new LRU(LRUOptions);
-        this.textChannelsCache = new LRU(LRUOptions);
+        this.voiceChannelsCache = new LRUCache(LRUOptions);
+        this.textChannelsCache = new LRUCache(LRUOptions);
 
         this.needsChannelsUpdate = new Set();
 

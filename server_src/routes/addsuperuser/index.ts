@@ -34,7 +34,6 @@ export default async function addsuperuser(app: Express, db: Db) {
                     memoryCost: 2 ** 16,
                     timeCost: 30,
                     parallelism: 2,
-                    saltLength: 128,
                     hashLength: 128,
                 });
 

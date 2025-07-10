@@ -23,9 +23,13 @@ export class ShoukakuHandler extends Shoukaku {
         this.on("close", (name, code, reason) => {
             this.connected = false;
 
-            logger.log("lavalink", `Lavalink Node: ${name} closed with code ${code}`, reason || "No reason");
+            logger.log(
+                "lavalink",
+                `Lavalink Node: ${name} closed with code ${code}`,
+                reason || "No reason"
+            );
         });
-        this.on("disconnect", (name, players, moved) => {
+        this.on("disconnect", (name, moved) => {
             this.connected = false;
 
             logger.log(

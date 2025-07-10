@@ -5,7 +5,7 @@ export declare class DatabaseManager {
     private client;
     private dbUrl;
     constructor();
-    connect(): Promise<Db | null>;
-    getDb(): Db | undefined;
+    connect(): Promise<Db>;
+    getDb(): Db;
 }
 export declare const dbManager: DatabaseManager;

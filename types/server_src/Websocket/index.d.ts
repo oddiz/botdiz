@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import WebSocket from "ws";
 import { ClientListenerManager } from "./ClientListenerManager";
 import { Server } from "http";
