@@ -1,11 +1,11 @@
 import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 
-import { logger } from "../logger";
 import { Command } from "../modules/Command";
+import { createLogger } from "@logger";
+const logger = createLogger("helpCommand");
 
 export default function (this: Command, invokedMessage?: ChatInputCommandInteraction | null): void {
     const self = this;
-
     try {
         if (!invokedMessage) {
             throw new Error("No invoked message");
@@ -52,13 +52,16 @@ export default function (this: Command, invokedMessage?: ChatInputCommandInterac
                 { name: "\u200B", value: PREFIX + command.name },
                 {
                     name: "\u200B",
-                    value: "```" + `Description:\n${command.description}\n\nUsage:\n${command.usage}` + "```",
+                    value:
+                        "```" +
+                        `Description:\n${command.description}\n\nUsage:\n${command.usage}` +
+                        "```",
                 }
             );
         }
 
         self.reply({ embeds: [embedMessage] });
     } catch (error) {
-        logger.log("error", "Error while executing help command : ", error);
+        logger.error("Error while executing help command : ", error);
     }
 }

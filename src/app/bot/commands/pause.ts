@@ -1,6 +1,5 @@
+import { createLogger } from "@logger";
 import { Command } from "../modules/Command";
-import { createLogger } from "../shared/logging/Logger";
-import { MusicPlayerError } from "../shared/errors/BotdizError";
 
 const logger = createLogger('PauseCommand');
 
@@ -36,10 +35,6 @@ export default async function (this: Command) {
     } catch (error) {
         logger.error('Error while executing pause command', error as Error);
         
-        if (error instanceof MusicPlayerError) {
-            self.reply(`❌ ${error.message}`);
-        } else {
-            self.reply("❌ Failed to pause playback.");
-        }
+        self.reply("❌ Failed to pause playback.");
     }
 }

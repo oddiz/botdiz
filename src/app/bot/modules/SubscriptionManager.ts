@@ -1,8 +1,9 @@
+import { createLogger } from "@logger";
 import { BaseGuildTextChannel, Guild, EmbedBuilder } from "discord.js";
-import { DbGuildObject, DbSubscriptionContent } from "../../server_src/db/databaseTypes";
 import { Db as MongoDb, WithId, Document } from "mongodb";
-import { logger } from "../logger";
+import type { DbGuildObject, DbSubscriptionContent } from "shared/types/databaseTypes";
 
+const logger = createLogger("SubscriptionManager");
 interface BotdizSubInfo extends DbSubscriptionContent {
     subscribed_channel: string;
     last_posted_content_hash: string;
@@ -60,50 +61,54 @@ export class SubscriptionManager {
 
                 if (epicSubObject) {
                     if (
-                        epicSubObject.last_posted_content_hash !== epicSubObject.current_content_hash ||
+                        epicSubObject.last_posted_content_hash !==
+                            epicSubObject.current_content_hash ||
                         epicSubObject.subscribed_channel !== epicSubObject.last_posted_channel
                     ) {
                         //post new epic message
-                        await this.sendEpicDeals(epicSubObject.subscribed_channel).catch((error) => {
-                            if (error === "Channel not found") {
-                                if (dbGuildSubs) {
-                                    //deactivate subscription
-                                    for (const sub of dbGuildSubs) {
-                                        if (sub.type === "epic_deals") {
-                                            sub.active = false;
+                        await this.sendEpicDeals(epicSubObject.subscribed_channel).catch(
+                            (error) => {
+                                if (error === "Channel not found") {
+                                    if (dbGuildSubs) {
+                                        //deactivate subscription
+                                        for (const sub of dbGuildSubs) {
+                                            if (sub.type === "epic_deals") {
+                                                sub.active = false;
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            if (this.db !== null) {
-                                //update db
-                                this.db.collection("guilds").updateOne(
-                                    {
-                                        guild_id: this.guild.id,
-                                    },
-                                    {
-                                        $set: {
-                                            subscriptions: dbGuildSubs,
+                                if (this.db !== null) {
+                                    //update db
+                                    this.db.collection("guilds").updateOne(
+                                        {
+                                            guild_id: this.guild.id,
                                         },
-                                    },
-                                    {
-                                        upsert: true,
-                                    }
-                                );
-                            } else {
-                                logger.log("error", "Database not connected");
-                            }
+                                        {
+                                            $set: {
+                                                subscriptions: dbGuildSubs,
+                                            },
+                                        },
+                                        {
+                                            upsert: true,
+                                        }
+                                    );
+                                } else {
+                                    logger.error("Database not connected");
+                                }
 
-                            return;
-                        });
+                                return;
+                            }
+                        );
 
                         try {
                             if (dbGuildSubs) {
                                 for (const sub of dbGuildSubs) {
                                     if (sub.type === "epic_deals") {
                                         sub.last_posted_channel = epicSubObject.subscribed_channel;
-                                        sub.last_posted_content_hash = epicSubObject.current_content_hash;
+                                        sub.last_posted_content_hash =
+                                            epicSubObject.current_content_hash;
                                     }
                                 }
                             } else {
@@ -125,7 +130,7 @@ export class SubscriptionManager {
                                     }
                                 );
                             } else {
-                                logger.log("error", "Database not connected");
+                                logger.error("Database not connected");
                             }
                             //update db
                         } catch (error) {
@@ -160,7 +165,7 @@ export class SubscriptionManager {
                     const guildDoc = await this.db
                         .collection("guilds")
                         .findOne({ guild_id: this.guild.id });
-                    dbGuild = guildDoc ? guildDoc as WithId<Document> & DbGuildObject : null;
+                    dbGuild = guildDoc ? (guildDoc as WithId<Document> & DbGuildObject) : null;
                 }
             }
 
@@ -189,11 +194,14 @@ export class SubscriptionManager {
                             last_posted_content_hash: sub.last_posted_content_hash,
                             last_posted_channel: sub.last_posted_channel,
                         };
-                        const subContentDoc = await this.db.collection("subscription_content").findOne({
-                            type: sub.type,
-                        });
-                        const dbSubContent: DbSubscriptionContent | null = subContentDoc ? 
-                            subContentDoc as WithId<Document> & DbSubscriptionContent : null;
+                        const subContentDoc = await this.db
+                            .collection("subscription_content")
+                            .findOne({
+                                type: sub.type,
+                            });
+                        const dbSubContent: DbSubscriptionContent | null = subContentDoc
+                            ? (subContentDoc as WithId<Document> & DbSubscriptionContent)
+                            : null;
 
                         if (dbSubContent) {
                             const botdizSubInfo: BotdizSubInfo = {
@@ -278,8 +286,7 @@ export class SubscriptionManager {
 
                     activeDeals.push(embedMessage);
                 } else {
-                    logger.log(
-                        "error",
+                    logger.error(
                         "Epic game is active but no end time found, this is an anomaly and should be looked at. Epic Game object: " +
                             JSON.stringify(epicGame)
                     );
@@ -311,8 +318,7 @@ export class SubscriptionManager {
 
                     futureDeals.push(embedMessage);
                 } else {
-                    logger.log(
-                        "error",
+                    logger.error(
                         "Epic game is not active but no activate time found, this is an anomaly and should be looked at. Epic Game object: " +
                             JSON.stringify(epicGame)
                     );

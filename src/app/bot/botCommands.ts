@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionData, ApplicationCommandOptionType } from "discord.js";
 import { Command } from "./modules/Command";
-import { GuildController as BotdizGuildContoller } from "@core/GuildController";
+import { GuildController as BotdizGuildContoller } from "core/GuildController";
 import helpCommand from "./commands/help";
 import gptCommand from "./commands/gpt";
 import recommendSongsCommand from "./commands/recommendSongs";
@@ -72,7 +72,8 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             Controller,
             {
                 name: "w2g",
-                description: "Creates a watch2gether room. You can watch videos with your friends in sync.",
+                description:
+                    "Creates a watch2gether room. You can watch videos with your friends in sync.",
                 needArgs: true,
                 usage: "/w2g https://www.youtube.com/watch?v=<video id>\n\n/w2g funny memes",
                 options: [
@@ -130,7 +131,8 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             Controller,
             {
                 name: "clear",
-                description: "Deletes messages in the channel which are less than 14 days old. Administrators only.",
+                description:
+                    "Deletes messages in the channel which are less than 14 days old. Administrators only.",
                 needArgs: true,
                 usage: "/clear <amount of message to delete (Max 100)>",
                 ephemeral: true,
@@ -138,7 +140,8 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
                     {
                         type: ApplicationCommandOptionType.Integer,
                         name: "amount",
-                        description: "Clears specified amount of messages. Must have manage permissions.",
+                        description:
+                            "Clears specified amount of messages. Must have manage permissions.",
                         required: true,
                     },
                 ],
@@ -212,7 +215,8 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             Controller,
             {
                 name: "votetoskip",
-                description: "Enables / disables voting to skip songs. Only administrator can change this setting.",
+                description:
+                    "Enables / disables voting to skip songs. Only administrator can change this setting.",
                 needArgs: false,
                 usage: "/votetoskip",
             },
@@ -255,7 +259,8 @@ export const botCommands = function (Controller: BotdizGuildContoller) {
             Controller,
             {
                 name: "recommend",
-                description: "Toggles recommend feature. Bot will recommend new songs when queue is finished.",
+                description:
+                    "Toggles recommend feature. Bot will recommend new songs when queue is finished.",
                 needArgs: false,
                 usage: "/recommend",
             },

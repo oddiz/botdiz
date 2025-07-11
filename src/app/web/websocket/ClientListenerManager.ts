@@ -1,13 +1,8 @@
-import { Client, Message, Guild, VoiceState } from 'discord.js';
-import { client as DiscordClient, GuildControllers } from '../../src/main';
-import { RPC_listenTextChannel, RPC_listenVoiceChannels } from './RPC_Commands/listenerCommands';
-import { AllowedGuild } from 'server_src/db/databaseTypes';
-import {
-    MusicController,
-    MusicControllerEvents,
-    MusicControllerEventsData,
-} from '../modules/MusicPlayer/MusicControllerLavalink';
-import WebSocket from 'ws';
+import { Client, Message, Guild, VoiceState } from "discord.js";
+import { RPC_listenTextChannel, RPC_listenVoiceChannels } from "./RPC_Commands/listenerCommands";
+import WebSocket from "ws";
+import { DiscordClient, GuildControllers } from "app/web/server";
+import type { AllowedGuild } from "shared/types/databaseTypes";
 
 export class ClientListenerManager {
     public client: Client;
@@ -32,8 +27,8 @@ export class ClientListenerManager {
         this.processVoiceChannelUpdate = this.processVoiceChannelUpdate.bind(this);
         this.startMusicPlayerListener = this.startMusicPlayerListener.bind(this);
 
-        this.client.on('messageCreate', this.processTextMessage);
-        this.client.on('voiceStateUpdate', this.processVoiceChannelUpdate);
+        this.client.on("messageCreate", this.processTextMessage);
+        this.client.on("voiceStateUpdate", this.processVoiceChannelUpdate);
 
         this.musicPlayerListening = false;
     }
@@ -44,7 +39,7 @@ export class ClientListenerManager {
                 listener(message);
             }
         } catch (error) {
-            console.log('ERROR while trying to process text message: ', error);
+            console.log("ERROR while trying to process text message: ", error);
         }
         //console.log("Listener list: " , this.listeners)
     }
@@ -55,13 +50,13 @@ export class ClientListenerManager {
                 listener(state);
             }
         } catch (error) {
-            console.log('ERROR while trying to process voice channel update: ', error);
+            console.log("ERROR while trying to process voice channel update: ", error);
         }
     }
 
-    addTextListener(allowedGuilds: AllowedGuild[] | 'ALL', guildId: string, channelId: string) {
-        if (!this.websocket) return console.log('websocket is null');
-        if (allowedGuilds !== 'ALL') {
+    addTextListener(allowedGuilds: AllowedGuild[] | "ALL", guildId: string, channelId: string) {
+        if (!this.websocket) return console.log("websocket is null");
+        if (allowedGuilds !== "ALL") {
             let commandAllowed = false;
             //first param is always guild id
             const execGuildId = guildId;
@@ -72,13 +67,13 @@ export class ClientListenerManager {
             }
 
             if (!commandAllowed) {
-                console.log('addTextListener command is not allowed for user');
+                console.log("addTextListener command is not allowed for user");
                 return;
             }
         }
 
         if (this.textListeners.has(guildId)) {
-            console.log('Text channel already has a listener, deleting existing one.');
+            console.log("Text channel already has a listener, deleting existing one.");
             this.textListeners.delete(guildId);
         }
         try {
@@ -87,14 +82,14 @@ export class ClientListenerManager {
 
             //console.log("Adding text listener new list: ", this.textListeners)
         } catch (error) {
-            console.log('Error while trying to add text channel listener: ', error);
+            console.log("Error while trying to add text channel listener: ", error);
         }
     }
 
-    addVoiceChannelListener(allowedGuilds: AllowedGuild[] | 'ALL', guildId: string) {
-        if (!this.websocket) return console.log('websocket is null');
+    addVoiceChannelListener(allowedGuilds: AllowedGuild[] | "ALL", guildId: string) {
+        if (!this.websocket) return console.log("websocket is null");
 
-        if (allowedGuilds !== 'ALL') {
+        if (allowedGuilds !== "ALL") {
             let commandAllowed = false;
             //first param is always guild guildId
             const execGuildId = guildId;
@@ -105,12 +100,12 @@ export class ClientListenerManager {
             }
 
             if (!commandAllowed) {
-                console.log('addVoiceChannelListener command is not allowed for user');
+                console.log("addVoiceChannelListener command is not allowed for user");
                 return;
             }
         }
         if (this.voiceChannelListeners.has(guildId)) {
-            console.log('Voice channel already has a listener');
+            console.log("Voice channel already has a listener");
 
             return;
         }
@@ -120,7 +115,7 @@ export class ClientListenerManager {
 
             //console.log("Adding voice channel listener new list: ", this.voiceChannelListeners)
         } catch (error) {
-            console.log('Error while trying to add voice channel listener: ', error);
+            console.log("Error while trying to add voice channel listener: ", error);
         }
     }
 
@@ -131,28 +126,28 @@ export class ClientListenerManager {
             )?.controller;
 
             if (!guildController) {
-                console.log('Guild not found?? ID: ', guildId);
+                console.log("Guild not found?? ID: ", guildId);
                 return;
             }
 
             const MusicController = guildController?.MusicController;
 
             if (!MusicController)
-                throw new Error('MusicController not found in startMusicPlayerListener');
+                throw new Error("MusicController not found in startMusicPlayerListener");
 
             return MusicController;
         } catch (error) {
-            console.log('Error while trying to get music controller: ', error);
+            console.log("Error while trying to get music controller: ", error);
 
             return;
         }
     }
-    startMusicPlayerListener(allowedGuilds: AllowedGuild[] | 'ALL', guildId: string) {
+    startMusicPlayerListener(allowedGuilds: AllowedGuild[] | "ALL", guildId: string) {
         try {
             if (this.musicPlayerListening) return;
 
             // Currently: runs the loop for every websocket listener
-            if (allowedGuilds !== 'ALL') {
+            if (allowedGuilds !== "ALL") {
                 let commandAllowed = false;
                 //first param is always guild id
                 for (const allowedGuild of allowedGuilds) {
@@ -162,7 +157,7 @@ export class ClientListenerManager {
                 }
 
                 if (!commandAllowed) {
-                    console.log('startMusicPlayerListener command is not allowed for user');
+                    console.log("startMusicPlayerListener command is not allowed for user");
                     return;
                 }
             }
@@ -174,11 +169,11 @@ export class ClientListenerManager {
 
             if (this.websocket) {
                 const musicControllerEvents: (keyof MusicControllerEvents)[] = [
-                    'queueUpdate',
-                    'skipVoteUpdate',
-                    'currentSongUpdate',
-                    'playerStatusUpdate',
-                    'playerUpdate',
+                    "queueUpdate",
+                    "skipVoteUpdate",
+                    "currentSongUpdate",
+                    "playerStatusUpdate",
+                    "playerUpdate",
                 ];
 
                 for (const eventName of musicControllerEvents) {
@@ -190,7 +185,7 @@ export class ClientListenerManager {
                 this.activeMusicListenerGuildId = guildId;
             }
         } catch (error) {
-            console.log('Error while trying to start music player listener:', error);
+            console.log("Error while trying to start music player listener:", error);
         }
     }
     handleMusicPlayerEvents = (data: MusicControllerEventsData) => {
@@ -203,7 +198,7 @@ export class ClientListenerManager {
         try {
             this.textListeners.delete(id);
         } catch (error) {
-            console.log('Error while trying to delete listener id: ', id);
+            console.log("Error while trying to delete listener id: ", id);
         }
     }
 
@@ -219,11 +214,11 @@ export class ClientListenerManager {
                 const MusicController = this.getMusicController(this.activeMusicListenerGuildId);
                 if (MusicController) {
                     const musicControllerEvents: (keyof MusicControllerEvents)[] = [
-                        'queueUpdate',
-                        'skipVoteUpdate',
-                        'currentSongUpdate',
-                        'playerStatusUpdate',
-                        'playerUpdate',
+                        "queueUpdate",
+                        "skipVoteUpdate",
+                        "currentSongUpdate",
+                        "playerStatusUpdate",
+                        "playerUpdate",
                     ];
                     for (const eventName of musicControllerEvents) {
                         MusicController.off(eventName, this.handleMusicPlayerEvents);
@@ -233,7 +228,7 @@ export class ClientListenerManager {
                 }
             }
         } catch (error) {
-            console.log('Error while trying to clear listeners: ', error);
+            console.log("Error while trying to clear listeners: ", error);
         }
         //console.log("Cleared listeners, listener list: ", this.listeners)
     }
@@ -241,11 +236,11 @@ export class ClientListenerManager {
     terminate() {
         try {
             this.clearListeners();
-            this.client.removeListener('message', this.processTextMessage);
-            this.client.removeListener('voiceStateUpdate', this.processVoiceChannelUpdate);
+            this.client.removeListener("message", this.processTextMessage);
+            this.client.removeListener("voiceStateUpdate", this.processVoiceChannelUpdate);
             this.websocket = null;
         } catch (error) {
-            console.log('Error while trying to terminate listener manager: ', error);
+            console.log("Error while trying to terminate listener manager: ", error);
         }
     }
 }

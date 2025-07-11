@@ -1,13 +1,13 @@
+import { createLogger } from "@logger";
 import { Command } from "../modules/Command";
 import { ChatInputCommandInteraction } from "discord.js";
-import { createLogger } from "../shared/logging/Logger";
-import { MusicPlayerError, ValidationError } from "../shared/errors/BotdizError";
+import { MusicPlayerError, ValidationError } from "shared/errors/BotdizError";
 
-const logger = createLogger('SkipCommand');
+const logger = createLogger("SkipCommand");
 
 export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null) {
     const self = this;
-    
+
     try {
         if (!invokedMessage) {
             throw new Error("invokedMessage is not defined");
@@ -43,17 +43,16 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
         } else {
             const skippedTracks = await musicController.skip(skipAmount);
             const skippedCount = skippedTracks.length;
-            
+
             if (skippedCount === 1) {
                 self.reply(`⏭️ Skipped: \`${skippedTracks[0].info.title}\``);
             } else {
                 self.reply(`⏭️ Skipped ${skippedCount} tracks.`);
             }
         }
-        
     } catch (error) {
-        logger.error('Error while executing skip command', error as Error);
-        
+        logger.error("Error while executing skip command", error as Error);
+
         if (error instanceof MusicPlayerError || error instanceof ValidationError) {
             self.reply(`❌ ${error.message}`);
         } else {

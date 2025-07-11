@@ -1,9 +1,9 @@
+import { createLogger } from "@logger";
 import { ChannelType, Collection, Message, TextChannel } from "discord.js";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/index.mjs";
-import { logger } from "../logger";
 const GPT_ALLOWED_CHANNEL_IDS = ["1158274050200719421", "1159299261045948436"];
-
+const logger = createLogger("GptHandler");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const systemMessage: ChatCompletionMessageParam = {
     role: "system",
@@ -57,7 +57,10 @@ export class GptHandler {
     public async getMessages(channel: TextChannel) {
         const tenMinutes = 600000;
 
-        const lastMessages = (await channel.messages.fetch({ limit: 20 })) as Collection<string, Message<true>>;
+        const lastMessages = (await channel.messages.fetch({ limit: 20 })) as Collection<
+            string,
+            Message<true>
+        >;
 
         // Filter out messages that are older than 10 minutes
         const filteredMessages = Array.from(lastMessages.values()).filter((message) => {
@@ -78,16 +81,16 @@ export class GptHandler {
             return;
         }
         if (!guildId || !channel) {
-            logger.log("warn", "No guild id or channel");
+            logger.warn("No guild id or channel");
             return;
         }
         if (channel.type !== ChannelType.GuildText) {
-            logger.log("warn", "Not a guild text channel");
+            logger.warn("Not a guild text channel");
             return;
         }
         if (!GPT_ALLOWED_CHANNEL_IDS.includes(channel.id)) {
-            logger.log("warn", channel.id);
-            logger.log("warn", "Not a gpt allowed channel");
+            logger.warn(channel.id);
+            logger.warn("Not a gpt allowed channel");
             return;
         }
         rateLimit(async () => {

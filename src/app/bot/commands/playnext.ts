@@ -1,9 +1,8 @@
-import { createLogger } from "../shared/logging/Logger";
-
-const logger = createLogger('PlayNextCommand');
+const logger = createLogger("PlayNextCommand");
 import { ChatInputCommandInteraction } from "discord.js";
 import { Command } from "../modules/Command";
 import play from "./play";
+import { createLogger } from "@logger";
 
 export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null) {
     try {
@@ -14,7 +13,7 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
 
         return;
     } catch (error) {
-        logger.error('Error while executing playnext command', error as Error);
+        logger.error("Error while executing playnext command", error as Error);
         return;
     }
 }

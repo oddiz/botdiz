@@ -3,16 +3,16 @@ import { GuildRepository } from "./repositories/GuildRepository";
 import { UserRepository, DiscordUserRepository } from "./repositories/UserRepository";
 import { SessionRepository, DiscordSessionRepository } from "./repositories/SessionRepository";
 import { SubscriptionRepository } from "./repositories/SubscriptionRepository";
-import { createLogger } from "../../shared/logging/Logger";
-import { DatabaseError } from "../../shared/errors/BotdizError";
+import { createLogger } from "@logger";
+import { DatabaseError } from "shared/errors/BotdizError";
 
 /**
  * Centralized manager for all database repositories
  * Provides dependency injection and lifecycle management for repositories
  */
 export class RepositoryManager {
-    private readonly logger = createLogger('RepositoryManager');
-    
+    private readonly logger = createLogger("RepositoryManager");
+
     public readonly guilds: GuildRepository;
     public readonly users: UserRepository;
     public readonly discordUsers: DiscordUserRepository;
@@ -24,7 +24,7 @@ export class RepositoryManager {
 
     constructor(private readonly db: Db) {
         if (!db) {
-            throw new DatabaseError('Database connection is required');
+            throw new DatabaseError("Database connection is required");
         }
 
         // Initialize all repositories
@@ -37,16 +37,16 @@ export class RepositoryManager {
 
         // Keep track of all repositories for bulk operations
         this.repositories = [
-            { name: 'guilds', repo: this.guilds },
-            { name: 'users', repo: this.users },
-            { name: 'discordUsers', repo: this.discordUsers },
-            { name: 'sessions', repo: this.sessions },
-            { name: 'discordSessions', repo: this.discordSessions },
-            { name: 'subscriptions', repo: this.subscriptions }
+            { name: "guilds", repo: this.guilds },
+            { name: "users", repo: this.users },
+            { name: "discordUsers", repo: this.discordUsers },
+            { name: "sessions", repo: this.sessions },
+            { name: "discordSessions", repo: this.discordSessions },
+            { name: "subscriptions", repo: this.subscriptions },
         ];
 
-        this.logger.info('Repository manager initialized', { 
-            repositoryCount: this.repositories.length 
+        this.logger.info("Repository manager initialized", {
+            repositoryCount: this.repositories.length,
         });
     }
 
@@ -55,22 +55,26 @@ export class RepositoryManager {
      * Should be called during application startup
      */
     async initializeIndexes(): Promise<void> {
-        this.logger.info('Initializing database indexes');
-        
+        this.logger.info("Initializing database indexes");
+
         const indexPromises = this.repositories.map(async ({ name, repo }) => {
             try {
-                if (typeof repo.createIndexes === 'function') {
+                if (typeof repo.createIndexes === "function") {
                     await repo.createIndexes();
-                    this.logger.debug('Initialized indexes', { repository: name });
+                    this.logger.debug("Initialized indexes", { repository: name });
                 }
             } catch (error) {
-                this.logger.error('Failed to initialize indexes', error as Error, { repository: name });
-                throw new DatabaseError(`Failed to initialize indexes for ${name}: ${(error as Error).message}`);
+                this.logger.error("Failed to initialize indexes", error as Error, {
+                    repository: name,
+                });
+                throw new DatabaseError(
+                    `Failed to initialize indexes for ${name}: ${(error as Error).message}`
+                );
             }
         });
 
         await Promise.all(indexPromises);
-        this.logger.info('All database indexes initialized successfully');
+        this.logger.info("All database indexes initialized successfully");
     }
 
     /**
@@ -95,15 +99,17 @@ export class RepositoryManager {
                 collections.push({
                     name,
                     documentCount: count,
-                    isAccessible: true
+                    isAccessible: true,
                 });
                 totalDocuments += count;
             } catch (error) {
-                this.logger.error('Repository health check failed', error as Error, { repository: name });
+                this.logger.error("Repository health check failed", error as Error, {
+                    repository: name,
+                });
                 collections.push({
                     name,
                     documentCount: 0,
-                    isAccessible: false
+                    isAccessible: false,
                 });
                 isHealthy = false;
             }
@@ -112,7 +118,7 @@ export class RepositoryManager {
         return {
             isHealthy,
             collections,
-            totalDocuments
+            totalDocuments,
         };
     }
 
@@ -123,27 +129,27 @@ export class RepositoryManager {
         sessionsDeleted: number;
         discordSessionsDeleted: number;
     }> {
-        this.logger.info('Starting cleanup of expired data');
+        this.logger.info("Starting cleanup of expired data");
 
         try {
             const [sessionsDeleted, discordSessionsDeleted] = await Promise.all([
                 this.sessions.cleanupExpiredSessions(),
-                this.discordSessions.cleanupExpiredDiscordSessions()
+                this.discordSessions.cleanupExpiredDiscordSessions(),
             ]);
 
-            this.logger.info('Cleanup completed', { 
-                sessionsDeleted, 
+            this.logger.info("Cleanup completed", {
+                sessionsDeleted,
                 discordSessionsDeleted,
-                totalDeleted: sessionsDeleted + discordSessionsDeleted
+                totalDeleted: sessionsDeleted + discordSessionsDeleted,
             });
 
             return {
                 sessionsDeleted,
-                discordSessionsDeleted
+                discordSessionsDeleted,
             };
         } catch (error) {
-            this.logger.error('Failed to cleanup expired data', error as Error);
-            throw new DatabaseError('Failed to cleanup expired data');
+            this.logger.error("Failed to cleanup expired data", error as Error);
+            throw new DatabaseError("Failed to cleanup expired data");
         }
     }
 
@@ -165,31 +171,31 @@ export class RepositoryManager {
             const [guildStats, subscriptionStats, healthStats] = await Promise.all([
                 this.guilds.getGuildStats(),
                 this.subscriptions.getSubscriptionStats(),
-                this.getHealthStats()
+                this.getHealthStats(),
             ]);
 
             const userCounts = {
                 regularUsers: await this.users.count({ is_active: true }),
                 discordUsers: await this.discordUsers.count({ is_active: true }),
-                activeSessions: await this.sessions.count({ 
+                activeSessions: await this.sessions.count({
                     expires_at: { $gt: new Date() },
-                    is_active: true 
+                    is_active: true,
                 }),
-                activeDiscordSessions: await this.discordSessions.count({ 
+                activeDiscordSessions: await this.discordSessions.count({
                     expires_at: { $gt: new Date() },
-                    is_active: true 
-                })
+                    is_active: true,
+                }),
             };
 
             return {
                 guildStats,
                 subscriptionStats,
                 userCounts,
-                healthStats
+                healthStats,
             };
         } catch (error) {
-            this.logger.error('Failed to get database statistics', error as Error);
-            throw new DatabaseError('Failed to get database statistics');
+            this.logger.error("Failed to get database statistics", error as Error);
+            throw new DatabaseError("Failed to get database statistics");
         }
     }
 
@@ -198,14 +204,14 @@ export class RepositoryManager {
      * Note: MongoDB transactions require replica sets, so this is a simple wrapper
      */
     async withTransaction<T>(operations: (repos: RepositoryManager) => Promise<T>): Promise<T> {
-        this.logger.debug('Starting repository transaction');
-        
+        this.logger.debug("Starting repository transaction");
+
         try {
             const result = await operations(this);
-            this.logger.debug('Repository transaction completed successfully');
+            this.logger.debug("Repository transaction completed successfully");
             return result;
         } catch (error) {
-            this.logger.error('Repository transaction failed', error as Error);
+            this.logger.error("Repository transaction failed", error as Error);
             throw error;
         }
     }

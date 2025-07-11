@@ -1,11 +1,10 @@
-
-import { client as DiscordClient } from "../../../src/main";
 import { makeImageUrl } from "../../scripts/makeImageUrl";
 import "dotenv/config";
 import { Db } from "mongodb";
 import { Express } from "express";
-import { DbDiscordSession, DbGuildObject, DbSession } from "../../db/databaseTypes";
-import { withAuth } from "../middlewares";
+import { withAuth } from "app/web/middleware/middlewares";
+import { DiscordClient } from "app/web/server";
+import type { DbGuildObject } from "shared/types/databaseTypes";
 
 interface BotdizGuild {
     id: string;
@@ -21,12 +20,12 @@ export default async function discordguild(app: Express, db: Db) {
     app.get("/discordguilds", withAuth, async (req, res) => {
         try {
             const session = req.dbSession;
-            
+
             if (!session) {
                 res.status(401).send({ status: "failed", message: "Session not found" });
                 return;
             }
-            
+
             const authToken = await getUserDiscordAuthToken(session);
 
             const botdizGuilds = await DiscordClient.guilds.cache;
@@ -211,7 +210,9 @@ export default async function discordguild(app: Express, db: Db) {
             }
 
             const guild = await DiscordClient.guilds.fetch(reqGuildId);
-            const guildRoles = await DiscordClient.guilds.fetch(reqGuildId).then((guild) => guild.roles.fetch());
+            const guildRoles = await DiscordClient.guilds
+                .fetch(reqGuildId)
+                .then((guild) => guild.roles.fetch());
 
             const guildRolesArray = [];
             for (const [, role] of guildRoles.entries()) {
@@ -244,7 +245,9 @@ export default async function discordguild(app: Express, db: Db) {
             });
         }
     });
-    async function getUserDiscordAuthToken(session: DbDiscordSession | DbSession): Promise<string | void> {
+    async function getUserDiscordAuthToken(
+        session: DbDiscordSession | DbSession
+    ): Promise<string | void> {
         try {
             if (!("discord_session" in session)) {
                 return "NOT_DISCORD_SESSION";
@@ -255,7 +258,12 @@ export default async function discordguild(app: Express, db: Db) {
 
             if (currentTime > session.discord_token_expiration) {
                 if (process.env.NODE_ENV === "development") {
-                    if (!(process.env.DISCORD_TESTBOT_CLIENT_ID && process.env.DISCORD_TESTBOT_CLIENT_SECRET)) {
+                    if (
+                        !(
+                            process.env.DISCORD_TESTBOT_CLIENT_ID &&
+                            process.env.DISCORD_TESTBOT_CLIENT_SECRET
+                        )
+                    ) {
                         throw "DISCORD_TESTBOT_CLIENT_ID and DISCORD_TESTBOT_CLIENT_SECRET are not defined.";
                     }
 
@@ -298,7 +306,8 @@ export default async function discordguild(app: Express, db: Db) {
                     {
                         discord_auth_token: (oAuthResult as any).access_token,
                         discord_refresh_token: (oAuthResult as any).refresh_token,
-                        discord_token_expiration: new Date().getTime() + (oAuthResult as any).expires_in * 1000,
+                        discord_token_expiration:
+                            new Date().getTime() + (oAuthResult as any).expires_in * 1000,
                     }
                 );
                 return (oAuthResult as any).access_token;

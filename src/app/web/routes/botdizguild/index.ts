@@ -1,9 +1,9 @@
-import { GuildControllers } from "../../../src/main";
 import { Db } from "mongodb";
 import { Express } from "express";
-import { DbGuildObject } from "../../db/databaseTypes";
 import { EmbedBuilder, TextChannel } from "discord.js";
-import { withAuth } from "../middlewares";
+import { withAuth } from "app/web/middleware/middlewares";
+import type { DbGuildObject } from "shared/types/databaseTypes";
+import { GuildControllers } from "app/web/server";
 
 export default async function botdizguild(app: Express, db: Db) {
     app.get("/botdizguild/:guildId", withAuth, async (req, res) => {
@@ -65,7 +65,8 @@ export default async function botdizguild(app: Express, db: Db) {
                 }
             }
 
-            const replyGuild = (await db.collection("guilds").findOne({ guild_id: reqGuildId })) || {};
+            const replyGuild =
+                (await db.collection("guilds").findOne({ guild_id: reqGuildId })) || {};
 
             res.send({
                 status: "success",
@@ -300,11 +301,15 @@ export default async function botdizguild(app: Express, db: Db) {
             let subFound = false;
             for (const sub of dbSubs) {
                 if (sub.type === reqSubType && GuildControllers) {
-                    const guild = await GuildControllers.find((element) => element.guildId === reqGuildId)?.guildObj;
+                    const guild = await GuildControllers.find(
+                        (element) => element.guildId === reqGuildId
+                    )?.guildObj;
 
                     let subbedChannel;
                     if (guild) {
-                        subbedChannel = (await guild.channels.fetch(req.body.subscribed_channel)) as TextChannel;
+                        subbedChannel = (await guild.channels.fetch(
+                            req.body.subscribed_channel
+                        )) as TextChannel;
                     }
 
                     if (subbedChannel) {
@@ -312,7 +317,8 @@ export default async function botdizguild(app: Express, db: Db) {
 
                         if (
                             (!sub.active && req.body.active) ||
-                            (req.body.active && sub.subscribed_channel !== req.body.subscribed_channel)
+                            (req.body.active &&
+                                sub.subscribed_channel !== req.body.subscribed_channel)
                         ) {
                             embedMessage
                                 .setColor("#0FF28F")

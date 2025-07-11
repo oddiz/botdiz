@@ -1,7 +1,7 @@
-import { AllowedGuild } from "../../db/databaseTypes";
-import { client as DiscordClient, GuildControllers } from "../../../src/main";
+import { DiscordClient, GuildControllers } from "app/web/server";
 import { TextChannel } from "discord.js";
-import cacheManager from "../../CacheManager";
+import cacheManager from "infrastructure/CacheManager";
+import type { AllowedGuild } from "shared/types/databaseTypes";
 const failed = {
     status: "failed",
 };
@@ -18,7 +18,9 @@ type getTextChannelsFailed = {
 };
 type getTextChannelsReturn = getTextChannelsSuccess | getTextChannelsFailed | unauthorizedResponse;
 
-const getCommands: { [commandName: string]: (allowedGuilds: AllowedGuild[] | "ALL", ...args: string[]) => any } = {
+const getCommands: {
+    [commandName: string]: (allowedGuilds: AllowedGuild[] | "ALL", ...args: string[]) => any;
+} = {
     RPC_getGuilds: async function (allowedGuilds: AllowedGuild[] | "ALL") {
         try {
             const guilds = await DiscordClient.guilds.cache;
@@ -65,7 +67,9 @@ const getCommands: { [commandName: string]: (allowedGuilds: AllowedGuild[] | "AL
                     return { status: "unauthorized" };
                 }
             }
-            const guild = await GuildControllers.find((element) => element.guildId === activeGuildId)?.guildObj;
+            const guild = await GuildControllers.find(
+                (element) => element.guildId === activeGuildId
+            )?.guildObj;
 
             if (!guild) {
                 //console.log("found guild")
@@ -115,7 +119,9 @@ const getCommands: { [commandName: string]: (allowedGuilds: AllowedGuild[] | "AL
                 }
             }
 
-            const guild = await GuildControllers.find((element) => element.guildId === activeGuildId)?.guildObj;
+            const guild = await GuildControllers.find(
+                (element) => element.guildId === activeGuildId
+            )?.guildObj;
 
             if (!guild) {
                 //console.log("found guild")
@@ -169,7 +175,10 @@ const getCommands: { [commandName: string]: (allowedGuilds: AllowedGuild[] | "AL
             return failed;
         }
     },
-    RPC_getVoiceChannels: async function (allowedGuilds: AllowedGuild[] | "ALL", activeGuildId: string) {
+    RPC_getVoiceChannels: async function (
+        allowedGuilds: AllowedGuild[] | "ALL",
+        activeGuildId: string
+    ) {
         try {
             if (allowedGuilds !== "ALL") {
                 let commandAllowed = false;
@@ -184,7 +193,9 @@ const getCommands: { [commandName: string]: (allowedGuilds: AllowedGuild[] | "AL
                     return { status: "unauthorized" };
                 }
             }
-            const guild = await GuildControllers.find((element) => element.guildId === activeGuildId)?.guildObj;
+            const guild = await GuildControllers.find(
+                (element) => element.guildId === activeGuildId
+            )?.guildObj;
 
             if (!guild) {
                 //console.log("found guild")

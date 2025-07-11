@@ -5,21 +5,20 @@ import cors from "cors";
 
 const app = express();
 
-import WsManager from "./Websocket";
-import { DatabaseManager, dbManager } from "./db/DatabaseManager";
 import { RouteManager } from "./routes";
-import { client as DiscordClient, GuildControllers } from "../src/main";
 import session from "express-session";
 import https from "https";
 import fs from "fs";
 import "dotenv/config";
 
-import { logger } from "../src/logger";
 import session_store from "session-file-store";
 import helmet from "helmet";
+import { createLogger } from "@logger";
+import { dbManager } from "infrastructure/db/DatabaseManager";
+import WebsocketManager from "app/web/websocket";
 
 const SessionFileStore = session_store(session);
-
+const logger = createLogger("BotdizServer");
 let corsOptions;
 if (process.env.NODE_ENV === "development") {
     corsOptions = {
@@ -29,7 +28,11 @@ if (process.env.NODE_ENV === "development") {
     };
 } else {
     corsOptions = {
-        origin: ["https://botdiz.kaansarkaya.com", "https://api.kaansarkaya.com:8080", "https://oddiz.grafana.net"],
+        origin: [
+            "https://botdiz.kaansarkaya.com",
+            "https://api.kaansarkaya.com:8080",
+            "https://oddiz.grafana.net",
+        ],
         credentials: true,
     };
 }
@@ -76,7 +79,7 @@ async function init() {
 
     app.use(sessionParser);
     //setup database
-    logger.log("info", "Setting up database.");
+    logger.info("Setting up database.");
 
     const db = await dbManager.connect();
 
@@ -86,15 +89,21 @@ async function init() {
     }
 
     //serup routes
-    logger.log("info", "Initilizing Route Manager.");
+    logger.info("Initilizing Route Manager.");
     const RouteMngr = new RouteManager(app, db);
     RouteMngr.run();
 
     let server;
     if (process.env.NODE_ENV === "development") {
-        server = app.listen(8080, () => logger.log("info", "Api is running on port 8080"));
+        server = app.listen(8080, () => logger.info("Api is running on port 8080"));
 
-        const websocketManager = new WsManager(server, db, DiscordClient, GuildControllers, sessionParser);
+        const websocketManager = new WebsocketManager(
+            server,
+            db,
+            DiscordClient,
+            GuildControllers,
+            sessionParser
+        );
 
         websocketManager.init();
     } else {
@@ -106,9 +115,17 @@ async function init() {
             app
         );
 
-        server = httpsServer.listen(8080, () => logger.log("info", "Api is running on port 8080 with https"));
+        server = httpsServer.listen(8080, () =>
+            logger.log("info", "Api is running on port 8080 with https")
+        );
 
-        const websocketManager = new WsManager(server, db, DiscordClient, GuildControllers, sessionParser);
+        const websocketManager = new WebsocketManager(
+            server,
+            db,
+            DiscordClient,
+            GuildControllers,
+            sessionParser
+        );
 
         websocketManager.init();
     }
@@ -116,4 +133,4 @@ async function init() {
 
 init();
 
-export { WsManager, DatabaseManager, dbManager, RouteManager, DiscordClient, GuildControllers };
+export { WebsocketManager, dbManager, RouteManager, DiscordClient, GuildControllers };

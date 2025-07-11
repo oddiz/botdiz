@@ -1,11 +1,13 @@
-import { Command } from "@bot/modules/Command";
+import { createLogger } from "@logger";
+import type { Command } from "app/bot/modules/Command";
 import { EmbedBuilder } from "discord.js";
+const logger = createLogger("epicCommand");
 export default async function (this: Command) {
     const self = this;
     try {
         const db = self.controller.getRepositories().getDatabase();
         if (!db) {
-            logger.log("warn", "Not connected to database so epic deals won't work.");
+            logger.warn("Not connected to database so epic deals won't work.");
             return;
         }
         const epicGames = await db
@@ -70,6 +72,6 @@ export default async function (this: Command) {
             self.reply({ embeds: [...activeDeals, ...futureDeals] });
         }
     } catch (error) {
-        logger.log("error", "Error while executing epic command: ", error);
+        logger.error("Error while executing epic command: ", error);
     }
 }

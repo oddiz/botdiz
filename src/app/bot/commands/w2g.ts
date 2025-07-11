@@ -2,9 +2,10 @@ import { Command } from "../modules/Command";
 import { ChatInputCommandInteraction } from "discord.js";
 import "dotenv/config";
 
-import { logger } from "../logger";
 import searchYT from "../scripts/searchYT";
+import { createLogger } from "@logger";
 
+const logger = createLogger("w2gCommand");
 export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null) {
     const self = this;
     try {
@@ -80,6 +81,6 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
                 });
         }
     } catch (error) {
-        logger.log("error", "Error while executing w2g command: ", error);
+        logger.error("Error while executing w2g command: ", error);
     }
 }

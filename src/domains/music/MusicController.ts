@@ -5,17 +5,17 @@ import { QueueService } from "./services/QueueService";
 import { TrackResolverService } from "./services/TrackResolverService";
 import { MusicEventBus } from "./infrastructure/EventBus";
 import { Track, RepeatMode, AddToQueueOptions } from "./models/Track";
-import { ShoukakuHandler } from "../../Shokaku/ShokakuHandler";
-import { createLogger } from "../../shared/logging/Logger";
-import { config } from "../../shared/config/AppConfig";
 import { MusicPlayerError, ValidationError } from "../../shared/errors/BotdizError";
+import { createLogger } from "@logger";
+import type { ShoukakuHandler } from "infrastructure/discord/ShokakuHandler";
+import { config } from "shared/config/AppConfig";
 
 /**
  * Modern MusicController that serves as a facade for all music-related operations
  * Delegates to specialized services while maintaining a clean public API
  */
 export class MusicController {
-    private readonly logger = createLogger('MusicController');
+    private readonly logger = createLogger("MusicController");
     private readonly eventBus: MusicEventBus;
     private readonly audioPlayer: AudioPlayerService;
     private readonly queue: QueueService;
@@ -32,7 +32,7 @@ export class MusicController {
         this.queue = new QueueService(guild.id, this.eventBus);
         this.trackResolver = new TrackResolverService(shoukaku, {
             clientId: config.spotify.clientId,
-            clientSecret: config.spotify.clientSecret
+            clientSecret: config.spotify.clientSecret,
         });
         this.musicService = new MusicService(
             guild.id,
@@ -42,9 +42,9 @@ export class MusicController {
             this.eventBus
         );
 
-        this.logger.info('Music controller initialized', { 
-            guildId: guild.id, 
-            guildName: guild.name 
+        this.logger.info("Music controller initialized", {
+            guildId: guild.id,
+            guildName: guild.name,
         });
     }
 
@@ -54,9 +54,9 @@ export class MusicController {
         try {
             await this.musicService.connect(voiceChannel);
         } catch (error) {
-            this.logger.error('Failed to connect to voice channel', error as Error, {
+            this.logger.error("Failed to connect to voice channel", error as Error, {
                 guildId: this.guild.id,
-                channelId: voiceChannel.id
+                channelId: voiceChannel.id,
             });
             throw error;
         }
@@ -66,8 +66,8 @@ export class MusicController {
         try {
             await this.musicService.disconnect();
         } catch (error) {
-            this.logger.error('Failed to disconnect from voice channel', error as Error, {
-                guildId: this.guild.id
+            this.logger.error("Failed to disconnect from voice channel", error as Error, {
+                guildId: this.guild.id,
             });
             throw error;
         }
@@ -80,10 +80,10 @@ export class MusicController {
             await this.musicService.play(query, requestedBy, options);
             return this.getQueue();
         } catch (error) {
-            this.logger.error('Failed to play', error as Error, {
+            this.logger.error("Failed to play", error as Error, {
                 guildId: this.guild.id,
                 query: query.substring(0, 100),
-                requestedBy: requestedBy.id
+                requestedBy: requestedBy.id,
             });
             throw error;
         }
@@ -91,26 +91,26 @@ export class MusicController {
 
     async pause(): Promise<void> {
         if (!this.isPlaying()) {
-            throw new MusicPlayerError('Nothing is currently playing');
+            throw new MusicPlayerError("Nothing is currently playing");
         }
 
         try {
             await this.musicService.pause();
         } catch (error) {
-            this.logger.error('Failed to pause', error as Error, { guildId: this.guild.id });
+            this.logger.error("Failed to pause", error as Error, { guildId: this.guild.id });
             throw error;
         }
     }
 
     async resume(): Promise<void> {
         if (!this.isPaused()) {
-            throw new MusicPlayerError('Playback is not paused');
+            throw new MusicPlayerError("Playback is not paused");
         }
 
         try {
             await this.musicService.resume();
         } catch (error) {
-            this.logger.error('Failed to resume', error as Error, { guildId: this.guild.id });
+            this.logger.error("Failed to resume", error as Error, { guildId: this.guild.id });
             throw error;
         }
     }
@@ -119,22 +119,22 @@ export class MusicController {
         try {
             await this.musicService.stop();
         } catch (error) {
-            this.logger.error('Failed to stop', error as Error, { guildId: this.guild.id });
+            this.logger.error("Failed to stop", error as Error, { guildId: this.guild.id });
             throw error;
         }
     }
 
     async skip(count: number = 1): Promise<Track[]> {
         if (count < 1) {
-            throw new ValidationError('Skip count must be at least 1');
+            throw new ValidationError("Skip count must be at least 1");
         }
 
         try {
             return await this.musicService.skip(count);
         } catch (error) {
-            this.logger.error('Failed to skip', error as Error, { 
-                guildId: this.guild.id, 
-                count 
+            this.logger.error("Failed to skip", error as Error, {
+                guildId: this.guild.id,
+                count,
             });
             throw error;
         }
@@ -144,8 +144,8 @@ export class MusicController {
         try {
             await this.musicService.previous();
         } catch (error) {
-            this.logger.error('Failed to go to previous track', error as Error, { 
-                guildId: this.guild.id 
+            this.logger.error("Failed to go to previous track", error as Error, {
+                guildId: this.guild.id,
             });
             throw error;
         }
@@ -153,14 +153,18 @@ export class MusicController {
 
     // === Queue Management ===
 
-    async addToQueue(query: string, requestedBy: User, options?: AddToQueueOptions): Promise<Track[]> {
+    async addToQueue(
+        query: string,
+        requestedBy: User,
+        options?: AddToQueueOptions
+    ): Promise<Track[]> {
         try {
             return await this.musicService.addToQueue(query, requestedBy, options);
         } catch (error) {
-            this.logger.error('Failed to add to queue', error as Error, {
+            this.logger.error("Failed to add to queue", error as Error, {
                 guildId: this.guild.id,
                 query: query.substring(0, 100),
-                requestedBy: requestedBy.id
+                requestedBy: requestedBy.id,
             });
             throw error;
         }
@@ -168,15 +172,15 @@ export class MusicController {
 
     async removeFromQueue(index: number): Promise<Track | null> {
         if (index < 0 || index >= this.getQueue().length) {
-            throw new ValidationError('Invalid queue index');
+            throw new ValidationError("Invalid queue index");
         }
 
         try {
             return await this.musicService.removeFromQueue(index);
         } catch (error) {
-            this.logger.error('Failed to remove from queue', error as Error, {
+            this.logger.error("Failed to remove from queue", error as Error, {
                 guildId: this.guild.id,
-                index
+                index,
             });
             throw error;
         }
@@ -186,7 +190,7 @@ export class MusicController {
         try {
             await this.musicService.clearQueue();
         } catch (error) {
-            this.logger.error('Failed to clear queue', error as Error, { guildId: this.guild.id });
+            this.logger.error("Failed to clear queue", error as Error, { guildId: this.guild.id });
             throw error;
         }
     }
@@ -195,25 +199,27 @@ export class MusicController {
         try {
             await this.musicService.shuffleQueue();
         } catch (error) {
-            this.logger.error('Failed to shuffle queue', error as Error, { guildId: this.guild.id });
+            this.logger.error("Failed to shuffle queue", error as Error, {
+                guildId: this.guild.id,
+            });
             throw error;
         }
     }
 
     async moveTrack(fromIndex: number, toIndex: number): Promise<boolean> {
         const queueSize = this.getQueue().length;
-        
+
         if (fromIndex < 0 || fromIndex >= queueSize || toIndex < 0 || toIndex >= queueSize) {
-            throw new ValidationError('Invalid queue indices');
+            throw new ValidationError("Invalid queue indices");
         }
 
         try {
             return await this.musicService.moveTrack(fromIndex, toIndex);
         } catch (error) {
-            this.logger.error('Failed to move track', error as Error, {
+            this.logger.error("Failed to move track", error as Error, {
                 guildId: this.guild.id,
                 fromIndex,
-                toIndex
+                toIndex,
             });
             throw error;
         }
@@ -223,32 +229,34 @@ export class MusicController {
 
     async setVolume(volume: number): Promise<void> {
         if (volume < 0 || volume > 100) {
-            throw new ValidationError('Volume must be between 0 and 100');
+            throw new ValidationError("Volume must be between 0 and 100");
         }
 
         try {
             await this.musicService.setVolume(volume);
         } catch (error) {
-            this.logger.error('Failed to set volume', error as Error, {
+            this.logger.error("Failed to set volume", error as Error, {
                 guildId: this.guild.id,
-                volume
+                volume,
             });
             throw error;
         }
     }
 
     async setRepeatMode(mode: RepeatMode): Promise<void> {
-        const validModes: RepeatMode[] = ['off', 'track', 'queue'];
+        const validModes: RepeatMode[] = ["off", "track", "queue"];
         if (!validModes.includes(mode)) {
-            throw new ValidationError(`Invalid repeat mode. Must be one of: ${validModes.join(', ')}`);
+            throw new ValidationError(
+                `Invalid repeat mode. Must be one of: ${validModes.join(", ")}`
+            );
         }
 
         try {
             await this.musicService.setRepeatMode(mode);
         } catch (error) {
-            this.logger.error('Failed to set repeat mode', error as Error, {
+            this.logger.error("Failed to set repeat mode", error as Error, {
                 guildId: this.guild.id,
-                mode
+                mode,
             });
             throw error;
         }
@@ -256,28 +264,28 @@ export class MusicController {
 
     async seekTo(position: number): Promise<void> {
         if (position < 0) {
-            throw new ValidationError('Position cannot be negative');
+            throw new ValidationError("Position cannot be negative");
         }
 
         const currentTrack = this.getCurrentTrack();
         if (!currentTrack) {
-            throw new MusicPlayerError('No track is currently playing');
+            throw new MusicPlayerError("No track is currently playing");
         }
 
         if (!currentTrack.info.isSeekable) {
-            throw new MusicPlayerError('Current track is not seekable');
+            throw new MusicPlayerError("Current track is not seekable");
         }
 
         if (position > currentTrack.info.duration) {
-            throw new ValidationError('Position cannot exceed track duration');
+            throw new ValidationError("Position cannot exceed track duration");
         }
 
         try {
             await this.musicService.seekTo(position);
         } catch (error) {
-            this.logger.error('Failed to seek', error as Error, {
+            this.logger.error("Failed to seek", error as Error, {
                 guildId: this.guild.id,
-                position
+                position,
             });
             throw error;
         }
@@ -320,27 +328,27 @@ export class MusicController {
     // === Event Management ===
 
     onTrackStart(callback: (data: { track: Track; position: number }) => void): void {
-        this.eventBus.on('track.started', callback);
+        this.eventBus.on("track.started", callback);
     }
 
     onTrackEnd(callback: (data: { track: Track | null; reason: string }) => void): void {
-        this.eventBus.on('track.ended', callback);
+        this.eventBus.on("track.ended", callback);
     }
 
     onQueueUpdate(callback: (data: { queue: Track[]; current: Track | null }) => void): void {
-        this.eventBus.on('queue.updated', callback);
+        this.eventBus.on("queue.updated", callback);
     }
 
     onPlayerError(callback: (data: { error: Error; track?: Track }) => void): void {
-        this.eventBus.on('player.error', callback);
+        this.eventBus.on("player.error", callback);
     }
 
     onVolumeChange(callback: (data: { volume: number }) => void): void {
-        this.eventBus.on('volume.changed', callback);
+        this.eventBus.on("volume.changed", callback);
     }
 
     onRepeatModeChange(callback: (data: { mode: string }) => void): void {
-        this.eventBus.on('repeat.changed', callback);
+        this.eventBus.on("repeat.changed", callback);
     }
 
     // === Utility Methods ===
@@ -351,24 +359,26 @@ export class MusicController {
     getStatus() {
         const currentTrack = this.getCurrentTrack();
         const queue = this.getQueue();
-        
+
         return {
             connected: this.isConnected(),
             playing: this.isPlaying(),
             paused: this.isPaused(),
-            currentTrack: currentTrack ? {
-                title: currentTrack.info.title,
-                artist: currentTrack.info.artist,
-                duration: currentTrack.info.duration,
-                position: this.getPosition(),
-                requestedBy: currentTrack.requestedBy
-            } : null,
+            currentTrack: currentTrack
+                ? {
+                      title: currentTrack.info.title,
+                      artist: currentTrack.info.artist,
+                      duration: currentTrack.info.duration,
+                      position: this.getPosition(),
+                      requestedBy: currentTrack.requestedBy,
+                  }
+                : null,
             queue: {
                 length: queue.length,
-                tracks: queue.slice(0, 10) // Return first 10 tracks for preview
+                tracks: queue.slice(0, 10), // Return first 10 tracks for preview
             },
             volume: this.getVolume(),
-            repeatMode: this.getRepeatMode()
+            repeatMode: this.getRepeatMode(),
         };
     }
 
@@ -383,16 +393,16 @@ export class MusicController {
      * Clean up resources
      */
     async destroy(): Promise<void> {
-        this.logger.info('Destroying music controller', { guildId: this.guild.id });
+        this.logger.info("Destroying music controller", { guildId: this.guild.id });
 
         try {
             await this.musicService.destroy();
             this.eventBus.cleanup();
-            
-            this.logger.info('Music controller destroyed', { guildId: this.guild.id });
+
+            this.logger.info("Music controller destroyed", { guildId: this.guild.id });
         } catch (error) {
-            this.logger.error('Failed to destroy music controller', error as Error, {
-                guildId: this.guild.id
+            this.logger.error("Failed to destroy music controller", error as Error, {
+                guildId: this.guild.id,
             });
         }
     }
@@ -404,7 +414,7 @@ export class MusicController {
      * @deprecated Use addToQueue for new code
      */
     async addSong(query: string, requestedBy: User): Promise<Track[]> {
-        this.logger.warn('Using deprecated addSong method', { guildId: this.guild.id });
+        this.logger.warn("Using deprecated addSong method", { guildId: this.guild.id });
         return this.addToQueue(query, requestedBy);
     }
 
@@ -413,7 +423,7 @@ export class MusicController {
      * @deprecated Use skip for new code
      */
     async skipSong(): Promise<Track[]> {
-        this.logger.warn('Using deprecated skipSong method', { guildId: this.guild.id });
+        this.logger.warn("Using deprecated skipSong method", { guildId: this.guild.id });
         return this.skip(1);
     }
 

@@ -3,10 +3,11 @@ import spotifyWebApi from "spotify-web-api-node";
 import { Db } from "mongodb";
 import { Express } from "express";
 import "dotenv/config";
-import { logger } from "../../../src/logger";
 import { getToken } from "../../scripts/getToken";
-import { withAuth } from "../middlewares";
+import { createLogger } from "@logger";
+import { withAuth } from "app/web/middleware/middlewares";
 
+const logger = createLogger("BotdizPlaylists");
 interface SpotifyPlaylistsResponse {
     total: string;
     items: any[];
@@ -47,7 +48,7 @@ export default async function playlists(app: Express, db: Db) {
                 savedPlaylists: user.data.spotify.playlists,
             });
         } catch (error) {
-            logger.log("error", "Error while trying to get playlist: " + error);
+            logger.error("Error while trying to get playlist: " + error);
             res.status(404).send({
                 status: "failed",
                 message: "Error while trying to get playlist",
@@ -76,12 +77,14 @@ export default async function playlists(app: Express, db: Db) {
             const spotifyApi = new spotifyWebApi(botdizCredentials);
 
             // Retrieve an access token and a refresh token
-            const spotifyAuthData = await spotifyApi.authorizationCodeGrant(reqCode).catch((err) => {
-                console.log("Error while accessing spotify api: ", err);
-            });
+            const spotifyAuthData = await spotifyApi
+                .authorizationCodeGrant(reqCode)
+                .catch((err) => {
+                    logger.error("Error while accessing spotify api: ", err);
+                });
 
             if (!spotifyAuthData) {
-                logger.log("error", "Error while trying to get spotify auth data");
+                logger.error("Error while trying to get spotify auth data");
                 res.status(403).send({
                     message: "Error while trying to get spotify auth data. ",
                 });
@@ -93,15 +96,18 @@ export default async function playlists(app: Express, db: Db) {
                 if (!spotifyAuthData) throw "No spotify auth data";
 
                 const { default: fetch } = await import("node-fetch");
-                const response = await fetch("https://api.spotify.com/v1/me/playlists?limit=50&offset=" + offset, {
-                    method: "GET",
-                    headers: {
-                        "Content-Encoding": "null",
-                        Accept: "application/json",
-                        "Content-Type": "application/json",
-                        Authorization: "Bearer " + spotifyAuthData.body["access_token"],
-                    },
-                });
+                const response = await fetch(
+                    "https://api.spotify.com/v1/me/playlists?limit=50&offset=" + offset,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Encoding": "null",
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
+                            Authorization: "Bearer " + spotifyAuthData.body["access_token"],
+                        },
+                    }
+                );
 
                 const jsonResponse = await response.json();
                 return jsonResponse as SpotifyPlaylistsResponse;
@@ -164,7 +170,8 @@ export default async function playlists(app: Express, db: Db) {
             console.log(error);
             res.status(401).send({
                 status: "error",
-                message: "Failed to fetch spotify playlists. Try again later, contact Oddiz if issue persists.",
+                message:
+                    "Failed to fetch spotify playlists. Try again later, contact Oddiz if issue persists.",
             });
         }
     });

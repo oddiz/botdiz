@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
-import { logger } from "../logger";
 import { Command } from "../modules/Command";
+import { createLogger } from "@logger";
+const logger = createLogger("inviteCommand");
 
 export default function (this: Command) {
     const self = this;
@@ -11,12 +12,11 @@ export default function (this: Command) {
             "https://discord.com/oauth2/authorize?client_id=851497395190890518&scope=bot+applications.commands&permissions=2184309832";
         let newEmbed = new EmbedBuilder();
 
-        newEmbed = newEmbed.setColor("#e9b463").setTitle("Invite Link")
-            .setURL(inviteLink);
+        newEmbed = newEmbed.setColor("#e9b463").setTitle("Invite Link").setURL(inviteLink);
 
         self.reply({ embeds: [newEmbed] });
     } catch (error) {
-        logger.log("error", "Error while executing invite command: ", error);
+        logger.error("Error while executing invite command: ", error);
     }
 }
 

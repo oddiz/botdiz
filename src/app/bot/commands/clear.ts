@@ -1,10 +1,17 @@
 import { Command } from "../modules/Command";
-import { CommandInteraction, GuildMember, Interaction, PermissionFlagsBits, TextChannel, ChatInputCommandInteraction } from "discord.js";
+import {
+    CommandInteraction,
+    GuildMember,
+    Interaction,
+    PermissionFlagsBits,
+    TextChannel,
+    ChatInputCommandInteraction,
+} from "discord.js";
 import { createLogger } from "@logger";
 
+const logger = createLogger("clearCommand");
 export default async function (this: Command, invokedMessage?: ChatInputCommandInteraction | null) {
     const self = this;
-    const Logger = createLogger("clearCommand");
     try {
         if (!invokedMessage) throw "invokedMessage is not defined";
 
@@ -23,7 +30,8 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
             }
 
             if (deleteAmount <= 100 && deleteAmount > 0) {
-                const textChannel = invokedMessage.channel instanceof TextChannel ? invokedMessage.channel : null;
+                const textChannel =
+                    invokedMessage.channel instanceof TextChannel ? invokedMessage.channel : null;
 
                 if (textChannel) {
                     await textChannel.bulkDelete(deleteAmount, true).catch((err) => {
@@ -31,12 +39,16 @@ export default async function (this: Command, invokedMessage?: ChatInputCommandI
                     });
                 }
             } else {
-                self.wrongUsage(invokedMessage, self.name, "Can't delete more than 100 messages or less then 1 (duh).");
+                self.wrongUsage(
+                    invokedMessage,
+                    self.name,
+                    "Can't delete more than 100 messages or less then 1 (duh)."
+                );
             }
 
             self.reply({ content: `Deleted ${deleteAmount} messages`, ephemeral: true });
         }
     } catch (error) {
-        Logger.error( "Error while executing clear command: ", error);
+        logger.error("Error while executing clear command: ", error);
     }
 }

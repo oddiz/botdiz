@@ -1,11 +1,11 @@
+import { createLogger } from "@logger";
+import { RepositoryManager } from "infrastructure/database/RepositoryManager";
 import { MongoClient, Db } from "mongodb";
-import { createLogger } from "../../src/shared/logging/Logger";
-import { RepositoryManager } from "../../src/infrastructure/database/RepositoryManager";
-import { config } from "../../src/shared/config/AppConfig";
-import { DatabaseError } from "../../src/shared/errors/BotdizError";
+import { config } from "shared/config/AppConfig";
+import { DatabaseError } from "shared/errors/BotdizError";
 
 export class DatabaseManager {
-    private readonly logger = createLogger('DatabaseManager');
+    private readonly logger = createLogger("DatabaseManager");
     private db: Db | null = null;
     private client: MongoClient | null = null;
     private repositoryManager: RepositoryManager | null = null;
@@ -17,14 +17,14 @@ export class DatabaseManager {
 
     async connect(): Promise<Db | null> {
         if (this.isConnected && this.db) {
-            this.logger.warn('Database already connected');
+            this.logger.warn("Database already connected");
             return this.db;
         }
 
         try {
-            this.logger.info('Connecting to MongoDB database', { 
+            this.logger.info("Connecting to MongoDB database", {
                 url: this.maskConnectionString(config.database.url),
-                database: config.database.name
+                database: config.database.name,
             });
 
             this.client = new MongoClient(config.database.url);
@@ -33,8 +33,8 @@ export class DatabaseManager {
             this.db = this.client.db(config.database.name);
             this.isConnected = true;
 
-            this.logger.info('Connected to MongoDB database successfully', { 
-                database: config.database.name 
+            this.logger.info("Connected to MongoDB database successfully", {
+                database: config.database.name,
             });
 
             // Initialize repository manager
@@ -46,11 +46,11 @@ export class DatabaseManager {
 
             return this.db;
         } catch (error) {
-            this.logger.error('Failed to connect to database', error as Error, {
+            this.logger.error("Failed to connect to database", error as Error, {
                 url: this.maskConnectionString(config.database.url),
-                database: config.database.name
+                database: config.database.name,
             });
-            
+
             this.isConnected = false;
             return null;
         }
@@ -58,7 +58,7 @@ export class DatabaseManager {
 
     async disconnect(): Promise<void> {
         if (!this.client) {
-            this.logger.warn('No database connection to close');
+            this.logger.warn("No database connection to close");
             return;
         }
 
@@ -68,11 +68,11 @@ export class DatabaseManager {
             this.client = null;
             this.repositoryManager = null;
             this.isConnected = false;
-            
-            this.logger.info('Database connection closed successfully');
+
+            this.logger.info("Database connection closed successfully");
         } catch (error) {
-            this.logger.error('Error while closing database connection', error as Error);
-            throw new DatabaseError('Failed to close database connection');
+            this.logger.error("Error while closing database connection", error as Error);
+            throw new DatabaseError("Failed to close database connection");
         }
     }
 
@@ -82,7 +82,9 @@ export class DatabaseManager {
 
     getRepositories(): RepositoryManager {
         if (!this.repositoryManager) {
-            throw new DatabaseError('Repository manager not initialized. Ensure database is connected.');
+            throw new DatabaseError(
+                "Repository manager not initialized. Ensure database is connected."
+            );
         }
         return this.repositoryManager;
     }
@@ -101,7 +103,7 @@ export class DatabaseManager {
             await this.db.admin().ping();
             return true;
         } catch (error) {
-            this.logger.error('Database connection check failed', error as Error);
+            this.logger.error("Database connection check failed", error as Error);
             return false;
         }
     }
@@ -116,15 +118,15 @@ export class DatabaseManager {
             isConnected: this.isConnected,
             isHealthy: this.isHealthy(),
             database: config.database.name,
-            collections: [] as string[]
+            collections: [] as string[],
         };
 
         if (this.db) {
             try {
                 const collections = await this.db.listCollections().toArray();
-                stats.collections = collections.map(col => col.name);
+                stats.collections = collections.map((col) => col.name);
             } catch (error) {
-                this.logger.error('Failed to list collections', error as Error);
+                this.logger.error("Failed to list collections", error as Error);
             }
         }
 
@@ -134,28 +136,28 @@ export class DatabaseManager {
     private setupConnectionMonitoring(): void {
         if (!this.client) return;
 
-        this.client.on('serverOpening', () => {
-            this.logger.debug('MongoDB connection opening');
+        this.client.on("serverOpening", () => {
+            this.logger.debug("MongoDB connection opening");
         });
 
-        this.client.on('serverClosed', () => {
-            this.logger.warn('MongoDB connection closed');
+        this.client.on("serverClosed", () => {
+            this.logger.warn("MongoDB connection closed");
             this.isConnected = false;
         });
 
-        this.client.on('error', (error) => {
-            this.logger.error('MongoDB connection error', error);
+        this.client.on("error", (error) => {
+            this.logger.error("MongoDB connection error", error);
             this.isConnected = false;
         });
 
-        this.client.on('timeout', () => {
-            this.logger.warn('MongoDB connection timeout');
+        this.client.on("timeout", () => {
+            this.logger.warn("MongoDB connection timeout");
         });
     }
 
     private maskConnectionString(url: string): string {
         // Mask credentials in connection string for logging
-        return url.replace(/\/\/([^:]+):([^@]+)@/, '//[USER]:[PASSWORD]@');
+        return url.replace(/\/\/([^:]+):([^@]+)@/, "//[USER]:[PASSWORD]@");
     }
 }
 

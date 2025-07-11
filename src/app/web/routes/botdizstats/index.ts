@@ -1,22 +1,21 @@
-import { getToken } from '../../scripts/getToken';
-import { GuildControllers } from '../../../src/main';
-import { Express } from 'express';
-import { Db } from 'mongodb';
-import { withAuth } from '../middlewares';
+import { withAuth } from "app/web/middleware/middlewares";
+import { GuildControllers } from "app/web/server";
+import { Express } from "express";
+import { Db } from "mongodb";
 
 export default async function botdizstats(app: Express, db: Db) {
-    app.get('/botdizstats', withAuth, async (req, res) => {
+    app.get("/botdizstats", withAuth, async (req, res) => {
         const totalGuilds = GuildControllers.length;
 
         let totalPlaying = 0;
         for (const guild of GuildControllers) {
-            if (guild.controller.MusicController?.audioPlayerStatus === 'PLAYING') {
+            if (guild.controller.MusicController?.audioPlayerStatus === "PLAYING") {
                 totalPlaying++;
             }
         }
 
         res.send({
-            status: 'success',
+            status: "success",
             result: {
                 total_guilds: totalGuilds,
                 total_playing: totalPlaying,

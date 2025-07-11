@@ -1,9 +1,10 @@
 import { Command } from "../modules/Command";
 import { CommandInteraction } from "discord.js";
-import { logger } from "../logger";
 import { GptHandler } from "../modules/gptHandler";
+import { createLogger } from "@logger";
 const allowedGuildIds = ["237628149901426688", "262673200536616960", "1101157784357183620"];
 // Hawaii, Hür ve kabul, Botdiz
+const logger = createLogger("gptCommand");
 
 export default async function (this: Command, invokedMessage: CommandInteraction) {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -23,7 +24,7 @@ export default async function (this: Command, invokedMessage: CommandInteraction
             this.reply("This command is only available in select guilds.");
         }
     } catch (error) {
-        logger.error(error);
+        logger.error("Error while executing gpt command: ", error);
         self.reply("Something went wrong.");
     }
 }

@@ -1,15 +1,15 @@
+import { createLogger } from "@logger";
 import { Command } from "../modules/Command";
-import { GuildController } from "../core/GuildController";
 import { ChatInputCommandInteraction, GuildMember } from "discord.js";
-import { createLogger } from "../shared/logging/Logger";
-import { MusicPlayerError, ValidationError } from "../shared/errors/BotdizError";
-import { AddToQueueOptions } from "../domains/music/models/Track";
+import type { GuildController } from "core/GuildController";
+import type { AddToQueueOptions } from "domains/music/models/Track";
+import { MusicPlayerError } from "shared/errors/BotdizError";
 
 export type PlayCommandOptions = {
     query?: string | null;
     forceNext?: boolean;
 };
-const logger = createLogger('PlayCommand');
+const logger = createLogger("PlayCommand");
 
 export default async function (
     this: Command,
@@ -21,18 +21,18 @@ export default async function (
         query: options?.query || null,
         forceNext: options?.forceNext || false,
     };
-    
+
     try {
         const controller = self.controller as GuildController;
         const musicController = controller.MusicController;
-        
+
         if (!controller) {
-            logger.error('Play command is not bound to a controller');
+            logger.error("Play command is not bound to a controller");
             return;
         }
 
         if (!musicController) {
-            logger.error('Music controller not found on the controller');
+            logger.error("Music controller not found on the controller");
             return;
         }
 
@@ -54,7 +54,7 @@ export default async function (
             if (!(member instanceof GuildMember)) {
                 return;
             }
-            
+
             const memberVoiceChannel = member.voice?.channel;
             if (!memberVoiceChannel) {
                 self.reply("You are not in a voice channel.");
@@ -65,21 +65,21 @@ export default async function (
 
             // Handle voice channel connection with new architecture
             if (!musicController.isConnected()) {
-                logger.info('Bot is not in a voice channel, connecting now.');
+                logger.info("Bot is not in a voice channel, connecting now.");
                 try {
                     await musicController.connect(memberVoiceChannel);
                 } catch (error) {
-                    logger.error('Could not join voice channel', error as Error);
+                    logger.error("Could not join voice channel", error as Error);
                     self.reply("Failed to join voice channel.");
                     return;
                 }
             } else if (botVoiceChannel && memberVoiceChannel.id !== botVoiceChannel.id) {
                 if (musicController.isPlaying()) {
-                    logger.info('Bot is already playing in another channel');
+                    logger.info("Bot is already playing in another channel");
                     self.reply("Bot is already playing in another channel ❗");
                     return;
                 } else {
-                    logger.info('Bot is not playing. Switching to new channel.');
+                    logger.info("Bot is not playing. Switching to new channel.");
                     await musicController.disconnect();
                     await musicController.connect(memberVoiceChannel);
                 }
@@ -91,22 +91,22 @@ export default async function (
         // Use the new MusicController architecture
         try {
             const addToQueueOptions: AddToQueueOptions = {
-                position: optionsDefault.forceNext ? 'next' : 'end'
+                position: optionsDefault.forceNext ? "next" : "end",
             };
-            
+
             if (!musicController.isConnected()) {
-                throw new MusicPlayerError('Bot is not connected to a voice channel');
+                throw new MusicPlayerError("Bot is not connected to a voice channel");
             }
 
             // Use the new play method which handles resolution and queueing
             if (optionsDefault.forceNext) {
                 // Add to front of queue
                 const tracks = await musicController.addToQueue(
-                    input, 
-                    invokedMessage?.user!, 
+                    input,
+                    invokedMessage?.user!,
                     addToQueueOptions
                 );
-                
+
                 if (tracks.length === 1) {
                     self.reply(`\`${tracks[0].info.title} added to queue (next) 👍\``);
                 } else if (tracks.length > 1) {
@@ -114,8 +114,12 @@ export default async function (
                 }
             } else {
                 // Normal play - add to queue and start playing if not already playing
-                const tracks = await musicController.play(input, invokedMessage?.user!, addToQueueOptions);
-                
+                const tracks = await musicController.play(
+                    input,
+                    invokedMessage?.user!,
+                    addToQueueOptions
+                );
+
                 if (tracks.length === 1) {
                     if (musicController.isPlaying()) {
                         self.reply(`\`${tracks[0].info.title} added to queue 👍\``);
@@ -127,16 +131,12 @@ export default async function (
                 }
             }
         } catch (error) {
-            logger.error('Error while executing play command', error as Error);
-            
-            if (error instanceof MusicPlayerError || error instanceof ValidationError) {
-                self.reply(`❌ ${error.message}`);
-            } else {
-                self.reply("`Error trying to process command. Please try again.`");
-            }
+            logger.error("Error while executing play command", error as Error);
+
+            self.reply("`Error trying to process command. Please try again.`");
         }
     } catch (error) {
-        logger.error('Error while executing play command', error as Error);
+        logger.error("Error while executing play command", error as Error);
         self.reply("`Error trying to process command. Please try again.`");
     }
 }

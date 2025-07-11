@@ -1,15 +1,15 @@
-import { Command } from '../modules/Command';
-import { createLogger } from '../shared/logging/Logger';
-import { MusicPlayerError } from '../shared/errors/BotdizError';
+import { createLogger } from "@logger";
+import { Command } from "../modules/Command";
+import { MusicPlayerError } from "shared/errors/BotdizError";
 
-const logger = createLogger('ResumeCommand');
+const logger = createLogger("ResumeCommand");
 
 export default async function (this: Command) {
     const self = this;
-    
+
     try {
         const musicController = self.controller.MusicController;
-        
+
         if (!musicController) {
             self.reply("Bot is currently not playing.");
             return;
@@ -32,10 +32,9 @@ export default async function (this: Command) {
 
         await musicController.resume();
         self.reply("▶️ Resumed playback.");
-        
     } catch (error) {
-        logger.error('Error while executing resume command', error as Error);
-        
+        logger.error("Error while executing resume command", error as Error);
+
         if (error instanceof MusicPlayerError) {
             self.reply(`❌ ${error.message}`);
         } else {

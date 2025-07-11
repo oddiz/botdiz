@@ -3,15 +3,15 @@ import { Track, RepeatMode, AddToQueueOptions, PlaybackOptions } from "../models
 import { AudioPlayerService } from "./AudioPlayerService";
 import { QueueService } from "./QueueService";
 import { TrackResolverService } from "./TrackResolverService";
-import { MusicEventBus } from "../infrastructure/EventBus";
-import { createLogger } from "../../../shared/logging/Logger";
 import { MusicPlayerError, ValidationError } from "../../../shared/errors/BotdizError";
+import { createLogger } from "@logger";
+import type { MusicEventBus } from "domains/music/infrastructure/EventBus";
 
 export interface IMusicService {
     // Connection management
     connect(voiceChannel: VoiceBasedChannel): Promise<void>;
     disconnect(): Promise<void>;
-    
+
     // Playback control
     play(query: string, requestedBy: User, options?: AddToQueueOptions): Promise<void>;
     playNext(): Promise<void>;
@@ -20,19 +20,19 @@ export interface IMusicService {
     stop(): Promise<void>;
     skip(count?: number): Promise<Track[]>;
     previous(): Promise<void>;
-    
+
     // Queue management
     addToQueue(query: string, requestedBy: User, options?: AddToQueueOptions): Promise<Track[]>;
     removeFromQueue(index: number): Promise<Track | null>;
     clearQueue(): Promise<void>;
     shuffleQueue(): Promise<void>;
     moveTrack(fromIndex: number, toIndex: number): Promise<boolean>;
-    
+
     // Playback settings
     setVolume(volume: number): Promise<void>;
     setRepeatMode(mode: RepeatMode): Promise<void>;
     seekTo(position: number): Promise<void>;
-    
+
     // State queries
     isPlaying(): boolean;
     isPaused(): boolean;
@@ -42,13 +42,13 @@ export interface IMusicService {
     getPosition(): number;
     getVolume(): number;
     getRepeatMode(): RepeatMode;
-    
+
     // Cleanup
     destroy(): Promise<void>;
 }
 
 export class MusicService implements IMusicService {
-    private readonly logger = createLogger('MusicService');
+    private readonly logger = createLogger("MusicService");
     private isDestroyed = false;
 
     constructor(
@@ -63,20 +63,22 @@ export class MusicService implements IMusicService {
 
     async connect(voiceChannel: VoiceBasedChannel): Promise<void> {
         this.ensureNotDestroyed();
-        
+
         if (this.isConnected()) {
-            this.logger.warn('Already connected to a voice channel', { guildId: this.guildId });
+            this.logger.warn("Already connected to a voice channel", { guildId: this.guildId });
             return;
         }
 
         try {
             await this.audioPlayer.connect(voiceChannel);
-            this.logger.info('Music service connected', { 
-                guildId: this.guildId, 
-                channelId: voiceChannel.id 
+            this.logger.info("Music service connected", {
+                guildId: this.guildId,
+                channelId: voiceChannel.id,
             });
         } catch (error) {
-            this.logger.error('Failed to connect music service', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to connect music service", error as Error, {
+                guildId: this.guildId,
+            });
             throw error;
         }
     }
@@ -88,25 +90,27 @@ export class MusicService implements IMusicService {
 
         try {
             await this.audioPlayer.disconnect();
-            this.logger.info('Music service disconnected', { guildId: this.guildId });
+            this.logger.info("Music service disconnected", { guildId: this.guildId });
         } catch (error) {
-            this.logger.error('Failed to disconnect music service', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to disconnect music service", error as Error, {
+                guildId: this.guildId,
+            });
             throw error;
         }
     }
 
     async play(query: string, requestedBy: User, options: AddToQueueOptions = {}): Promise<void> {
         this.ensureNotDestroyed();
-        
+
         if (!this.isConnected()) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         try {
             const tracks = await this.addToQueue(query, requestedBy, { ...options, silent: true });
-            
+
             if (tracks.length === 0) {
-                throw new MusicPlayerError('No tracks found for the given query');
+                throw new MusicPlayerError("No tracks found for the given query");
             }
 
             // If not currently playing, start playing
@@ -114,15 +118,15 @@ export class MusicService implements IMusicService {
                 await this.playNext();
             }
 
-            this.logger.info('Successfully added and started playing', {
+            this.logger.info("Successfully added and started playing", {
                 guildId: this.guildId,
                 trackCount: tracks.length,
-                query: query.substring(0, 100)
+                query: query.substring(0, 100),
             });
         } catch (error) {
-            this.logger.error('Failed to play', error as Error, { 
-                guildId: this.guildId, 
-                query: query.substring(0, 100) 
+            this.logger.error("Failed to play", error as Error, {
+                guildId: this.guildId,
+                query: query.substring(0, 100),
             });
             throw error;
         }
@@ -130,14 +134,14 @@ export class MusicService implements IMusicService {
 
     async playNext(): Promise<void> {
         this.ensureNotDestroyed();
-        
+
         if (!this.isConnected()) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         const nextTrack = this.queue.getNext();
         if (!nextTrack) {
-            this.logger.info('No more tracks in queue', { guildId: this.guildId });
+            this.logger.info("No more tracks in queue", { guildId: this.guildId });
             return;
         }
 
@@ -147,15 +151,17 @@ export class MusicService implements IMusicService {
             this.queue.setCurrentIndex(nextIndex);
 
             await this.audioPlayer.play(nextTrack);
-            
-            this.logger.info('Playing next track', {
+
+            this.logger.info("Playing next track", {
                 guildId: this.guildId,
                 trackTitle: nextTrack.info.title,
-                queuePosition: nextIndex
+                queuePosition: nextIndex,
             });
         } catch (error) {
-            this.logger.error('Failed to play next track', error as Error, { guildId: this.guildId });
-            
+            this.logger.error("Failed to play next track", error as Error, {
+                guildId: this.guildId,
+            });
+
             // Try to continue with the next track
             await this.skip(1);
         }
@@ -178,14 +184,14 @@ export class MusicService implements IMusicService {
 
     async skip(count: number = 1): Promise<Track[]> {
         this.ensureNotDestroyed();
-        
+
         if (count < 1) {
-            throw new ValidationError('Skip count must be at least 1');
+            throw new ValidationError("Skip count must be at least 1");
         }
 
         const skippedTracks: Track[] = [];
         const currentTrack = this.getCurrentTrack();
-        
+
         if (currentTrack) {
             skippedTracks.push(currentTrack);
         }
@@ -203,18 +209,18 @@ export class MusicService implements IMusicService {
             }
 
             await this.playNext();
-            
-            this.logger.info('Skipped tracks', {
+
+            this.logger.info("Skipped tracks", {
                 guildId: this.guildId,
                 skippedCount: skippedTracks.length,
-                requestedCount: count
+                requestedCount: count,
             });
-            
+
             return skippedTracks;
         } catch (error) {
-            this.logger.error('Failed to skip tracks', error as Error, { 
-                guildId: this.guildId, 
-                count 
+            this.logger.error("Failed to skip tracks", error as Error, {
+                guildId: this.guildId,
+                count,
             });
             throw error;
         }
@@ -222,67 +228,73 @@ export class MusicService implements IMusicService {
 
     async previous(): Promise<void> {
         this.ensureNotDestroyed();
-        
+
         const previousTrack = this.queue.getPrevious();
         if (!previousTrack) {
-            throw new MusicPlayerError('No previous track available');
+            throw new MusicPlayerError("No previous track available");
         }
 
         try {
             const prevIndex = this.queue.getCurrentIndex() - 1;
             this.queue.setCurrentIndex(prevIndex);
-            
+
             await this.audioPlayer.play(previousTrack);
-            
-            this.logger.info('Playing previous track', {
+
+            this.logger.info("Playing previous track", {
                 guildId: this.guildId,
-                trackTitle: previousTrack.info.title
+                trackTitle: previousTrack.info.title,
             });
         } catch (error) {
-            this.logger.error('Failed to play previous track', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to play previous track", error as Error, {
+                guildId: this.guildId,
+            });
             throw error;
         }
     }
 
-    async addToQueue(query: string, requestedBy: User, options: AddToQueueOptions = {}): Promise<Track[]> {
+    async addToQueue(
+        query: string,
+        requestedBy: User,
+        options: AddToQueueOptions = {}
+    ): Promise<Track[]> {
         this.ensureNotDestroyed();
-        
+
         if (!query?.trim()) {
-            throw new ValidationError('Query cannot be empty');
+            throw new ValidationError("Query cannot be empty");
         }
 
         try {
             const requestedByData = {
                 id: requestedBy.id,
                 username: requestedBy.username,
-                avatar: requestedBy.avatar || undefined
+                avatar: requestedBy.avatar || undefined,
             };
 
             const result = await this.trackResolver.resolve(query, requestedByData);
-            
-            if (result.loadType === 'error') {
-                throw new MusicPlayerError(result.exception?.message || 'Failed to resolve track');
+
+            if (result.loadType === "error") {
+                throw new MusicPlayerError(result.exception?.message || "Failed to resolve track");
             }
 
             if (result.tracks.length === 0) {
-                throw new MusicPlayerError('No tracks found for the given query');
+                throw new MusicPlayerError("No tracks found for the given query");
             }
 
             this.queue.add(result.tracks, options);
-            
-            this.logger.info('Added tracks to queue', {
+
+            this.logger.info("Added tracks to queue", {
                 guildId: this.guildId,
                 trackCount: result.tracks.length,
                 loadType: result.loadType,
-                requestedBy: requestedBy.id
+                requestedBy: requestedBy.id,
             });
 
             return result.tracks;
         } catch (error) {
-            this.logger.error('Failed to add to queue', error as Error, {
+            this.logger.error("Failed to add to queue", error as Error, {
                 guildId: this.guildId,
                 query: query.substring(0, 100),
-                requestedBy: requestedBy.id
+                requestedBy: requestedBy.id,
             });
             throw error;
         }
@@ -311,9 +323,9 @@ export class MusicService implements IMusicService {
 
     async setVolume(volume: number): Promise<void> {
         this.ensureNotDestroyed();
-        
+
         if (volume < 0 || volume > 100) {
-            throw new ValidationError('Volume must be between 0 and 100');
+            throw new ValidationError("Volume must be between 0 and 100");
         }
 
         await this.audioPlayer.setVolume(volume);
@@ -326,18 +338,18 @@ export class MusicService implements IMusicService {
 
     async seekTo(position: number): Promise<void> {
         this.ensureNotDestroyed();
-        
+
         if (position < 0) {
-            throw new ValidationError('Position cannot be negative');
+            throw new ValidationError("Position cannot be negative");
         }
 
         const currentTrack = this.getCurrentTrack();
         if (!currentTrack) {
-            throw new MusicPlayerError('No track is currently playing');
+            throw new MusicPlayerError("No track is currently playing");
         }
 
         if (position > currentTrack.info.duration) {
-            throw new ValidationError('Position cannot exceed track duration');
+            throw new ValidationError("Position cannot exceed track duration");
         }
 
         await this.audioPlayer.seekTo(position);
@@ -382,42 +394,48 @@ export class MusicService implements IMusicService {
             return;
         }
 
-        this.logger.info('Destroying music service', { guildId: this.guildId });
+        this.logger.info("Destroying music service", { guildId: this.guildId });
 
         try {
             await this.audioPlayer.destroy();
             this.queue.clear();
-            
+
             this.isDestroyed = true;
-            
-            this.logger.info('Music service destroyed', { guildId: this.guildId });
+
+            this.logger.info("Music service destroyed", { guildId: this.guildId });
         } catch (error) {
-            this.logger.error('Failed to destroy music service', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to destroy music service", error as Error, {
+                guildId: this.guildId,
+            });
         }
     }
 
     private setupEventHandlers(): void {
         // Handle track end to automatically play next
-        this.eventBus.on('track.ended', (data) => {
-            if (data.reason === 'finished') {
+        this.eventBus.on("track.ended", (data) => {
+            if (data.reason === "finished") {
                 // Automatically play next track
-                this.playNext().catch(error => {
-                    this.logger.error('Failed to auto-play next track', error, { guildId: this.guildId });
+                this.playNext().catch((error) => {
+                    this.logger.error("Failed to auto-play next track", error, {
+                        guildId: this.guildId,
+                    });
                 });
             }
         });
 
         // Handle player errors
-        this.eventBus.on('player.error', (data) => {
-            this.logger.error('Player error occurred', data.error, { 
+        this.eventBus.on("player.error", (data) => {
+            this.logger.error("Player error occurred", data.error, {
                 guildId: this.guildId,
-                track: data.track?.info.title 
+                track: data.track?.info.title,
             });
-            
+
             // Try to recover by playing next track
             if (this.queue.getNext()) {
-                this.playNext().catch(error => {
-                    this.logger.error('Failed to recover from player error', error, { guildId: this.guildId });
+                this.playNext().catch((error) => {
+                    this.logger.error("Failed to recover from player error", error, {
+                        guildId: this.guildId,
+                    });
                 });
             }
         });
@@ -425,7 +443,7 @@ export class MusicService implements IMusicService {
 
     private ensureNotDestroyed(): void {
         if (this.isDestroyed) {
-            throw new MusicPlayerError('Music service has been destroyed');
+            throw new MusicPlayerError("Music service has been destroyed");
         }
     }
 
@@ -435,7 +453,7 @@ export class MusicService implements IMusicService {
     getStats() {
         const playerState = this.audioPlayer.getState();
         const queueStats = this.queue.getStats();
-        
+
         return {
             guildId: this.guildId,
             isDestroyed: this.isDestroyed,
@@ -445,10 +463,10 @@ export class MusicService implements IMusicService {
                 paused: this.isPaused(),
                 volume: playerState.volume,
                 position: playerState.position,
-                channelId: playerState.channelId
+                channelId: playerState.channelId,
             },
             currentTrack: this.getCurrentTrack(),
-            queue: queueStats
+            queue: queueStats,
         };
     }
 }

@@ -1,19 +1,19 @@
 import { Guild, Client as DiscordClient, CommandInteraction, ButtonInteraction } from "discord.js";
-import { ShoukakuHandler } from "../Shokaku/ShokakuHandler";
 import { MusicController } from "../domains/music/MusicController";
-import { SubscriptionManager } from "../modules/SubscriptionManager";
 import { GuildService, GuildSettings } from "../domains/guilds/GuildService";
 import { CommandService } from "../domains/commands/CommandService";
-import { botCommands } from "../botCommands";
 import { createLogger } from "../shared/logging/Logger";
 import { BotdizError } from "../shared/errors/BotdizError";
 import { RepositoryManager } from "../infrastructure/database/RepositoryManager";
+import { SubscriptionManager } from "app/bot/modules/SubscriptionManager";
+import type { ShoukakuHandler } from "infrastructure/discord/ShokakuHandler";
+import { botCommands } from "app/bot/botCommands";
 
 /**
  * Modern, focused GuildController that delegates responsibilities to specialized services
  */
 export class GuildController {
-    private readonly logger = createLogger('GuildController');
+    private readonly logger = createLogger("GuildController");
     private readonly guildService: GuildService;
     private readonly commandService: CommandService;
     private readonly musicController: MusicController;
@@ -35,14 +35,14 @@ export class GuildController {
 
     async initialize(): Promise<void> {
         if (this.isInitialized) {
-            this.logger.warn('Guild controller already initialized', { guildId: this.guild.id });
+            this.logger.warn("Guild controller already initialized", { guildId: this.guild.id });
             return;
         }
 
         try {
-            this.logger.info('Initializing guild controller', { 
-                guildId: this.guild.id, 
-                guildName: this.guild.name 
+            this.logger.info("Initializing guild controller", {
+                guildId: this.guild.id,
+                guildName: this.guild.name,
             });
 
             // Initialize guild settings
@@ -61,42 +61,46 @@ export class GuildController {
             await this.subscriptionManager.init(this.guildSettings as any); // TODO: Fix typing
 
             this.isInitialized = true;
-            this.logger.info('Guild controller initialized successfully', { guildId: this.guild.id });
+            this.logger.info("Guild controller initialized successfully", {
+                guildId: this.guild.id,
+            });
         } catch (error) {
-            this.logger.error('Failed to initialize guild controller', error as Error, { guildId: this.guild.id });
+            this.logger.error("Failed to initialize guild controller", error as Error, {
+                guildId: this.guild.id,
+            });
             throw error;
         }
     }
 
     async handleCommand(interaction: CommandInteraction, options?: any): Promise<void> {
         this.ensureInitialized();
-        
+
         try {
             await this.commandService.executeCommand(interaction.commandName, interaction, options);
         } catch (error) {
-            this.logger.error('Failed to handle command', error as Error, { 
+            this.logger.error("Failed to handle command", error as Error, {
                 commandName: interaction.commandName,
                 guildId: this.guild.id,
-                userId: interaction.user.id 
+                userId: interaction.user.id,
             });
 
             if (error instanceof BotdizError) {
                 await this.replyWithError(interaction, error.message);
             } else {
-                await this.replyWithError(interaction, 'An unexpected error occurred');
+                await this.replyWithError(interaction, "An unexpected error occurred");
             }
         }
     }
 
     async handleButtonInteraction(interaction: ButtonInteraction): Promise<void> {
         this.ensureInitialized();
-        
+
         // Handle button interactions (voting, music controls, etc.)
         // This would delegate to appropriate services
-        this.logger.debug('Handling button interaction', { 
+        this.logger.debug("Handling button interaction", {
             customId: interaction.customId,
             guildId: this.guild.id,
-            userId: interaction.user.id 
+            userId: interaction.user.id,
         });
     }
 
@@ -108,13 +112,13 @@ export class GuildController {
                 await interaction.reply({ content: `❌ ${message}`, ephemeral: true });
             }
         } catch (error) {
-            this.logger.error('Failed to reply with error', error as Error);
+            this.logger.error("Failed to reply with error", error as Error);
         }
     }
 
     private ensureInitialized(): void {
         if (!this.isInitialized) {
-            throw new Error('Guild controller not initialized');
+            throw new Error("Guild controller not initialized");
         }
     }
 
@@ -160,17 +164,17 @@ export class GuildController {
     }
 
     async destroy(): Promise<void> {
-        this.logger.info('Destroying guild controller', { guildId: this.guild.id });
-        
+        this.logger.info("Destroying guild controller", { guildId: this.guild.id });
+
         // Clean up resources
         if (this.musicController) {
             // Add cleanup logic for music controller
         }
-        
+
         if (this.subscriptionManager) {
             // Add cleanup logic for subscription manager
         }
-        
+
         this.isInitialized = false;
     }
 }

@@ -1,10 +1,10 @@
+import { createLogger } from "@logger";
 import { VoiceBasedChannel } from "discord.js";
-import { Player, PlayerUpdate } from "shoukaku";
-import { Track, PlayerState, PlaybackOptions } from "../models/Track";
-import { createLogger } from "../../../shared/logging/Logger";
-import { MusicEventBus } from "../infrastructure/EventBus";
-import { ShoukakuHandler } from "../../../Shokaku/ShokakuHandler";
-import { MusicPlayerError } from "../../../shared/errors/BotdizError";
+import type { MusicEventBus } from "domains/music/infrastructure/EventBus";
+import type { PlaybackOptions, PlayerState, Track } from "domains/music/models/Track";
+import type { ShoukakuHandler } from "infrastructure/discord/ShokakuHandler";
+import { MusicPlayerError } from "shared/errors/BotdizError";
+import { type Player, type PlayerUpdate } from "shoukaku";
 
 export interface IAudioPlayerService {
     connect(voiceChannel: VoiceBasedChannel): Promise<void>;
@@ -22,7 +22,7 @@ export interface IAudioPlayerService {
 }
 
 export class AudioPlayerService implements IAudioPlayerService {
-    private readonly logger = createLogger('AudioPlayerService');
+    private readonly logger = createLogger("AudioPlayerService");
     private player: Player | null = null;
     private state: PlayerState;
     private currentTrack: Track | null = null;
@@ -37,32 +37,33 @@ export class AudioPlayerService implements IAudioPlayerService {
             position: 0,
             paused: false,
             volume: 100,
-            connected: false
+            connected: false,
         };
     }
 
     async connect(voiceChannel: VoiceBasedChannel): Promise<void> {
         try {
-            this.logger.info('Connecting to voice channel', {
+            this.logger.info("Connecting to voice channel", {
                 guildId: this.guildId,
                 channelId: voiceChannel.id,
-                channelName: voiceChannel.name
+                channelName: voiceChannel.name,
             });
 
             const node = this.shoukaku.getIdealNode();
             if (!node) {
-                throw new MusicPlayerError('No Lavalink nodes available');
+                throw new MusicPlayerError("No Lavalink nodes available");
             }
 
             // Create or get existing player
             let player = node.manager.players.get(this.guildId);
-            
+
             if (!player) {
-                player = node.manager.joinChannel({
+                player = await node.manager.joinVoiceChannel({
                     guildId: this.guildId,
                     channelId: voiceChannel.id,
                     shardId: 0, // Adjust based on your setup
-                    deaf: true
+                    deaf: true,
+                    mute: false,
                 });
             }
 
@@ -73,31 +74,33 @@ export class AudioPlayerService implements IAudioPlayerService {
             this.setupPlayerEventHandlers();
             this.startPositionTracking();
 
-            this.logger.info('Successfully connected to voice channel', {
+            this.logger.info("Successfully connected to voice channel", {
                 guildId: this.guildId,
-                channelId: voiceChannel.id
+                channelId: voiceChannel.id,
             });
 
-            this.eventBus.emitEvent('player.connected', { channelId: voiceChannel.id });
+            this.eventBus.emitEvent("player.connected", { channelId: voiceChannel.id });
         } catch (error) {
-            this.logger.error('Failed to connect to voice channel', error as Error, {
+            this.logger.error("Failed to connect to voice channel", error as Error, {
                 guildId: this.guildId,
-                channelId: voiceChannel.id
+                channelId: voiceChannel.id,
             });
-            
+
             this.state.connected = false;
-            throw new MusicPlayerError(`Failed to connect to voice channel: ${(error as Error).message}`);
+            throw new MusicPlayerError(
+                `Failed to connect to voice channel: ${(error as Error).message}`
+            );
         }
     }
 
     async disconnect(): Promise<void> {
         try {
-            this.logger.info('Disconnecting from voice channel', { guildId: this.guildId });
+            this.logger.info("Disconnecting from voice channel", { guildId: this.guildId });
 
             this.stopPositionTracking();
-            
+
             if (this.player) {
-                await this.player.connection.disconnect();
+                await this.player.destroy();
                 this.player = null;
             }
 
@@ -106,12 +109,14 @@ export class AudioPlayerService implements IAudioPlayerService {
             this.currentTrack = null;
             this.state.position = 0;
 
-            this.logger.info('Successfully disconnected from voice channel', { guildId: this.guildId });
-            
-            this.eventBus.emitEvent('player.disconnected', { reason: 'manual' });
+            this.logger.info("Successfully disconnected from voice channel", {
+                guildId: this.guildId,
+            });
+
+            this.eventBus.emitEvent("player.disconnected", { reason: "manual" });
         } catch (error) {
-            this.logger.error('Failed to disconnect from voice channel', error as Error, {
-                guildId: this.guildId
+            this.logger.error("Failed to disconnect from voice channel", error as Error, {
+                guildId: this.guildId,
             });
             throw new MusicPlayerError(`Failed to disconnect: ${(error as Error).message}`);
         }
@@ -119,146 +124,149 @@ export class AudioPlayerService implements IAudioPlayerService {
 
     async play(track: Track, options: PlaybackOptions = {}): Promise<void> {
         if (!this.player) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         try {
-            this.logger.info('Playing track', {
+            this.logger.info("Playing track", {
                 guildId: this.guildId,
                 trackTitle: track.info.title,
-                trackDuration: track.info.duration
             });
 
             const playOptions = {
                 track: { encoded: track.encoded },
-                ...options
+                ...options,
             };
 
             await this.player.playTrack(playOptions);
-            
+
             this.currentTrack = track;
             this.state.track = track;
             this.state.position = options.startTime || 0;
             this.state.paused = false;
 
-            this.logger.info('Successfully started playing track', {
+            this.logger.info("Successfully started playing track", {
                 guildId: this.guildId,
-                trackTitle: track.info.title
+                trackTitle: track.info.title,
             });
 
-            this.eventBus.emitEvent('track.started', { 
-                track, 
-                position: this.state.position 
+            this.eventBus.emitEvent("track.started", {
+                track,
+                position: this.state.position,
             });
         } catch (error) {
-            this.logger.error('Failed to play track', error as Error, {
+            this.logger.error("Failed to play track", error as Error, {
                 guildId: this.guildId,
-                trackTitle: track.info.title
+                trackTitle: track.info.title,
             });
 
-            this.eventBus.emitEvent('player.error', { 
-                error: error as Error, 
-                track 
+            this.eventBus.emitEvent("player.error", {
+                error: error as Error,
+                track,
             });
-            
+
             throw new MusicPlayerError(`Failed to play track: ${(error as Error).message}`);
         }
     }
 
     async pause(): Promise<void> {
         if (!this.player) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         try {
             await this.player.setPaused(true);
             this.state.paused = true;
 
-            this.logger.info('Paused playback', { guildId: this.guildId });
-            
-            this.eventBus.emitEvent('track.paused', { 
-                track: this.currentTrack, 
-                position: this.state.position 
+            this.logger.info("Paused playback", { guildId: this.guildId });
+
+            this.eventBus.emitEvent("track.paused", {
+                track: this.currentTrack,
+                position: this.state.position,
             });
         } catch (error) {
-            this.logger.error('Failed to pause playback', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to pause playback", error as Error, {
+                guildId: this.guildId,
+            });
             throw new MusicPlayerError(`Failed to pause: ${(error as Error).message}`);
         }
     }
 
     async resume(): Promise<void> {
         if (!this.player) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         try {
             await this.player.setPaused(false);
             this.state.paused = false;
 
-            this.logger.info('Resumed playback', { guildId: this.guildId });
-            
-            this.eventBus.emitEvent('track.resumed', { 
-                track: this.currentTrack, 
-                position: this.state.position 
+            this.logger.info("Resumed playback", { guildId: this.guildId });
+
+            this.eventBus.emitEvent("track.resumed", {
+                track: this.currentTrack,
+                position: this.state.position,
             });
         } catch (error) {
-            this.logger.error('Failed to resume playback', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to resume playback", error as Error, {
+                guildId: this.guildId,
+            });
             throw new MusicPlayerError(`Failed to resume: ${(error as Error).message}`);
         }
     }
 
     async stop(): Promise<void> {
         if (!this.player) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         try {
             await this.player.stopTrack();
-            
+
             const stoppedTrack = this.currentTrack;
             this.currentTrack = null;
             this.state.track = undefined;
             this.state.position = 0;
             this.state.paused = false;
 
-            this.logger.info('Stopped playback', { guildId: this.guildId });
-            
-            this.eventBus.emitEvent('track.ended', { 
-                track: stoppedTrack, 
-                reason: 'stopped' 
+            this.logger.info("Stopped playback", { guildId: this.guildId });
+
+            this.eventBus.emitEvent("track.ended", {
+                track: stoppedTrack,
+                reason: "stopped",
             });
         } catch (error) {
-            this.logger.error('Failed to stop playback', error as Error, { guildId: this.guildId });
+            this.logger.error("Failed to stop playback", error as Error, { guildId: this.guildId });
             throw new MusicPlayerError(`Failed to stop: ${(error as Error).message}`);
         }
     }
 
     async seekTo(position: number): Promise<void> {
         if (!this.player) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         if (!this.currentTrack?.info.isSeekable) {
-            throw new MusicPlayerError('Current track is not seekable');
+            throw new MusicPlayerError("Current track is not seekable");
         }
 
         try {
             await this.player.seekTo(position);
             this.state.position = position;
 
-            this.logger.info('Seeked to position', { 
-                guildId: this.guildId, 
-                position 
+            this.logger.info("Seeked to position", {
+                guildId: this.guildId,
+                position,
             });
-            
-            this.eventBus.emitEvent('track.seeked', { 
-                track: this.currentTrack, 
-                position 
+
+            this.eventBus.emitEvent("track.seeked", {
+                track: this.currentTrack,
+                position,
             });
         } catch (error) {
-            this.logger.error('Failed to seek', error as Error, { 
-                guildId: this.guildId, 
-                position 
+            this.logger.error("Failed to seek", error as Error, {
+                guildId: this.guildId,
+                position,
             });
             throw new MusicPlayerError(`Failed to seek: ${(error as Error).message}`);
         }
@@ -266,27 +274,27 @@ export class AudioPlayerService implements IAudioPlayerService {
 
     async setVolume(volume: number): Promise<void> {
         if (!this.player) {
-            throw new MusicPlayerError('Not connected to a voice channel');
+            throw new MusicPlayerError("Not connected to a voice channel");
         }
 
         if (volume < 0 || volume > 100) {
-            throw new MusicPlayerError('Volume must be between 0 and 100');
+            throw new MusicPlayerError("Volume must be between 0 and 100");
         }
 
         try {
             await this.player.setGlobalVolume(volume);
             this.state.volume = volume;
 
-            this.logger.info('Set volume', { 
-                guildId: this.guildId, 
-                volume 
+            this.logger.info("Set volume", {
+                guildId: this.guildId,
+                volume,
             });
-            
-            this.eventBus.emitEvent('volume.changed', { volume });
+
+            this.eventBus.emitEvent("volume.changed", { volume });
         } catch (error) {
-            this.logger.error('Failed to set volume', error as Error, { 
-                guildId: this.guildId, 
-                volume 
+            this.logger.error("Failed to set volume", error as Error, {
+                guildId: this.guildId,
+                volume,
             });
             throw new MusicPlayerError(`Failed to set volume: ${(error as Error).message}`);
         }
@@ -306,10 +314,10 @@ export class AudioPlayerService implements IAudioPlayerService {
 
     async destroy(): Promise<void> {
         try {
-            this.logger.info('Destroying audio player', { guildId: this.guildId });
-            
+            this.logger.info("Destroying audio player", { guildId: this.guildId });
+
             this.stopPositionTracking();
-            
+
             if (this.player) {
                 await this.disconnect();
             }
@@ -319,14 +327,14 @@ export class AudioPlayerService implements IAudioPlayerService {
                 position: 0,
                 paused: false,
                 volume: 100,
-                connected: false
+                connected: false,
             };
             this.currentTrack = null;
 
-            this.logger.info('Audio player destroyed', { guildId: this.guildId });
+            this.logger.info("Audio player destroyed", { guildId: this.guildId });
         } catch (error) {
-            this.logger.error('Failed to destroy audio player', error as Error, { 
-                guildId: this.guildId 
+            this.logger.error("Failed to destroy audio player", error as Error, {
+                guildId: this.guildId,
             });
         }
     }
@@ -335,66 +343,66 @@ export class AudioPlayerService implements IAudioPlayerService {
         if (!this.player) return;
 
         // Handle player updates (position changes)
-        this.player.on('update', (data: PlayerUpdate) => {
+        this.player.on("update", (data: PlayerUpdate) => {
             this.state.position = data.state.position;
         });
 
         // Handle track end
-        this.player.on('end', (data) => {
+        this.player.on("end", (data) => {
             const endedTrack = this.currentTrack;
             this.currentTrack = null;
             this.state.track = undefined;
             this.state.position = 0;
 
-            this.logger.info('Track ended', { 
-                guildId: this.guildId, 
-                reason: data.reason 
+            this.logger.info("Track ended", {
+                guildId: this.guildId,
+                reason: data.reason,
             });
 
-            this.eventBus.emitEvent('track.ended', { 
-                track: endedTrack, 
-                reason: data.reason 
+            this.eventBus.emitEvent("track.ended", {
+                track: endedTrack,
+                reason: data.reason,
             });
         });
 
         // Handle player errors
-        this.player.on('exception', (data) => {
-            this.logger.error('Player exception', new Error(data.exception.message), {
+        this.player.on("exception", (data) => {
+            this.logger.error("Player exception", new Error(data.exception.message), {
                 guildId: this.guildId,
-                severity: data.exception.severity
+                severity: data.exception.severity,
             });
 
-            this.eventBus.emitEvent('player.error', { 
-                error: new Error(data.exception.message), 
-                track: this.currentTrack 
+            this.eventBus.emitEvent("player.error", {
+                error: new Error(data.exception.message),
+                track: this.currentTrack,
             });
         });
 
         // Handle connection issues
-        this.player.on('stuck', (data) => {
-            this.logger.warn('Player stuck', {
+        this.player.on("stuck", (data) => {
+            this.logger.warn("Player stuck", {
                 guildId: this.guildId,
-                thresholdMs: data.thresholdMs
+                thresholdMs: data.thresholdMs,
             });
 
-            this.eventBus.emitEvent('player.error', { 
-                error: new Error(`Player stuck for ${data.thresholdMs}ms`), 
-                track: this.currentTrack 
+            this.eventBus.emitEvent("player.error", {
+                error: new Error(`Player stuck for ${data.thresholdMs}ms`),
+                track: this.currentTrack,
             });
         });
 
         // Handle voice connection events
-        this.player.connection.on('disconnect', () => {
+        this.player.on("closed", () => {
             this.state.connected = false;
-            this.logger.info('Voice connection disconnected', { guildId: this.guildId });
-            
-            this.eventBus.emitEvent('player.disconnected', { reason: 'connection_lost' });
+            this.logger.info("Voice connection disconnected", { guildId: this.guildId });
+
+            this.eventBus.emitEvent("player.disconnected", { reason: "connection_lost" });
         });
     }
 
     private startPositionTracking(): void {
         this.stopPositionTracking();
-        
+
         this.positionUpdateInterval = setInterval(() => {
             if (this.player && !this.state.paused && this.currentTrack) {
                 // Position is updated through player events, this is just a fallback

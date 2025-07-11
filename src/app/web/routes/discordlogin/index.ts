@@ -1,15 +1,13 @@
-
 import crypto from "crypto";
 import * as uuid from "uuid";
-import { client as DiscordClient } from "../../../src/main";
 import { Db, WithId, Document } from "mongodb";
 import { Express } from "express";
 import "dotenv/config";
-
-import { logger } from "../../../src/logger";
-import { BotdizSession } from "../../types";
-import { makeImageUrl } from "../../scripts/makeImageUrl";
-import { DbGuildObject } from "server_src/db/databaseTypes";
+import { createLogger } from "@logger";
+import { DiscordClient } from "app/web/server";
+import { makeImageUrl } from "app/web/scripts/makeImageUrl";
+import type { DbGuildObject } from "shared/types/databaseTypes";
+import type { BotdizSession } from "shared/types/server";
 
 interface DiscordOAuthResponse {
     access_token: string;
@@ -39,7 +37,7 @@ interface DiscordGuild {
     administrator?: boolean;
     dj_access?: boolean;
 }
-
+const logger = createLogger("BotdizDiscordLogin");
 export default async function playlists(app: Express, db: Db) {
     app.post("/discordlogin", async (req, res) => {
         const { default: fetch } = await import("node-fetch");
@@ -49,8 +47,11 @@ export default async function playlists(app: Express, db: Db) {
             let clientId, clientSecret, redirectUri;
 
             if (process.env.NODE_ENV === "development") {
-                if (!process.env.DISCORD_TESTBOT_CLIENT_ID || !process.env.DISCORD_TESTBOT_CLIENT_SECRET) {
-                    logger.log("error", "Env variables not set properly!");
+                if (
+                    !process.env.DISCORD_TESTBOT_CLIENT_ID ||
+                    !process.env.DISCORD_TESTBOT_CLIENT_SECRET
+                ) {
+                    logger.error("Env variables not set properly!");
 
                     return;
                 }
@@ -60,7 +61,7 @@ export default async function playlists(app: Express, db: Db) {
                 redirectUri = "http://localhost:3000/discordlogin";
             } else {
                 if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
-                    logger.log("error", "Env variables not set properly!");
+                    logger.error("Env variables not set properly!");
 
                     return;
                 }
@@ -70,7 +71,7 @@ export default async function playlists(app: Express, db: Db) {
                 redirectUri = "https://botdiz.kaansarkaya.com/discordlogin";
             }
             if (code) {
-                const oauthResult = await fetch("https://discord.com/api/oauth2/token", {
+                const oauthResult = (await fetch("https://discord.com/api/oauth2/token", {
                     method: "POST",
                     body: new URLSearchParams({
                         client_id: clientId,
@@ -82,7 +83,7 @@ export default async function playlists(app: Express, db: Db) {
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded",
                     },
-                }).then((response) => response.json()) as DiscordOAuthResponse;
+                }).then((response) => response.json())) as DiscordOAuthResponse;
 
                 if (oauthResult.error) {
                     res.status(401).send({
@@ -96,17 +97,17 @@ export default async function playlists(app: Express, db: Db) {
                 const expiresIn = oauthResult.expires_in;
                 const tokenType = oauthResult.token_type;
 
-                const userResult = await fetch("https://discord.com/api/users/@me", {
+                const userResult = (await fetch("https://discord.com/api/users/@me", {
                     headers: {
                         authorization: `${tokenType} ${accessToken}`,
                     },
-                }).then((response) => response.json()) as DiscordUser;
+                }).then((response) => response.json())) as DiscordUser;
 
-                const userGuilds = await fetch("https://discord.com/api/users/@me/guilds", {
+                const userGuilds = (await fetch("https://discord.com/api/users/@me/guilds", {
                     headers: {
                         authorization: `${tokenType} ${accessToken}`,
                     },
-                }).then((response) => response.json()) as DiscordGuild[];
+                }).then((response) => response.json())) as DiscordGuild[];
 
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const passPermissions = [
@@ -132,9 +133,12 @@ export default async function playlists(app: Express, db: Db) {
                             guild.administrator = true;
                             allowedGuilds.push(guild);
                         } else {
-                            const guildDoc = await db.collection("guilds").findOne({ guild_id: guild.id });
-                            const botdizGuildOptions: DbGuildObject | null = guildDoc ? 
-                                guildDoc as WithId<Document> & DbGuildObject : null;
+                            const guildDoc = await db
+                                .collection("guilds")
+                                .findOne({ guild_id: guild.id });
+                            const botdizGuildOptions: DbGuildObject | null = guildDoc
+                                ? (guildDoc as WithId<Document> & DbGuildObject)
+                                : null;
 
                             if (botdizGuildOptions) {
                                 const allowedDjRoles = botdizGuildOptions.dj_roles;
@@ -240,7 +244,7 @@ export default async function playlists(app: Express, db: Db) {
                 console.log(userResult.username + "#" + userResult.discriminator + " logged in.");
             }
         } catch (error) {
-            logger.log("error", "Error while trying to login via discord: " + error);
+            logger.error("Error while trying to login via discord: " + error);
             res.status(401).send({
                 status: "error",
             });

@@ -1,15 +1,15 @@
-import { Command } from '../modules/Command';
-import { createLogger } from '../shared/logging/Logger';
-import { CommandInteraction, EmbedBuilder } from 'discord.js';
+import { createLogger } from "@logger";
+import { Command } from "../modules/Command";
+import { CommandInteraction, EmbedBuilder } from "discord.js";
 
-const logger = createLogger('StatusCommand');
+const logger = createLogger("StatusCommand");
 
 export default async function (this: Command, invokedMessage?: CommandInteraction | null) {
     const self = this;
-    
+
     try {
         const musicController = self.controller.MusicController;
-        
+
         if (!musicController) {
             self.reply("Nothing is playing.");
             return;
@@ -21,7 +21,7 @@ export default async function (this: Command, invokedMessage?: CommandInteractio
         }
 
         const currentTrack = musicController.getCurrentTrack();
-        
+
         if (!currentTrack) {
             self.reply("Nothing is playing.");
             return;
@@ -32,48 +32,52 @@ export default async function (this: Command, invokedMessage?: CommandInteractio
         const position = musicController.getPosition();
         const volume = musicController.getVolume();
         const repeatMode = musicController.getRepeatMode();
-        
+
         // Create status embed
         const embed = new EmbedBuilder()
-            .setTitle('🎵 Now Playing')
+            .setTitle("🎵 Now Playing")
             .setColor(self.controller.roleColor)
             .addFields([
                 {
-                    name: 'Track',
-                    value: `**${currentTrack.info.title}**\nby ${currentTrack.info.artist || 'Unknown Artist'}`,
-                    inline: false
+                    name: "Track",
+                    value: `**${currentTrack.info.title}**\nby ${currentTrack.info.artist || "Unknown Artist"}`,
+                    inline: false,
                 },
                 {
-                    name: 'Progress',
+                    name: "Progress",
                     value: `${formatTime(position)} / ${formatTime(currentTrack.info.duration)}`,
-                    inline: true
+                    inline: true,
                 },
                 {
-                    name: 'Volume',
+                    name: "Volume",
                     value: `${volume}%`,
-                    inline: true
+                    inline: true,
                 },
                 {
-                    name: 'Repeat Mode',
-                    value: repeatMode === 'off' ? 'Off' : repeatMode === 'track' ? 'Track' : 'Queue',
-                    inline: true
+                    name: "Repeat Mode",
+                    value:
+                        repeatMode === "off" ? "Off" : repeatMode === "track" ? "Track" : "Queue",
+                    inline: true,
                 },
                 {
-                    name: 'Status',
-                    value: musicController.isPlaying() ? '▶️ Playing' : 
-                           musicController.isPaused() ? '⏸️ Paused' : '⏹️ Stopped',
-                    inline: true
+                    name: "Status",
+                    value: musicController.isPlaying()
+                        ? "▶️ Playing"
+                        : musicController.isPaused()
+                          ? "⏸️ Paused"
+                          : "⏹️ Stopped",
+                    inline: true,
                 },
                 {
-                    name: 'Queue',
-                    value: `${status.queue.length} track${status.queue.length !== 1 ? 's' : ''} remaining`,
-                    inline: true
+                    name: "Queue",
+                    value: `${status.queue.length} track${status.queue.length !== 1 ? "s" : ""} remaining`,
+                    inline: true,
                 },
                 {
-                    name: 'Requested by',
+                    name: "Requested by",
                     value: `<@${currentTrack.requestedBy.id}>`,
-                    inline: true
-                }
+                    inline: true,
+                },
             ]);
 
         // Add thumbnail if available
@@ -87,9 +91,8 @@ export default async function (this: Command, invokedMessage?: CommandInteractio
         }
 
         self.reply({ embeds: [embed] });
-        
     } catch (error) {
-        logger.error('Error while executing status command', error as Error);
+        logger.error("Error while executing status command", error as Error);
         self.reply("❌ Failed to get player status.");
     }
 }
@@ -100,8 +103,8 @@ function formatTime(ms: number): string {
     const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
 
     if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     } else {
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
 }

@@ -1,6 +1,6 @@
 import { Db, Filter } from "mongodb";
 import { BaseRepository } from "../BaseRepository";
-import { DbSession, DbDiscordSession } from "../../../../server_src/db/databaseTypes";
+import type { DbSession } from "shared/types/databaseTypes";
 
 export class SessionRepository extends BaseRepository<DbSession> {
     constructor(db: Db) {
@@ -16,12 +16,12 @@ export class SessionRepository extends BaseRepository<DbSession> {
     }
 
     async createSession(username: string, token: string, expiresAt?: Date): Promise<DbSession> {
-        const sessionData: Omit<DbSession, '_id'> = {
+        const sessionData: Omit<DbSession, "_id"> = {
             username,
             token,
             created_at: new Date(),
             expires_at: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days default
-            is_active: true
+            is_active: true,
         };
 
         return this.create(sessionData);
@@ -38,24 +38,24 @@ export class SessionRepository extends BaseRepository<DbSession> {
 
     async cleanupExpiredSessions(): Promise<number> {
         const result = await this.collection.deleteMany({
-            expires_at: { $lt: new Date() }
+            expires_at: { $lt: new Date() },
         } as Filter<DbSession>);
-        
-        this.logger.info('Cleaned up expired sessions', { deletedCount: result.deletedCount });
+
+        this.logger.info("Cleaned up expired sessions", { deletedCount: result.deletedCount });
         return result.deletedCount;
     }
 
     async extendSession(token: string, newExpiryDate: Date): Promise<DbSession> {
         const filter = { token } as Filter<DbSession>;
-        await this.updateOne(filter, { 
-            $set: { expires_at: newExpiryDate }
+        await this.updateOne(filter, {
+            $set: { expires_at: newExpiryDate },
         });
-        
+
         const updated = await this.findByToken(token);
         if (!updated) {
-            throw new Error('Failed to retrieve extended session');
+            throw new Error("Failed to retrieve extended session");
         }
-        
+
         return updated;
     }
 
@@ -65,20 +65,20 @@ export class SessionRepository extends BaseRepository<DbSession> {
             this.collection.createIndex({ username: 1 }),
             this.collection.createIndex({ expires_at: 1 }),
             this.collection.createIndex({ created_at: 1 }),
-            this.collection.createIndex({ is_active: 1 })
+            this.collection.createIndex({ is_active: 1 }),
         ]);
-        
-        this.logger.info('Created indexes for sessions collection');
+
+        this.logger.info("Created indexes for sessions collection");
     }
 
     protected sanitizeForLog(data: any): any {
         const sanitized = super.sanitizeForLog(data);
-        
+
         // Redact the token from logs
-        if ('token' in sanitized) {
-            sanitized.token = '[REDACTED]';
+        if ("token" in sanitized) {
+            sanitized.token = "[REDACTED]";
         }
-        
+
         return sanitized;
     }
 }
@@ -90,11 +90,11 @@ export class DiscordSessionRepository extends BaseRepository<DbDiscordSession> {
 
     async findByToken(token: string): Promise<DbDiscordSession | null> {
         // Find sessions that have discord_session property
-        const session = await this.findOne({ 
+        const session = await this.findOne({
             token,
-            discord_session: { $exists: true }
+            discord_session: { $exists: true },
         } as Filter<DbDiscordSession>);
-        
+
         return session;
     }
 
@@ -103,18 +103,18 @@ export class DiscordSessionRepository extends BaseRepository<DbDiscordSession> {
     }
 
     async createDiscordSession(
-        discordId: string, 
-        token: string, 
+        discordId: string,
+        token: string,
         discordSession: any,
         expiresAt?: Date
     ): Promise<DbDiscordSession> {
-        const sessionData: Omit<DbDiscordSession, '_id'> = {
+        const sessionData: Omit<DbDiscordSession, "_id"> = {
             discord_id: discordId,
             token,
             discord_session: discordSession,
             created_at: new Date(),
             expires_at: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days default
-            is_active: true
+            is_active: true,
         };
 
         return this.create(sessionData);
@@ -122,43 +122,45 @@ export class DiscordSessionRepository extends BaseRepository<DbDiscordSession> {
 
     async updateDiscordSession(token: string, discordSession: any): Promise<DbDiscordSession> {
         const filter = { token } as Filter<DbDiscordSession>;
-        await this.updateOne(filter, { 
-            $set: { 
+        await this.updateOne(filter, {
+            $set: {
                 discord_session: discordSession,
-                updated_at: new Date()
-            }
+                updated_at: new Date(),
+            },
         });
-        
+
         const updated = await this.findByToken(token);
         if (!updated) {
-            throw new Error('Failed to retrieve updated Discord session');
+            throw new Error("Failed to retrieve updated Discord session");
         }
-        
+
         return updated;
     }
 
     async revokeDiscordSession(token: string): Promise<boolean> {
-        return this.deleteOne({ 
+        return this.deleteOne({
             token,
-            discord_session: { $exists: true }
+            discord_session: { $exists: true },
         } as Filter<DbDiscordSession>);
     }
 
     async revokeAllUserDiscordSessions(discordId: string): Promise<number> {
-        const result = await this.collection.deleteMany({ 
-            discord_id: discordId 
+        const result = await this.collection.deleteMany({
+            discord_id: discordId,
         } as Filter<DbDiscordSession>);
-        
+
         return result.deletedCount;
     }
 
     async cleanupExpiredDiscordSessions(): Promise<number> {
         const result = await this.collection.deleteMany({
             discord_session: { $exists: true },
-            expires_at: { $lt: new Date() }
+            expires_at: { $lt: new Date() },
         } as Filter<DbDiscordSession>);
-        
-        this.logger.info('Cleaned up expired Discord sessions', { deletedCount: result.deletedCount });
+
+        this.logger.info("Cleaned up expired Discord sessions", {
+            deletedCount: result.deletedCount,
+        });
         return result.deletedCount;
     }
 
@@ -168,28 +170,28 @@ export class DiscordSessionRepository extends BaseRepository<DbDiscordSession> {
             this.collection.createIndex({ discord_id: 1 }),
             this.collection.createIndex({ expires_at: 1 }),
             this.collection.createIndex({ created_at: 1 }),
-            this.collection.createIndex({ "discord_session.access_token": 1 })
+            this.collection.createIndex({ "discord_session.access_token": 1 }),
         ]);
-        
-        this.logger.info('Created indexes for Discord sessions');
+
+        this.logger.info("Created indexes for Discord sessions");
     }
 
     protected sanitizeForLog(data: any): any {
         const sanitized = super.sanitizeForLog(data);
-        
+
         // Redact sensitive Discord session data
-        if ('token' in sanitized) {
-            sanitized.token = '[REDACTED]';
+        if ("token" in sanitized) {
+            sanitized.token = "[REDACTED]";
         }
-        
-        if ('discord_session' in sanitized && sanitized.discord_session) {
+
+        if ("discord_session" in sanitized && sanitized.discord_session) {
             sanitized.discord_session = {
                 ...sanitized.discord_session,
-                access_token: '[REDACTED]',
-                refresh_token: '[REDACTED]'
+                access_token: "[REDACTED]",
+                refresh_token: "[REDACTED]",
             };
         }
-        
+
         return sanitized;
     }
 }

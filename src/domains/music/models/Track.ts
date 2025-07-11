@@ -1,4 +1,4 @@
-export type TrackSource = 'youtube' | 'spotify' | 'soundcloud' | 'url' | 'file';
+export type TrackSource = "youtube" | "spotify" | "soundcloud" | "url" | "file";
 
 export interface TrackInfo {
     title: string;
@@ -22,15 +22,15 @@ export interface Track {
     };
     addedAt: Date;
     playCount?: number;
-    
+
     // Spotify-specific data (if available)
     spotify?: {
         id: string;
         uri: string;
-        externalUrls: Record<string, string>;
+        externalUrls: SpotifyApi.ExternalUrlObject;
         previewUrl?: string;
     };
-    
+
     // Additional metadata
     metadata?: {
         genre?: string;
@@ -49,7 +49,7 @@ export interface Playlist {
     source: TrackSource;
 }
 
-export type RepeatMode = 'off' | 'track' | 'queue';
+export type RepeatMode = "off" | "track" | "queue";
 
 export interface QueueState {
     tracks: Track[];
@@ -75,14 +75,14 @@ export interface PlaybackOptions {
 }
 
 export interface AddToQueueOptions {
-    position?: 'next' | 'end' | number;
+    position?: "next" | "end" | number;
     forcePlay?: boolean;
     silent?: boolean;
 }
 
 export interface SearchResult {
     tracks: Track[];
-    loadType: 'track' | 'playlist' | 'search' | 'empty' | 'error';
+    loadType: "track" | "playlist" | "search" | "empty" | "error";
     playlistInfo?: {
         name: string;
         selectedTrack: number;
@@ -121,21 +121,26 @@ export class TrackBuilder {
         return this;
     }
 
-    setSpotifyData(spotify: Track['spotify']): this {
+    setSpotifyData(spotify: Track["spotify"]): this {
         this.track.spotify = spotify;
         return this;
     }
 
-    setMetadata(metadata: Track['metadata']): this {
+    setMetadata(metadata: Track["metadata"]): this {
         this.track.metadata = metadata;
         return this;
     }
 
     build(): Track {
-        if (!this.track.encoded || !this.track.info || !this.track.source || !this.track.requestedBy) {
-            throw new Error('Track is missing required fields');
+        if (
+            !this.track.encoded ||
+            !this.track.info ||
+            !this.track.source ||
+            !this.track.requestedBy
+        ) {
+            throw new Error("Track is missing required fields");
         }
-        
+
         return this.track as Track;
     }
 
@@ -146,7 +151,7 @@ export class TrackBuilder {
 
 export class PlaylistBuilder {
     private playlist: Partial<Playlist> = {
-        tracks: []
+        tracks: [],
     };
 
     setName(name: string): this {
@@ -181,9 +186,9 @@ export class PlaylistBuilder {
 
     build(): Playlist {
         if (!this.playlist.name || !this.playlist.source) {
-            throw new Error('Playlist is missing required fields');
+            throw new Error("Playlist is missing required fields");
         }
-        
+
         return this.playlist as Playlist;
     }
 }

@@ -4,13 +4,18 @@ import { Server } from "http";
 import { Db } from "mongodb";
 import { Request, RequestHandler, Response } from "express";
 import { Client } from "discord.js";
-import { GuildController } from "../../src/main";
 import { getToken } from "../scripts/getToken";
-import { BotdizSession } from "server_src/types";
-import { AllowedGuild, DbDiscordSession, DbDiscordUser, DbSession } from "../db/databaseTypes";
 import execCommands from "./RPC_Commands/execCommands";
 import getCommands from "./RPC_Commands/getCommands";
-import { webSocketRateLimiter } from "../RateLimiter";
+import type { GuildController } from "core/GuildController";
+import type { BotdizSession } from "shared/types/server";
+import type {
+    AllowedGuild,
+    DbDiscordSession,
+    DbDiscordUser,
+    DbSession,
+} from "shared/types/databaseTypes";
+import { webSocketRateLimiter } from "infrastructure/RateLimiter";
 
 // Extended Request type to include session
 interface SessionRequest extends Request {
@@ -22,7 +27,11 @@ interface BotdizWebsocketClient {
     clientListener: ClientListenerManager;
 }
 
-type GetCommands = "RPC_getGuilds" | "RPC_getTextChannels" | "RPC_getTextChannelContent" | "RPC_getVoiceChannels";
+type GetCommands =
+    | "RPC_getGuilds"
+    | "RPC_getTextChannels"
+    | "RPC_getTextChannelContent"
+    | "RPC_getVoiceChannels";
 
 export default class WebsocketManager {
     public server: Server;
@@ -157,12 +166,16 @@ export default class WebsocketManager {
         });
     }
 
-    async handleWsMessage(ws: WebSocket, msg: WebSocket.RawData, clientListener: ClientListenerManager, token: string) {
+    async handleWsMessage(
+        ws: WebSocket,
+        msg: WebSocket.RawData,
+        clientListener: ClientListenerManager,
+        token: string
+    ) {
         try {
-            const session = (await this.db.collection("sessions").findOne({ token: token })) as unknown as
-                | DbDiscordSession
-                | DbSession
-                | null;
+            const session = (await this.db
+                .collection("sessions")
+                .findOne({ token: token })) as unknown as DbDiscordSession | DbSession | null;
 
             if (!session) {
                 console.log("Session not validated");
@@ -201,7 +214,10 @@ export default class WebsocketManager {
                 return;
             }
             if (message.type === "listenMusicPlayer") {
-                clientListener.startMusicPlayerListener(allowedGuilds as AllowedGuild[] | "ALL", message.guildId);
+                clientListener.startMusicPlayerListener(
+                    allowedGuilds as AllowedGuild[] | "ALL",
+                    message.guildId
+                );
             }
 
             if (message.type === "addTextChannelListener") {
@@ -225,7 +241,10 @@ export default class WebsocketManager {
             }
 
             if (message.type === "addVoiceChannelListener") {
-                clientListener.addVoiceChannelListener(allowedGuilds as AllowedGuild[] | "ALL", message.guildId);
+                clientListener.addVoiceChannelListener(
+                    allowedGuilds as AllowedGuild[] | "ALL",
+                    message.guildId
+                );
 
                 return;
             }
@@ -236,7 +255,10 @@ export default class WebsocketManager {
 
             if (message.type === "get") {
                 const commandName = message.command as GetCommands;
-                const args = message.params as [string] | [string, string] | [string, string, string];
+                const args = message.params as
+                    | [string]
+                    | [string, string]
+                    | [string, string, string];
                 const targetFunc = getCommands[commandName];
                 //find command
                 const result = await targetFunc(allowedGuilds, ...args);

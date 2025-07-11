@@ -1,6 +1,6 @@
+import { createLogger } from "@logger";
 import { Track, QueueState, RepeatMode, AddToQueueOptions } from "../models/Track";
-import { createLogger } from "../../../shared/logging/Logger";
-import { MusicEventBus } from "../infrastructure/EventBus";
+import type { MusicEventBus } from "domains/music/infrastructure/EventBus";
 
 export interface IQueueService {
     add(tracks: Track[], options?: AddToQueueOptions): void;
@@ -25,7 +25,7 @@ export interface IQueueService {
 }
 
 export class QueueService implements IQueueService {
-    private readonly logger = createLogger('QueueService');
+    private readonly logger = createLogger("QueueService");
     private state: QueueState;
 
     constructor(
@@ -35,33 +35,33 @@ export class QueueService implements IQueueService {
         this.state = {
             tracks: [],
             currentIndex: -1,
-            repeatMode: 'off',
-            shuffled: false
+            repeatMode: "off",
+            shuffled: false,
         };
     }
 
     add(tracks: Track[], options: AddToQueueOptions = {}): void {
-        const { position = 'end', forcePlay = false, silent = false } = options;
+        const { position = "end", forcePlay = false, silent = false } = options;
 
         if (tracks.length === 0) {
-            this.logger.warn('Attempted to add empty tracks array', { guildId: this.guildId });
+            this.logger.warn("Attempted to add empty tracks array", { guildId: this.guildId });
             return;
         }
 
-        this.logger.info('Adding tracks to queue', {
+        this.logger.info("Adding tracks to queue", {
             guildId: this.guildId,
             trackCount: tracks.length,
             position,
-            forcePlay
+            forcePlay,
         });
 
         let insertIndex: number;
 
-        if (position === 'end') {
+        if (position === "end") {
             insertIndex = this.state.tracks.length;
-        } else if (position === 'next') {
+        } else if (position === "next") {
             insertIndex = this.state.currentIndex + 1;
-        } else if (typeof position === 'number') {
+        } else if (typeof position === "number") {
             insertIndex = Math.max(0, Math.min(position, this.state.tracks.length));
         } else {
             insertIndex = this.state.tracks.length;
@@ -81,19 +81,19 @@ export class QueueService implements IQueueService {
         }
 
         if (!silent) {
-            this.eventBus.emitEvent('queue.updated', {
+            this.eventBus.emitEvent("queue.updated", {
                 queue: this.getAll(),
-                current: this.getCurrent()
+                current: this.getCurrent(),
             });
         }
     }
 
     remove(index: number): Track | null {
         if (index < 0 || index >= this.state.tracks.length) {
-            this.logger.warn('Invalid index for track removal', { 
-                guildId: this.guildId, 
-                index, 
-                queueSize: this.state.tracks.length 
+            this.logger.warn("Invalid index for track removal", {
+                guildId: this.guildId,
+                index,
+                queueSize: this.state.tracks.length,
             });
             return null;
         }
@@ -110,15 +110,15 @@ export class QueueService implements IQueueService {
             }
         }
 
-        this.logger.info('Removed track from queue', {
+        this.logger.info("Removed track from queue", {
             guildId: this.guildId,
             trackTitle: removedTrack.info.title,
-            newQueueSize: this.state.tracks.length
+            newQueueSize: this.state.tracks.length,
         });
 
-        this.eventBus.emitEvent('queue.updated', {
+        this.eventBus.emitEvent("queue.updated", {
             queue: this.getAll(),
-            current: this.getCurrent()
+            current: this.getCurrent(),
         });
 
         return removedTrack;
@@ -131,15 +131,15 @@ export class QueueService implements IQueueService {
         this.state.shuffled = false;
         this.state.originalOrder = undefined;
 
-        this.logger.info('Cleared queue', {
+        this.logger.info("Cleared queue", {
             guildId: this.guildId,
-            clearedCount
+            clearedCount,
         });
 
-        this.eventBus.emitEvent('queue.cleared', { guildId: this.guildId });
-        this.eventBus.emitEvent('queue.updated', {
+        this.eventBus.emitEvent("queue.cleared", { guildId: this.guildId });
+        this.eventBus.emitEvent("queue.updated", {
             queue: [],
-            current: null
+            current: null,
         });
     }
 
@@ -154,28 +154,33 @@ export class QueueService implements IQueueService {
         }
 
         const currentTrack = this.getCurrent();
-        
+
         // Fisher-Yates shuffle algorithm
         for (let i = this.state.tracks.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [this.state.tracks[i], this.state.tracks[j]] = [this.state.tracks[j], this.state.tracks[i]];
+            [this.state.tracks[i], this.state.tracks[j]] = [
+                this.state.tracks[j],
+                this.state.tracks[i],
+            ];
         }
 
         // Find the new position of the current track
         if (currentTrack) {
-            this.state.currentIndex = this.state.tracks.findIndex(track => track.id === currentTrack.id);
+            this.state.currentIndex = this.state.tracks.findIndex(
+                (track) => track.id === currentTrack.id
+            );
         }
 
         this.state.shuffled = true;
 
-        this.logger.info('Shuffled queue', {
+        this.logger.info("Shuffled queue", {
             guildId: this.guildId,
-            queueSize: this.state.tracks.length
+            queueSize: this.state.tracks.length,
         });
 
-        this.eventBus.emitEvent('queue.updated', {
+        this.eventBus.emitEvent("queue.updated", {
             queue: this.getAll(),
-            current: this.getCurrent()
+            current: this.getCurrent(),
         });
     }
 
@@ -185,26 +190,28 @@ export class QueueService implements IQueueService {
         }
 
         const currentTrack = this.getCurrent();
-        
+
         // Restore original order
         this.state.tracks = [...this.state.originalOrder];
-        
+
         // Find the position of the current track in the original order
         if (currentTrack) {
-            this.state.currentIndex = this.state.tracks.findIndex(track => track.id === currentTrack.id);
+            this.state.currentIndex = this.state.tracks.findIndex(
+                (track) => track.id === currentTrack.id
+            );
         }
 
         this.state.shuffled = false;
         this.state.originalOrder = undefined;
 
-        this.logger.info('Unshuffled queue', {
+        this.logger.info("Unshuffled queue", {
             guildId: this.guildId,
-            queueSize: this.state.tracks.length
+            queueSize: this.state.tracks.length,
         });
 
-        this.eventBus.emitEvent('queue.updated', {
+        this.eventBus.emitEvent("queue.updated", {
             queue: this.getAll(),
-            current: this.getCurrent()
+            current: this.getCurrent(),
         });
     }
 
@@ -214,14 +221,14 @@ export class QueueService implements IQueueService {
         }
 
         switch (this.state.repeatMode) {
-            case 'track':
+            case "track":
                 return this.getCurrent();
-            
-            case 'queue':
+
+            case "queue":
                 const nextIndex = (this.state.currentIndex + 1) % this.state.tracks.length;
                 return this.state.tracks[nextIndex] || null;
-            
-            case 'off':
+
+            case "off":
             default:
                 const straightNextIndex = this.state.currentIndex + 1;
                 return this.state.tracks[straightNextIndex] || null;
@@ -234,15 +241,15 @@ export class QueueService implements IQueueService {
         }
 
         switch (this.state.repeatMode) {
-            case 'track':
+            case "track":
                 return this.getCurrent();
-            
-            case 'queue':
+
+            case "queue":
                 const prevIndex = this.state.currentIndex - 1;
                 const wrappedIndex = prevIndex < 0 ? this.state.tracks.length - 1 : prevIndex;
                 return this.state.tracks[wrappedIndex] || null;
-            
-            case 'off':
+
+            case "off":
             default:
                 const straightPrevIndex = this.state.currentIndex - 1;
                 return straightPrevIndex >= 0 ? this.state.tracks[straightPrevIndex] : null;
@@ -267,10 +274,10 @@ export class QueueService implements IQueueService {
     setCurrentIndex(index: number): void {
         if (index >= -1 && index < this.state.tracks.length) {
             this.state.currentIndex = index;
-            
-            this.eventBus.emitEvent('queue.updated', {
+
+            this.eventBus.emitEvent("queue.updated", {
                 queue: this.getAll(),
-                current: this.getCurrent()
+                current: this.getCurrent(),
             });
         }
     }
@@ -278,12 +285,12 @@ export class QueueService implements IQueueService {
     setRepeatMode(mode: RepeatMode): void {
         this.state.repeatMode = mode;
 
-        this.logger.info('Changed repeat mode', {
+        this.logger.info("Changed repeat mode", {
             guildId: this.guildId,
-            mode
+            mode,
         });
 
-        this.eventBus.emitEvent('repeat.changed', { mode });
+        this.eventBus.emitEvent("repeat.changed", { mode });
     }
 
     getRepeatMode(): RepeatMode {
@@ -299,12 +306,16 @@ export class QueueService implements IQueueService {
     }
 
     getPosition(track: Track): number {
-        return this.state.tracks.findIndex(t => t.id === track.id);
+        return this.state.tracks.findIndex((t) => t.id === track.id);
     }
 
     moveTrack(fromIndex: number, toIndex: number): boolean {
-        if (fromIndex < 0 || fromIndex >= this.state.tracks.length ||
-            toIndex < 0 || toIndex >= this.state.tracks.length) {
+        if (
+            fromIndex < 0 ||
+            fromIndex >= this.state.tracks.length ||
+            toIndex < 0 ||
+            toIndex >= this.state.tracks.length
+        ) {
             return false;
         }
 
@@ -320,9 +331,9 @@ export class QueueService implements IQueueService {
             this.state.currentIndex++;
         }
 
-        this.eventBus.emitEvent('queue.updated', {
+        this.eventBus.emitEvent("queue.updated", {
             queue: this.getAll(),
-            current: this.getCurrent()
+            current: this.getCurrent(),
         });
 
         return true;
@@ -334,7 +345,7 @@ export class QueueService implements IQueueService {
             currentIndex: this.state.currentIndex,
             repeatMode: this.state.repeatMode,
             shuffled: this.state.shuffled,
-            originalOrder: this.state.originalOrder ? [...this.state.originalOrder] : undefined
+            originalOrder: this.state.originalOrder ? [...this.state.originalOrder] : undefined,
         };
     }
 
@@ -344,12 +355,12 @@ export class QueueService implements IQueueService {
             currentIndex: state.currentIndex,
             repeatMode: state.repeatMode,
             shuffled: state.shuffled,
-            originalOrder: state.originalOrder ? [...state.originalOrder] : undefined
+            originalOrder: state.originalOrder ? [...state.originalOrder] : undefined,
         };
 
-        this.eventBus.emitEvent('queue.updated', {
+        this.eventBus.emitEvent("queue.updated", {
             queue: this.getAll(),
-            current: this.getCurrent()
+            current: this.getCurrent(),
         });
     }
 
@@ -357,21 +368,28 @@ export class QueueService implements IQueueService {
      * Get queue statistics
      */
     getStats() {
-        const totalDuration = this.state.tracks.reduce((sum, track) => sum + track.info.duration, 0);
-        const sourceCounts = this.state.tracks.reduce((counts, track) => {
-            counts[track.source] = (counts[track.source] || 0) + 1;
-            return counts;
-        }, {} as Record<string, number>);
+        const totalDuration = this.state.tracks.reduce(
+            (sum, track) => sum + track.info.duration,
+            0
+        );
+        const sourceCounts = this.state.tracks.reduce(
+            (counts, track) => {
+                counts[track.source] = (counts[track.source] || 0) + 1;
+                return counts;
+            },
+            {} as Record<string, number>
+        );
 
         return {
             guildId: this.guildId,
             totalTracks: this.state.tracks.length,
             currentIndex: this.state.currentIndex,
             totalDuration,
-            averageDuration: this.state.tracks.length > 0 ? totalDuration / this.state.tracks.length : 0,
+            averageDuration:
+                this.state.tracks.length > 0 ? totalDuration / this.state.tracks.length : 0,
             repeatMode: this.state.repeatMode,
             shuffled: this.state.shuffled,
-            sourceCounts
+            sourceCounts,
         };
     }
 }

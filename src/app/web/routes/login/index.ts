@@ -4,10 +4,10 @@ import crypto from "crypto";
 
 import { Express } from "express";
 import { Db, WithId, Document } from "mongodb";
-import { logger } from "../../../src/logger";
-import { DbSession, DbUser } from "../../db/databaseTypes";
-import { BotdizSession } from "../../types";
 import "dotenv/config";
+import { createLogger } from "@logger";
+import type { DbSession, DbUser } from "shared/types/databaseTypes";
+import type { BotdizSession } from "shared/types/server";
 
 interface RecaptchaResponse {
     success: boolean;
@@ -15,7 +15,7 @@ interface RecaptchaResponse {
     hostname?: string;
     "error-codes"?: string[];
 }
-
+const logger = createLogger("BotdizLogin");
 export default async function login(app: Express, db: Db) {
     app.post("/login", async (req, res) => {
         const reqBody = req.body;
@@ -37,7 +37,7 @@ export default async function login(app: Express, db: Db) {
         const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET;
 
         if (!RECAPTCHA_SECRET) {
-            logger.log("error", "Env variable RECAPTCHA_SECRET not set");
+            logger.error("Env variable RECAPTCHA_SECRET not set");
             return;
         }
 
@@ -46,7 +46,9 @@ export default async function login(app: Express, db: Db) {
         const reCapURI = `https://www.google.com/recaptcha/api/siteverify?secret=${encodedRecaptchaSecret}&response=${reCaptchaUserToken}`;
 
         const { default: fetch } = await import("node-fetch");
-        const recaptchaReply = await fetch(reCapURI).then((data) => data.json()) as RecaptchaResponse;
+        const recaptchaReply = (await fetch(reCapURI).then((data) =>
+            data.json()
+        )) as RecaptchaResponse;
         if (!recaptchaReply.success) {
             console.log("Recaptcha failed");
             res.status(404).send({
@@ -69,7 +71,7 @@ export default async function login(app: Express, db: Db) {
 
         //get username from db
         const userDoc = await db.collection("users").findOne({ username: reqUsername });
-        const user: DbUser | null = userDoc ? userDoc as WithId<Document> & DbUser : null;
+        const user: DbUser | null = userDoc ? (userDoc as WithId<Document> & DbUser) : null;
 
         if (!user) {
             res.status(404).send({ message: "Failed to login with given credentials" });
@@ -106,7 +108,7 @@ export default async function login(app: Express, db: Db) {
             const reqSession = req.session as unknown as BotdizSession | null;
 
             if (!reqSession) {
-                logger.log("error", "Failed to get session from express");
+                logger.error("Failed to get session from express");
 
                 return;
             }

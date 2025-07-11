@@ -1,9 +1,9 @@
 import argon2 from "argon2";
 import { Db } from "mongodb";
 import { Express } from "express";
-import { getToken } from "../../scripts/getToken";
-import { DbDiscordSession, DbSession, DbUser } from "../../db/databaseTypes";
-import { withAuth } from "../middlewares";
+import { withAuth } from "app/web/middleware/middlewares";
+import { getToken } from "app/web/scripts/getToken";
+import type { DbSession, DbDiscordSession, DbUser } from "shared/types/databaseTypes";
 
 interface AddSuperUserReply {
     status: "success" | "failed" | "unauthorized";
@@ -60,10 +60,9 @@ export default async function addsuperuser(app: Express, db: Db) {
             return;
         }
         //find username from token
-        const session = (await db.collection("sessions").findOne({ token: reqToken })) as unknown as
-            | DbSession
-            | DbDiscordSession
-            | null;
+        const session = (await db
+            .collection("sessions")
+            .findOne({ token: reqToken })) as unknown as DbSession | DbDiscordSession | null;
 
         if (!session) {
             console.log("Session not found");
@@ -75,7 +74,9 @@ export default async function addsuperuser(app: Express, db: Db) {
         }
 
         //find user from username
-        const user = (await db.collection("users").findOne({ username: session.username })) as unknown as DbUser;
+        const user = (await db
+            .collection("users")
+            .findOne({ username: session.username })) as unknown as DbUser;
 
         if (!user.is_admin) {
             console.log("You can't add users if you are not an admin.");
