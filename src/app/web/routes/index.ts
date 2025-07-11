@@ -1,0 +1,73 @@
+import { Db } from "mongodb";
+
+import login from "./login";
+import validate from "./validate";
+import logout from "./logout";
+import playlists from "./playlists";
+import addsuperuser from "./addsuperuser";
+import discordlogin from "./discordlogin";
+import discordguild from "./discordguild";
+import botdizguild from "./botdizguild";
+import botdizstats from "./botdizstats";
+import metrics from "./metrics";
+import "dotenv/config";
+
+import { APIRateLimiter } from "../RateLimiter";
+import { Express, Request, Response, NextFunction } from "express";
+import { BotdizSession } from "server_src/types";
+
+interface ExtendedRequest extends Request {
+    session: BotdizSession;
+    path: string;
+}
+
+interface ExtendedResponse extends Response {
+    status(code: number): this;
+    send(body?: any): this;
+}
+
+const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
+    const extReq = req as ExtendedRequest;
+    const extRes = res as ExtendedResponse;
+    const session = extReq.session;
+
+    const whitelistedRoutes = ["/login", "/discordlogin", "/validate"];
+
+    if (whitelistedRoutes.includes(extReq.path)) {
+        next();
+    } else if (session.userId) {
+        if (APIRateLimiter.isUserAllowed(session.userId)) {
+            next();
+        } else {
+            //logger.log('warn', 'Rate limited user: ' + session.userId + '\nPath: ' + req.path);
+            extRes.status(401).send({ status: "rate_limited" });
+        }
+    } else {
+        next();
+    }
+};
+
+export class RouteManager {
+    private app: Express;
+    private db: Db;
+
+    constructor(app: Express, db: Db) {
+        this.app = app;
+        this.db = db;
+    }
+
+    run() {
+        validate(this.app, this.db);
+        discordlogin(this.app, this.db);
+        botdizguild(this.app, this.db);
+
+        this.app.use(rateLimiter);
+        login(this.app, this.db);
+        logout(this.app, this.db);
+        playlists(this.app, this.db);
+        addsuperuser(this.app, this.db);
+        discordguild(this.app, this.db);
+        botdizstats(this.app, this.db);
+        metrics(this.app);
+    }
+}

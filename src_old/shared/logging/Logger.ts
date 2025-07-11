@@ -1,4 +1,4 @@
-import { BotdizError } from "@shared/errors/BotdizError";
+import { BotdizError } from "../errors/BotdizError";
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

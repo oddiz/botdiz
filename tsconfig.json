@@ -2,7 +2,6 @@
 {
   "include": [
     "./src/**/*",
-    "./server_src/**/*",
     "./src/**/*.json"
   ],
   "exclude": [
@@ -12,7 +11,39 @@
     "target": "es2021" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
     "module": "node16",
     "moduleResolution": "node16" /* Specify what module code is generated. */,
-    "baseUrl": "." /* Specify the base directory to resolve non-relative module names. */,
+    "baseUrl": "./src" /* Specify the base directory to resolve non-relative module names. */,
+    "paths": {
+      "@bot/*": [
+        "./app/bot"
+      ],
+      "@web/*": [
+        "./app/web"
+      ],
+      "@core/*": [
+        "./core"
+      ],
+      "@domains/*": [
+        "./domains"
+      ],
+      "@infrastructure/*": [
+        "./infrastructure"
+      ],
+      "@interfaces/*": [
+        "./interfaces"
+      ],
+      "@config/*": [
+        "./shared/config"
+      ],
+      "@validation/*": [
+        "./shared/validation"
+      ],
+      "@types/*": [
+        "./shared/types"
+      ],
+      "@logger": [
+        "./shared/logging/Logger"
+      ],
+    },
     "types": [ /* Specify type package names to be included without being referenced in a source file. */
       "spotify-api"
     ],
@@ -24,7 +55,6 @@
     "declarationDir": "./types",
     "rootDirs": [
       "./src",
-      "./server_src",
       "."
     ],
     "outDir": "./build",
