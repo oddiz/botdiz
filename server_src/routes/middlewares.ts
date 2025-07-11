@@ -1,24 +1,30 @@
+/// <reference path="../types.d.ts" />
 import { NextFunction, Request, Response } from "express";
+import { WithId, Document } from "mongodb";
 import { dbManager } from "../db/DatabaseManager";
 import { DbDiscordSession, DbDiscordUser, DbSession, DbUser } from "server_src/db/databaseTypes";
 import { BotdizSession } from "server_src/types";
 
-declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace Express {
-        interface Request {
-            dbSession: DbSession | DbDiscordSession;
-            user: DbUser | DbDiscordUser;
-        }
-    }
-}
-
 /**
  * Authenticate Request and adds session data and user data to request
  */
+interface ExtendedRequest extends Request {
+    session: BotdizSession;
+    dbSession?: DbSession | DbDiscordSession;
+    user?: DbUser | DbDiscordUser;
+}
+
+interface ExtendedResponse extends Response {
+    status(code: number): this;
+    send(body?: any): this;
+}
+
 export async function withAuth(req: Request, res: Response, next: NextFunction) {
+    const extReq = req as ExtendedRequest;
+    const extRes = res as ExtendedResponse;
+    
     try {
-        const reqSession = req.session as BotdizSession;
+        const reqSession = extReq.session;
 
         if (!reqSession) throw "No session was found";
 
@@ -33,31 +39,30 @@ export async function withAuth(req: Request, res: Response, next: NextFunction) 
             return;
         }
 
-        const session = (await db.collection("sessions").findOne({ token: reqToken })) as unknown as
-            | DbSession
-            | DbDiscordSession
-            | undefined;
+        const sessionDoc = await db.collection("sessions").findOne({ token: reqToken });
+        const session: DbSession | DbDiscordSession | null = sessionDoc ? 
+            sessionDoc as WithId<Document> & (DbSession | DbDiscordSession) : null;
 
         if (!session) throw "Unauthorized, no session";
 
         let user: DbUser | DbDiscordUser | null;
         if ("discord_session" in session) {
-            user = (await db
-                .collection("discord_users")
-                .findOne({ discord_id: session.discord_id })) as DbDiscordUser | null;
+            const userDoc = await db.collection("discord_users").findOne({ discord_id: (session as DbDiscordSession).discord_id });
+            user = userDoc ? userDoc as WithId<Document> & DbDiscordUser : null;
         } else {
-            user = (await db.collection("users").findOne({ username: session.username })) as DbUser | null;
+            const userDoc = await db.collection("users").findOne({ username: (session as DbSession).username });
+            user = userDoc ? userDoc as WithId<Document> & DbUser : null;
         }
 
         if (!user) throw "Unauthorized, user not found.";
 
-        req.user = user;
-        req.dbSession = session;
+        extReq.user = user;
+        extReq.dbSession = session;
 
         next();
     } catch (error) {
         console.log("error withAuth: " + JSON.stringify(error));
-        res.status(401).send({
+        extRes.status(401).send({
             status: "failed",
             message: error,
         });

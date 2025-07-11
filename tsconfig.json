@@ -21,6 +21,7 @@
     "strict": false /* Enable all strict type-checking options. */,
     "noImplicitAny": false,
     "strictNullChecks": false,
+    "noImplicitReturns": false,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
 
     /* Projects */

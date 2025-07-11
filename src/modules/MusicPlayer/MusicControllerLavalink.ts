@@ -582,9 +582,8 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                 this.changeCurrentSong(nextSong);
 
                 await this.audioPlayer.playTrack({
-                    track: { encoded: nextSong.encoded },
-                    options: {
-                        noReplace: false,
+                    track: {
+                        encoded: nextSong.encoded,
                     },
                 });
             } else {
@@ -642,7 +641,6 @@ export class MusicController extends TypedEmitter<MusicControllerEvents> {
                     return null;
                 case LoadType.PLAYLIST:
                     return response.data.tracks[0];
-                    return null;
                 case LoadType.TRACK:
                     return response.data;
                 case LoadType.SEARCH:

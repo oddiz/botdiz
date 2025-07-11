@@ -322,9 +322,11 @@ class SkipVote {
                 if (this.voteMessage) {
                     await this.voteMessage.edit({ embeds: [embed] });
                 } else {
-                    this.voteMessage = await this.invokedTextChannel.send({
-                        embeds: [embed],
-                    });
+                    if ('send' in this.invokedTextChannel) {
+                        this.voteMessage = await this.invokedTextChannel.send({
+                            embeds: [embed],
+                        });
+                    }
                 }
 
                 return;
@@ -341,7 +343,7 @@ class SkipVote {
 
                 finalEmbed.setTitle("Vote skip passed! ⏩");
 
-                if (!this.voteMessage) {
+                if (!this.voteMessage && 'send' in this.invokedTextChannel) {
                     this.voteMessage = await this.invokedTextChannel.send({
                         embeds: [finalEmbed],
                     });

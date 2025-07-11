@@ -50,6 +50,7 @@ export default async function discordguild(app: Express, db: Db) {
 
             const discordSession = session as DbDiscordSession;
 
+            const { default: fetch } = await import("node-fetch");
             const userGuilds = await fetch("https://discord.com/api/users/@me/guilds", {
                 headers: {
                     authorization: `Bearer ${authToken}`,
@@ -254,6 +255,7 @@ export default async function discordguild(app: Express, db: Db) {
                     clientSecret = process.env.DISCORD_CLIENT_SECRET;
                     redirectUri = "https://botdiz.kaansarkaya.com/discordlogin";
                 }
+                const { default: fetch } = await import("node-fetch");
                 const oAuthResult = await fetch("https://discord.com/api/oauth2/token", {
                     method: "POST",
                     body: new URLSearchParams({
@@ -278,12 +280,12 @@ export default async function discordguild(app: Express, db: Db) {
                         discord_id: session.discord_id,
                     },
                     {
-                        discord_auth_token: oAuthResult.access_token,
-                        discord_refresh_token: oAuthResult.refresh_token,
-                        discord_token_expiration: new Date().getTime() + oAuthResult.expires_in * 1000,
+                        discord_auth_token: (oAuthResult as any).access_token,
+                        discord_refresh_token: (oAuthResult as any).refresh_token,
+                        discord_token_expiration: new Date().getTime() + (oAuthResult as any).expires_in * 1000,
                     }
                 );
-                return oAuthResult.access_token;
+                return (oAuthResult as any).access_token;
             }
 
             return session.discord_auth_token;

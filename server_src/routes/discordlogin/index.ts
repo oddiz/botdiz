@@ -2,7 +2,7 @@
 import crypto from "crypto";
 import * as uuid from "uuid";
 import { client as DiscordClient } from "../../../src/main";
-import { Db } from "mongodb";
+import { Db, WithId, Document } from "mongodb";
 import { Express } from "express";
 import "dotenv/config";
 
@@ -11,8 +11,38 @@ import { BotdizSession } from "../../types";
 import { makeImageUrl } from "../../scripts/makeImageUrl";
 import { DbGuildObject } from "server_src/db/databaseTypes";
 
+interface DiscordOAuthResponse {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+    refresh_token: string;
+    scope: string;
+    error?: string;
+}
+
+interface DiscordUser {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string | null;
+    email?: string;
+    verified?: boolean;
+}
+
+interface DiscordGuild {
+    id: string;
+    name: string;
+    icon: string | null;
+    owner: boolean;
+    permissions: number;
+    iconUrl?: string;
+    administrator?: boolean;
+    dj_access?: boolean;
+}
+
 export default async function playlists(app: Express, db: Db) {
     app.post("/discordlogin", async (req, res) => {
+        const { default: fetch } = await import("node-fetch");
         try {
             const code = req.body?.code;
 
@@ -52,17 +82,8 @@ export default async function playlists(app: Express, db: Db) {
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded",
                     },
-                }).then((response) => response.json());
+                }).then((response) => response.json()) as DiscordOAuthResponse;
 
-                /* 
-                oauthResult = {
-                    access_token: 'DxxxxxxxxxxxxxxxxxxxxxxxxxxS',
-                    expires_in: 604800,
-                    refresh_token: 'axxxxxxxxxxxxxxxxxxxxxxxx06',
-                    scope: 'identify email guilds',
-                    token_type: 'Bearer'
-                }
-                */
                 if (oauthResult.error) {
                     res.status(401).send({
                         status: "error",
@@ -79,44 +100,13 @@ export default async function playlists(app: Express, db: Db) {
                     headers: {
                         authorization: `${tokenType} ${accessToken}`,
                     },
-                }).then((response) => response.json());
+                }).then((response) => response.json()) as DiscordUser;
 
-                /*
-                userResult = {
-                    id: '2xxxxxxxxxxxxx4',
-                    username: 'oxxz',
-                    avatar: 'a_39xxxxxxxxxxxxxxc07e6ff749',
-                    discriminator: '9xx9',
-                    public_flags: 128,
-                    flags: 128,
-                    banner: null,
-                    banner_color: null,
-                    accent_color: null,
-                    locale: 'en-US',
-                    mfa_enabled: true,
-                    premium_type: 2,
-                    email: 'kxxxxxxxxxa@xxxx.com',
-                    verified: true
-                }
-                */
                 const userGuilds = await fetch("https://discord.com/api/users/@me/guilds", {
                     headers: {
                         authorization: `${tokenType} ${accessToken}`,
                     },
-                }).then((response) => response.json());
-
-                /* 
-                userGuilds= [{
-                    id: '85xxxxxxxxxxx904',
-                    name: 'Minyatür',
-                    icon: '7a4xxxxxxxxxxxxxx8b26a7d',
-                    owner: false,
-                    permissions: 2147483647,
-                    features: [],
-                    permissions_new: '274877906943'
-                },
-                ...
-                */
+                }).then((response) => response.json()) as DiscordGuild[];
 
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const passPermissions = [
@@ -142,9 +132,9 @@ export default async function playlists(app: Express, db: Db) {
                             guild.administrator = true;
                             allowedGuilds.push(guild);
                         } else {
-                            const botdizGuildOptions = (await db.collection("guilds").findOne({
-                                guild_id: guild.id,
-                            })) as unknown as DbGuildObject;
+                            const guildDoc = await db.collection("guilds").findOne({ guild_id: guild.id });
+                            const botdizGuildOptions: DbGuildObject | null = guildDoc ? 
+                                guildDoc as WithId<Document> & DbGuildObject : null;
 
                             if (botdizGuildOptions) {
                                 const allowedDjRoles = botdizGuildOptions.dj_roles;

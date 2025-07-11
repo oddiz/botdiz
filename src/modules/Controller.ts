@@ -16,7 +16,7 @@ import { logger } from "../logger";
 import { EmbedBuilder } from "discord.js";
 import { MusicController } from "./MusicPlayer/MusicControllerLavalink";
 import { SubscriptionManager } from "./SubscriptionManager";
-import { Db } from "mongodb";
+import { Db, WithId, Document } from "mongodb";
 import { DbGuildObject } from "../../server_src/db/databaseTypes";
 
 export class Controller {
@@ -67,9 +67,11 @@ export class Controller {
 
         try {
             if (this.db) {
-                let dbGuildObject = (await this.db
+                const guildDoc = await this.db
                     .collection("guilds")
-                    .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
+                    .findOne({ guild_id: this.guild.id });
+                let dbGuildObject: DbGuildObject | null = guildDoc ? 
+                    guildDoc as WithId<Document> & DbGuildObject : null;
                 if (!dbGuildObject) {
                     const everyoneRole = this.guild.roles.everyone.id;
                     dbGuildObject = {
@@ -222,7 +224,9 @@ export class Controller {
             )
             .setColor("#e9b463");
 
-        message.channel.send({ embeds: [newEmbed] });
+        if (message.channel && 'send' in message.channel) {
+            message.channel.send({ embeds: [newEmbed] });
+        }
 
         return;
         /*

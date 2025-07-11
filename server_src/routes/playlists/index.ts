@@ -7,6 +7,11 @@ import { logger } from "../../../src/logger";
 import { getToken } from "../../scripts/getToken";
 import { withAuth } from "../middlewares";
 
+interface SpotifyPlaylistsResponse {
+    total: string;
+    items: any[];
+}
+
 const UNAUTH_RESPONSE = {
     status: "failed",
     message: "401 Not authorized",
@@ -87,6 +92,7 @@ export default async function playlists(app: Express, db: Db) {
             async function fetchSpotifyPlaylists(offset: number) {
                 if (!spotifyAuthData) throw "No spotify auth data";
 
+                const { default: fetch } = await import("node-fetch");
                 const response = await fetch("https://api.spotify.com/v1/me/playlists?limit=50&offset=" + offset, {
                     method: "GET",
                     headers: {
@@ -97,7 +103,8 @@ export default async function playlists(app: Express, db: Db) {
                     },
                 });
 
-                return response.json();
+                const jsonResponse = await response.json();
+                return jsonResponse as SpotifyPlaylistsResponse;
             }
 
             // Set the access token on the API object to use it in later calls

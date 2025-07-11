@@ -57,10 +57,14 @@ export default async function (
                     return await invokedMessage.followUp(content);
                 } else if (options.new) {
                     const messageContent = content as string | MessagePayload;
-                    return await invokedMessage.channel?.send(messageContent);
+                    if (invokedMessage.channel && 'send' in invokedMessage.channel) {
+                        return await invokedMessage.channel.send(messageContent);
+                    }
                 } else {
                     const messageContent = content as string | MessagePayload;
-                    return await invokedMessage.channel?.send(messageContent);
+                    if (invokedMessage.channel && 'send' in invokedMessage.channel) {
+                        return await invokedMessage.channel.send(messageContent);
+                    }
                 }
             }
         } else {

@@ -13,22 +13,34 @@ import metrics from "./metrics";
 import "dotenv/config";
 
 import { APIRateLimiter } from "../RateLimiter";
-import { Express, RequestHandler } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import { BotdizSession } from "server_src/types";
 
-const rateLimiter: RequestHandler = (req, res, next) => {
-    const session = req.session as BotdizSession;
+interface ExtendedRequest extends Request {
+    session: BotdizSession;
+    path: string;
+}
+
+interface ExtendedResponse extends Response {
+    status(code: number): this;
+    send(body?: any): this;
+}
+
+const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
+    const extReq = req as ExtendedRequest;
+    const extRes = res as ExtendedResponse;
+    const session = extReq.session;
 
     const whitelistedRoutes = ["/login", "/discordlogin", "/validate"];
 
-    if (whitelistedRoutes.includes(req.path)) {
+    if (whitelistedRoutes.includes(extReq.path)) {
         next();
     } else if (session.userId) {
         if (APIRateLimiter.isUserAllowed(session.userId)) {
             next();
         } else {
             //logger.log('warn', 'Rate limited user: ' + session.userId + '\nPath: ' + req.path);
-            res.status(401).send({ status: "rate_limited" });
+            extRes.status(401).send({ status: "rate_limited" });
         }
     } else {
         next();

@@ -1,6 +1,6 @@
 import { BaseGuildTextChannel, Guild, EmbedBuilder } from "discord.js";
 import { DbGuildObject, DbSubscriptionContent } from "../../server_src/db/databaseTypes";
-import { Db as MongoDb } from "mongodb";
+import { Db as MongoDb, WithId, Document } from "mongodb";
 import { logger } from "../logger";
 
 interface BotdizSubInfo extends DbSubscriptionContent {
@@ -157,9 +157,10 @@ export class SubscriptionManager {
                 dbGuild = dbGuildObject;
             } else {
                 if (this.db !== null) {
-                    dbGuild = (await this.db
+                    const guildDoc = await this.db
                         .collection("guilds")
-                        .findOne({ guild_id: this.guild.id })) as DbGuildObject | null;
+                        .findOne({ guild_id: this.guild.id });
+                    dbGuild = guildDoc ? guildDoc as WithId<Document> & DbGuildObject : null;
                 }
             }
 
@@ -188,9 +189,11 @@ export class SubscriptionManager {
                             last_posted_content_hash: sub.last_posted_content_hash,
                             last_posted_channel: sub.last_posted_channel,
                         };
-                        const dbSubContent = (await this.db.collection("subscription_content").findOne({
+                        const subContentDoc = await this.db.collection("subscription_content").findOne({
                             type: sub.type,
-                        })) as DbSubscriptionContent | null;
+                        });
+                        const dbSubContent: DbSubscriptionContent | null = subContentDoc ? 
+                            subContentDoc as WithId<Document> & DbSubscriptionContent : null;
 
                         if (dbSubContent) {
                             const botdizSubInfo: BotdizSubInfo = {

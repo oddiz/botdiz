@@ -5,6 +5,7 @@ import {
     ChatInputCommandInteraction,
     CommandInteraction,
     InteractionReplyOptions,
+    InteractionEditReplyOptions,
     Message,
     MessageCreateOptions,
     MessagePayload,
@@ -28,6 +29,8 @@ export type replyOptions = {
     new?: boolean;
     required?: boolean;
 };
+
+type ReplyContent = string | MessagePayload | (InteractionReplyOptions & InteractionEditReplyOptions);
 
 export type CommandFunction = (
     invokedMessage?: CommandInteraction | ChatInputCommandInteraction | null,
@@ -110,19 +113,21 @@ export class Command {
         }
     }
 
-    async createNewMessage(content: string | MessagePayload | MessageCreateOptions | InteractionReplyOptions) {
+    async createNewMessage(content: string | MessagePayload | MessageCreateOptions) {
         if (!this.lastInvokedMessage) {
             // no message to reply
             return;
         }
         const newMessage = content as MessageCreateOptions;
-        this.lastInvokedMessage = (await this.lastInvokedMessage.channel?.send(newMessage)) || null;
+        if (this.lastInvokedMessage.channel && 'send' in this.lastInvokedMessage.channel) {
+            this.lastInvokedMessage = (await this.lastInvokedMessage.channel.send(newMessage)) || null;
+        }
         this.lastIsInteraction = false;
 
         return this.lastInvokedMessage;
     }
     async reply(
-        content: string | MessagePayload | InteractionReplyOptions,
+        content: ReplyContent,
         options: replyOptions = { followup: false, new: false, required: true }
     ) {
         try {
@@ -145,20 +150,20 @@ export class Command {
                 }
 
                 if (options.new) {
-                    return this.createNewMessage(content);
+                    return this.createNewMessage(content as string | MessagePayload | MessageCreateOptions);
                 }
 
                 return await this.lastInvokedMessage.editReply(content).catch(async (err) => {
                     console.log(err + " -> Can't edit Last Invoked Message");
 
                     if (options.new && options.required) {
-                        return this.createNewMessage(content);
+                        return this.createNewMessage(content as string | MessagePayload | MessageCreateOptions);
                     }
                 });
             } else {
                 //if normal command
                 if (options.required) {
-                    return this.createNewMessage(content);
+                    return this.createNewMessage(content as string | MessagePayload | MessageCreateOptions);
                 }
             }
         } catch (error) {
