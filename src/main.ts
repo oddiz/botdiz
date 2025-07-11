@@ -3,7 +3,7 @@ import "dotenv/config";
 
 import Discord, { Guild, Events, IntentsBitField } from "discord.js";
 
-import { logger } from "./logger";
+// Legacy logger import removed - using new createLogger system
 export const client = new Discord.Client({
     intents: [
         IntentsBitField.Flags.Guilds,
@@ -16,133 +16,153 @@ export const client = new Discord.Client({
 import { DatabaseManager as DbManager } from "../server_src/db/DatabaseManager";
 import { ShoukakuHandler } from "./Shokaku/ShokakuHandler";
 import { updateEpicDeals } from "./scripts/updateEpicDeals";
+import { GuildManager } from "./core/GuildManager";
+import { RepositoryManager } from "./infrastructure/database/RepositoryManager";
+import { createLogger } from "./shared/logging/Logger";
 
-import { Controller as BotdizController } from "./modules/Controller";
-import { GptHandler } from "./modules/gptHandler";
-
-export interface GuildController {
-    guildId: string;
-    guildObj: Guild;
-    controller: BotdizController;
-}
-
-export const GuildControllers: GuildController[] = [];
+const mainLogger = createLogger('Main');
 
 async function main(): Promise<void> {
-    const shoukaku: ShoukakuHandler = new ShoukakuHandler(client);
+    try {
+        mainLogger.info('Starting Botdiz...');
 
-    const databaseManager = new DbManager();
-    const db = await databaseManager.connect();
+        // Initialize core services
+        const shoukaku = new ShoukakuHandler(client);
+        const databaseManager = new DbManager();
+        const db = await databaseManager.connect();
 
-    if (!db) {
-        logger.log("error", "Failed to connect to database");
-    }
+        if (!db) {
+            mainLogger.error('Failed to connect to database');
+            process.exit(1);
+        }
 
-    client.on("ready", async () => {
-        if (client.user) {
-            client.user.setActivity(`/help`, { type: Discord.ActivityType.Listening });
+        const repositories = new RepositoryManager(db);
+        const guildManager = new GuildManager(client, repositories, shoukaku);
 
-            if (process.env.NODE_ENV === "development") {
-                if (client.user.username !== "botdiz testing [alpha]") {
-                    client.user.setUsername("botdiz testing [alpha]");
+        client.on("ready", async () => {
+            if (client.user) {
+                client.user.setActivity(`/help`, { type: Discord.ActivityType.Listening });
+
+                if (process.env.NODE_ENV === "development") {
+                    if (client.user.username !== "botdiz testing [alpha]") {
+                        client.user.setUsername("botdiz testing [alpha]");
+                    }
+                } else if (client.user.username !== "botdiz") {
+                    client.user.setUsername("botdiz");
                 }
-            } else if (client.user.username !== "botdiz") {
-                client.user.setUsername("botdiz");
             }
-        }
 
-        //await updateEpicDeals(db);
-        //setInterval(updateEpicDeals, 1000 * 60 * 30, db);
-        await client.guilds.fetch();
-        for (const guild of client.guilds.cache) {
-            const Controller = new BotdizController(db, client, guild[1], shoukaku);
-
-            Controller.init();
-
-            GuildControllers.push({
-                guildId: guild[0],
-                guildObj: guild[1],
-                controller: Controller,
+            mainLogger.info('Bot logged in', { 
+                username: client.user?.username,
+                guilds: client.guilds.cache.size 
             });
-            logger.log("info", `Creating controller for guild: ${guild[1].name}.`);
-        }
 
-        logger.log("info", "The bot is online!");
-    });
-    client.on("debug", (msg) => {
-        logger.log("debug", msg);
-    });
-    client.on("warn", (msg) => {
-        logger.log("warn", msg);
-    });
-    client.on("error", (msg) => {
-        logger.log("error", msg);
-    });
-
-    client.on("messageCreate", (message) => {
-        if (message.interaction) {
-            return;
-        }
-        if (message.guild) {
-            const messageGuildId = message.guild.id;
-            const guildController = GuildControllers.find(({ guildId }) => guildId === messageGuildId)?.controller;
-
-            if (guildController) {
-                new GptHandler().handleMessage(message);
-                guildController.handleMessage(message);
-            } else {
-                logger.log("warn", `No controller found for guild: ${message.guild.name}.`);
+            // Initialize guild controllers for existing guilds
+            await client.guilds.fetch();
+            for (const [guildId, guild] of client.guilds.cache) {
+                try {
+                    await guildManager.createController(guild);
+                    mainLogger.info('Initialized guild controller', { 
+                        guildId, 
+                        guildName: guild.name 
+                    });
+                } catch (error) {
+                    mainLogger.error('Failed to initialize guild controller', error as Error, { 
+                        guildId, 
+                        guildName: guild.name 
+                    });
+                }
             }
-        }
-    });
 
-    client.on(Events.InteractionCreate, async (interaction) => {
-        if (interaction.guild) {
-            const messageGuildId = interaction.guild.id;
-            const guildController = GuildControllers.find(({ guildId }) => guildId === messageGuildId)?.controller;
+            //await updateEpicDeals(db);
+            //setInterval(updateEpicDeals, 1000 * 60 * 30, db);
 
-            if (guildController) {
-                guildController.handleInteraction(interaction);
-            } else {
-                logger.log("warn", `No controller found for guild: ${interaction.guild.name}.`);
-            }
-        }
-    });
-
-    client.on("rateLimit", (data) => {
-        console.error("Rate limit achieved: ");
-        console.error(data);
-    });
-
-    client.on("guildCreate", async (guild) => {
-        const Controller = new BotdizController(db, client, guild, shoukaku);
-
-        await Controller.init();
-
-        GuildControllers.push({
-            guildId: guild.id,
-            guildObj: guild,
-            controller: Controller,
+            mainLogger.info('Bot is fully online and ready!');
         });
-        logger.log("info", `${guild.name} controller added succesfully.`);
-    });
 
-    client.on("guildDelete", (guild) => {
-        const deletedGuildId = guild.id;
+        // Event handlers
+        client.on("debug", (msg) => {
+            mainLogger.debug('Discord client debug', { message: msg });
+        });
+        
+        client.on("warn", (msg) => {
+            mainLogger.warn('Discord client warning', { message: msg });
+        });
+        
+        client.on("error", (error) => {
+            mainLogger.error('Discord client error', error);
+        });
 
-        for (const [index, guildObj] of GuildControllers.entries()) {
-            if (guildObj.guildId == deletedGuildId) {
-                guildObj.controller.destroy();
-                GuildControllers.splice(index, 1);
+        // Guild join/leave events
+        client.on(Events.GuildCreate, async (guild) => {
+            try {
+                await guildManager.createController(guild);
+                mainLogger.info('Bot joined new guild', { 
+                    guildId: guild.id, 
+                    guildName: guild.name,
+                    memberCount: guild.memberCount 
+                });
+            } catch (error) {
+                mainLogger.error('Failed to initialize controller for new guild', error as Error, { 
+                    guildId: guild.id, 
+                    guildName: guild.name 
+                });
             }
-        }
-        logger.log("info", `${guild.name} controller removed.`);
-    });
+        });
 
-    if (process.env.NODE_ENV == "development") {
-        client.login(process.env.DISCORD_TESTBOT_TOKEN);
-    } else {
-        client.login(process.env.DISCORD_TOKEN);
+        client.on(Events.GuildDelete, (guild) => {
+            guildManager.destroyController(guild.id);
+            mainLogger.info('Bot left guild', { 
+                guildId: guild.id, 
+                guildName: guild.name 
+            });
+        });
+
+        // Command interactions
+        client.on(Events.InteractionCreate, async (interaction) => {
+            if (!interaction.guild) return;
+
+            try {
+                const controller = guildManager.getController(interaction.guild.id);
+                if (!controller) {
+                    mainLogger.warn('No controller found for guild interaction', { 
+                        guildId: interaction.guild.id,
+                        guildName: interaction.guild.name 
+                    });
+                    return;
+                }
+
+                if (interaction.isCommand()) {
+                    await controller.handleCommand(interaction);
+                } else if (interaction.isButton()) {
+                    await controller.handleButtonInteraction(interaction);
+                }
+            } catch (error) {
+                mainLogger.error('Failed to handle interaction', error as Error, {
+                    guildId: interaction.guild.id,
+                    interactionType: interaction.type
+                });
+            }
+        });
+
+        client.on("rateLimit", (data) => {
+            mainLogger.warn('Discord rate limit hit', { data });
+        });
+
+        // Login to Discord
+        const token = process.env.NODE_ENV === "development" 
+            ? process.env.DISCORD_TESTBOT_TOKEN 
+            : process.env.DISCORD_TOKEN;
+            
+        if (!token) {
+            throw new Error('Discord token not found in environment variables');
+        }
+        
+        await client.login(token);
+        
+    } catch (error) {
+        mainLogger.error('Failed to start bot', error as Error);
+        process.exit(1);
     }
 }
 

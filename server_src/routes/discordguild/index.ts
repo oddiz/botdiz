@@ -21,6 +21,12 @@ export default async function discordguild(app: Express, db: Db) {
     app.get("/discordguilds", withAuth, async (req, res) => {
         try {
             const session = req.dbSession;
+            
+            if (!session) {
+                res.status(401).send({ status: "failed", message: "Session not found" });
+                return;
+            }
+            
             const authToken = await getUserDiscordAuthToken(session);
 
             const botdizGuilds = await DiscordClient.guilds.cache;
@@ -171,6 +177,16 @@ export default async function discordguild(app: Express, db: Db) {
             }
 
             const session = req.dbSession;
+
+            if (!session) {
+                res.status(401).send({ status: "failed", message: "Session not found" });
+                return;
+            }
+
+            if (!req.user) {
+                res.status(401).send({ status: "failed", message: "User not found" });
+                return;
+            }
 
             if ("discord_session" in session && "discord_id" in req.user) {
                 const allowedGuilds = req.user.allowed_guilds;

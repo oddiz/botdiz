@@ -22,6 +22,11 @@ export default async function botdizguild(app: Express, db: Db) {
             const session = req.dbSession;
 
             if (!session) {
+                res.status(401).send({ status: "failed", message: "Session not found" });
+                return;
+            }
+
+            if (!session) {
                 res.status(401).send({
                     status: "failed",
                     message: "401 Unauthorized",
@@ -31,6 +36,11 @@ export default async function botdizguild(app: Express, db: Db) {
             }
 
             const user = req.user;
+
+            if (!user) {
+                res.status(401).send({ status: "failed", message: "User not found" });
+                return;
+            }
 
             if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
@@ -83,7 +93,18 @@ export default async function botdizguild(app: Express, db: Db) {
 
             const session = req.dbSession;
 
+            if (!session) {
+                res.status(401).send({ status: "failed", message: "Session not found" });
+                return;
+            }
+
             const user = req.user;
+
+            if (!user) {
+                res.status(401).send({ status: "failed", message: "User not found" });
+                return;
+            }
+
             if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
 
@@ -158,7 +179,18 @@ export default async function botdizguild(app: Express, db: Db) {
 
             const session = req.dbSession;
 
+            if (!session) {
+                res.status(401).send({ status: "failed", message: "Session not found" });
+                return;
+            }
+
             const user = req.user;
+
+            if (!user) {
+                res.status(401).send({ status: "failed", message: "User not found" });
+                return;
+            }
+
             if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;
 
@@ -221,7 +253,17 @@ export default async function botdizguild(app: Express, db: Db) {
 
             const session = req.dbSession;
 
+            if (!session) {
+                res.status(401).send({ status: "failed", message: "Session not found" });
+                return;
+            }
+
             const user = req.user;
+
+            if (!user) {
+                res.status(401).send({ status: "failed", message: "User not found" });
+                return;
+            }
 
             if ("discord_session" in session && "discord_id" in user) {
                 const allowedGuilds = user.allowed_guilds;

@@ -2,7 +2,7 @@ import { getToken } from '../../scripts/getToken';
 import { Express } from 'express';
 import { Db } from 'mongodb';
 
-export default async function logout(app: Express, db: Db) {
+export default async function logout(app: Express, db: Db): Promise<void> {
     app.post('/logout', async (req, res) => {
         const reqToken = getToken(req);
 
@@ -24,8 +24,6 @@ export default async function logout(app: Express, db: Db) {
                 status: 'success',
                 message: 'Logout successful',
             });
-
-            return;
         } catch (error) {
             res.status(404).send({
                 status: 'failed',

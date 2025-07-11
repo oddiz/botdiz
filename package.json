@@ -32,7 +32,8 @@
     "winston-sentry-log": "^1.0.24",
     "ws": "^8.18.3",
     "ytdl-core": "^4.11.5",
-    "ytsr": "^3.8.4"
+    "ytsr": "^3.8.4",
+    "zod": "^3.25.76"
   },
   "name": "botdiz",
   "description": "A bot for discord by oddiz",

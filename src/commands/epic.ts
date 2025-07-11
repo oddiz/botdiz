@@ -4,14 +4,15 @@ import { EmbedBuilder } from "discord.js";
 export default async function (this: Command) {
     const self = this;
     try {
-        if (!self.controller.db) {
+        const db = self.controller.getRepositories().getDatabase();
+        if (!db) {
             logger.log("warn", "Not connected to database so epic deals won't work.");
             return;
         }
-        const epicGames = await self.controller.db
+        const epicGames = await db
             .collection("subscription_content")
             .findOne({ type: "epic_deals" })
-            .then((res) => res?.current_content);
+            .then((res: any) => res?.current_content);
 
         const activeDeals = [];
         const futureDeals = [];

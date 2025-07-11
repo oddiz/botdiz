@@ -1,32 +1,45 @@
-import { Command } from "../modules/Command"
+import { Command } from "../modules/Command";
+import { createLogger } from "../shared/logging/Logger";
+import { MusicPlayerError } from "../shared/errors/BotdizError";
 
-import { logger } from '../logger'
+const logger = createLogger('PauseCommand');
 
 export default async function (this: Command) {
-    const self = this 
+    const self = this;
 
     try {
-        if (!self.controller.MusicController || !self.controller.MusicController.audioPlayer) {
-            self.reply("Bot is currently not playing.")
-            
-            return 
-        }
-        if (self.controller.MusicController.audioPlayerStatus === "PAUSED") {
-            self.reply("Player already paused")
-             
-        } else if (self.controller.MusicController.audioPlayerStatus !== "PLAYING") {
-            self.reply("Player is not active")
-        } else {
-            self.controller.MusicController.pause()
-            
-            self.reply("⏸️ /resume to continue playing.")
+        const musicController = self.controller.MusicController;
+        
+        if (!musicController) {
+            self.reply("Bot is currently not playing.");
+            return;
         }
 
+        if (!musicController.isConnected()) {
+            self.reply("Bot is not connected to a voice channel.");
+            return;
+        }
 
+        if (musicController.isPaused()) {
+            self.reply("Player is already paused.");
+            return;
+        }
+
+        if (!musicController.isPlaying()) {
+            self.reply("Player is not currently playing.");
+            return;
+        }
+
+        await musicController.pause();
+        self.reply("⏸️ Use /resume to continue playing.");
         
     } catch (error) {
-        logger.log("error", "Error while executing pause:", error)
+        logger.error('Error while executing pause command', error as Error);
+        
+        if (error instanceof MusicPlayerError) {
+            self.reply(`❌ ${error.message}`);
+        } else {
+            self.reply("❌ Failed to pause playback.");
+        }
     }
-
-    
 }

@@ -10,7 +10,7 @@ import {
     MessageCreateOptions,
     MessagePayload,
 } from "discord.js";
-import { Controller as BotdizController } from "./Controller";
+import { GuildController as BotdizController } from "../core/GuildController";
 import { PlayCommandOptions } from "../commands/play";
 import { botCommands } from "../botCommands";
 
@@ -113,10 +113,10 @@ export class Command {
         }
     }
 
-    async createNewMessage(content: string | MessagePayload | MessageCreateOptions) {
+    async createNewMessage(content: string | MessagePayload | MessageCreateOptions): Promise<Message | null> {
         if (!this.lastInvokedMessage) {
             // no message to reply
-            return;
+            return null;
         }
         const newMessage = content as MessageCreateOptions;
         if (this.lastInvokedMessage.channel && 'send' in this.lastInvokedMessage.channel) {
@@ -129,7 +129,7 @@ export class Command {
     async reply(
         content: ReplyContent,
         options: replyOptions = { followup: false, new: false, required: true }
-    ) {
+    ): Promise<Message | CommandInteraction | void> {
         try {
             const commands = botCommands;
             if (!this.lastInvokedMessage) {
@@ -168,6 +168,7 @@ export class Command {
             }
         } catch (error) {
             console.log("Failed to reply to command: \n" + error);
+            return;
         }
     }
 
@@ -200,7 +201,7 @@ export class Command {
         }
 
         //show help of specified command
-        const helpCommand = this.controller.commands.find(({ name }) => name === "help");
+        const helpCommand = this.controller.getCommandService().getCommand("help");
 
         if (helpCommand) {
             helpCommand.execute(invokedMessage, false);

@@ -15,7 +15,7 @@ export default function (this: Command, invokedMessage?: ChatInputCommandInterac
 
         let embedMessage = new EmbedBuilder();
         const { PREFIX } = self.controller;
-        const userAvatar = self.controller.client.user?.avatarURL();
+        const userAvatar = self.controller.getClient().user?.avatarURL();
 
         embedMessage = embedMessage.setColor("#e9b463").setTimestamp();
 
@@ -23,7 +23,7 @@ export default function (this: Command, invokedMessage?: ChatInputCommandInterac
             embedMessage = embedMessage.setThumbnail(userAvatar);
         }
         if (commandName) {
-            const foundCommand = self.controller.commands.find(({ name }) => name === commandName);
+            const foundCommand = self.controller.getCommandService().getCommand(commandName);
 
             if (foundCommand) {
                 embedMessage = embedMessage
@@ -47,7 +47,7 @@ export default function (this: Command, invokedMessage?: ChatInputCommandInterac
             .setDescription(`Below are all the things Botdiz can do.`)
             .setFooter({ text: `Made with 💜 by oddiz#9659` });
 
-        for (const command of self.controller.commands) {
+        for (const command of self.controller.getCommandService().getAllCommands()) {
             embedMessage = embedMessage.addFields(
                 { name: "\u200B", value: PREFIX + command.name },
                 {

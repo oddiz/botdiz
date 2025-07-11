@@ -20,11 +20,13 @@ export default async function (this: Command, invokedMessage: CommandInteraction
             messageUserId = invokedMessage.user.id
         } 
     
-        if ((messageUserId == self.controller.oddiz?.id) || (messageUserId == guildOwnerId)) {
+        const botOwner = await self.controller.getGuildService().getOwner();
+        
+        if ((messageUserId == botOwner?.id) || (messageUserId == guildOwnerId)) {
     
             let slashCommands = [];
     
-            for (const command of self.controller.commands) {
+            for (const command of self.controller.getCommandService().getAllCommands()) {
                 slashCommands.push(command.convertSlashCommand())
             }
             

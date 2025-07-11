@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionData, ApplicationCommandOptionType } from "discord.js";
 import { Command } from "./modules/Command";
-import { Controller as BotdizGuildContoller } from "./modules/Controller";
+import { GuildController as BotdizGuildContoller } from "./core/GuildController";
 import helpCommand from "./commands/help";
 import gptCommand from "./commands/gpt";
 import recommendSongsCommand from "./commands/recommendSongs";
